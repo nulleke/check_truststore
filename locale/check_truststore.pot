@@ -1,0 +1,108 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-13 13:43+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: utils/check_truststore:114
+msgid "Certificate Hierarchy:"
+msgstr ""
+
+#: utils/check_truststore:174
+msgid "Unknown format: {}"
+msgstr ""
+
+#: utils/check_truststore:206
+msgid "File not found"
+msgstr ""
+
+#: utils/check_truststore:206 utils/check_truststore:253
+msgid "READ_ERROR"
+msgstr ""
+
+#: utils/check_truststore:214
+msgid "Duplicate content"
+msgstr ""
+
+#: utils/check_truststore:227 utils/check_truststore:230
+#: utils/check_truststore:280
+msgid "Unknown"
+msgstr ""
+
+#: utils/check_truststore:286
+msgid "Missing issuer for"
+msgstr ""
+
+#: utils/check_truststore:286
+msgid "UNTRUSTED"
+msgstr ""
+
+#: utils/check_truststore:297
+msgid "Name collision (different content)"
+msgstr ""
+
+#: utils/check_truststore:300
+msgid "Collision"
+msgstr ""
+
+#: utils/check_truststore:315
+msgid "ERROR"
+msgstr ""
+
+#: utils/check_truststore:315
+msgid "WARNING"
+msgstr ""
+
+#: utils/check_truststore:315
+msgid "OK"
+msgstr ""
+
+#: utils/check_truststore:315
+msgid "INFO"
+msgstr ""
+
+#: utils/check_truststore:320
+#, python-brace-format
+msgid "File '{path}' does not exist."
+msgstr ""
+
+#: utils/check_truststore:324
+msgid "Analyze certificate truststores and visualize the chain hierarchy."
+msgstr ""
+
+#: utils/check_truststore:325
+msgid "Compatible with Python 3.6+"
+msgstr ""
+
+#: utils/check_truststore:327
+msgid "Path to the YAML file"
+msgstr ""
+
+#: utils/check_truststore:328
+msgid "Show this help message and exit"
+msgstr ""
+
+#: utils/check_truststore:329
+msgid "Output format"
+msgstr ""
+
+#: utils/check_truststore:330
+msgid "Show debug info"
+msgstr ""
+
+#: utils/check_truststore:341
+msgid "Rendering failed"
+msgstr ""

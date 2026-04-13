@@ -1,0 +1,108 @@
+# Dutch translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Serge van Thillo <nulleke76@gmail.com>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-13 13:43+0200\n"
+"PO-Revision-Date: 2026-04-13 11:08+0200\n"
+"Last-Translator: Serge van Thillo <nulleke76@gmail.com>\n"
+"Language-Team: Dutch <vertaling@vrijschrift.org>\n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: utils/check_truststore:114
+msgid "Certificate Hierarchy:"
+msgstr "Certificaat Hiërarchie:"
+
+#: utils/check_truststore:174
+msgid "Unknown format: {}"
+msgstr "Onbekend formaat: {}"
+
+#: utils/check_truststore:206
+msgid "File not found"
+msgstr "Bestand niet gevonden"
+
+#: utils/check_truststore:206 utils/check_truststore:253
+msgid "READ_ERROR"
+msgstr "LEES_FOUT"
+
+#: utils/check_truststore:214
+msgid "Duplicate content"
+msgstr "Dubbele inhoud"
+
+#: utils/check_truststore:227 utils/check_truststore:230
+#: utils/check_truststore:280
+msgid "Unknown"
+msgstr "Onbekend"
+
+#: utils/check_truststore:286
+msgid "Missing issuer for"
+msgstr "Ontbrekende issuer voor"
+
+#: utils/check_truststore:286
+msgid "UNTRUSTED"
+msgstr "GEEN_TRUST"
+
+#: utils/check_truststore:297
+msgid "Name collision (different content)"
+msgstr "Naam-conflict (verschillende inhoud)"
+
+#: utils/check_truststore:300
+msgid "Collision"
+msgstr "Conflict"
+
+#: utils/check_truststore:315
+msgid "ERROR"
+msgstr "FOUT"
+
+#: utils/check_truststore:315
+msgid "WARNING"
+msgstr "WAARSCHUWING"
+
+#: utils/check_truststore:315
+msgid "OK"
+msgstr "CHECK"
+
+#: utils/check_truststore:315
+msgid "INFO"
+msgstr "INFO"
+
+#: utils/check_truststore:320
+#, python-brace-format
+msgid "File '{path}' does not exist."
+msgstr "Bestand '{path}' bestaat niet."
+
+#: utils/check_truststore:324
+msgid "Analyze certificate truststores and visualize the chain hierarchy."
+msgstr "Analyseer certificaat truststores en visualiseer de hiërarchie."
+
+#: utils/check_truststore:325
+msgid "Compatible with Python 3.6+"
+msgstr "Compatibel met Python 3.6+"
+
+#: utils/check_truststore:327
+msgid "Path to the YAML file"
+msgstr "Pad naar het YAML-bestand"
+
+#: utils/check_truststore:328
+msgid "Show this help message and exit"
+msgstr "Toon dit helpbericht en sluit af"
+
+#: utils/check_truststore:329
+msgid "Output format"
+msgstr "Output formaat"
+
+#: utils/check_truststore:330
+msgid "Show debug info"
+msgstr "Toon debug informatie"
+
+#: utils/check_truststore:341
+msgid "Rendering failed"
+msgstr "Renderen mislukt"
