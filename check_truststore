@@ -23,7 +23,6 @@ from pathlib import Path
 from collections import defaultdict
 from typing import Any, Optional, List, Dict, Union, Set
 
-# --- 1. Hybrid Pydantic Check ---
 PYDANTIC_AVAILABLE = False
 try:
     from pydantic import BaseModel, Field, model_validator
@@ -35,7 +34,6 @@ try:
 except ImportError:
     class BaseModel: pass
 
-# --- 2. Internationalization (i18n) ---
 base_path = os.path.dirname(os.path.abspath(__file__))
 locale_dir = os.path.join(base_path, "locale")
 t = gettext.translation("check_truststore", locale_dir, fallback=True)
@@ -43,7 +41,6 @@ _ = t.gettext
 
 EXPIRY_THRESHOLD_DAYS = 30
 
-# --- 3. Status & Logging Class ---
 class Status:
     def __init__(self, name: str, icon: str, color: str, translate: bool = True):
         self.NAME: str = _(name) if translate else name
@@ -62,17 +59,16 @@ ERROR = Status("ERROR", "\U0000274C", RED)                              # ❌
 OK = Status("OK", "\U00002705", GREEN)                                  # ✅
 WARNING = Status("WARNING", "\U000023F3", YELLOW)                       # ⏳
 MISSING = Status("MISSING", "\U00002753", MAGENTA, translate=False)     # ❓
-COLLISION = Status("COLLISION", "\U0001F46F", CYAN, translate=False)    # 👥 (Original was \U0001F46F)
+COLLISION = Status("COLLISION", "\U0001F46F", CYAN, translate=False)    # 👥
 INFO = Status("INFO", "\U0001F535", BLUE)                               # 🔵
 
-# --- 4. Hybrid Models ---
 if PYDANTIC_AVAILABLE:
     class Certificate(BaseModel):
         common_name: str = Field(alias="commonName")
         is_valid: bool = Field(alias="isValid")
         is_expiring_soon: bool = Field(alias="isExpiringSoon")
         expiry_date: datetime = Field(alias="expiryDate")
-        children: Optional[List[Any]] = None # Any because of recursion in 3.6
+        children: Optional[List[Any]] = None
  
         @model_validator(mode='before')
         @classmethod
@@ -103,7 +99,6 @@ else:
                 obj["children"] = [c.model_dump() for c in self.children]
             return obj
 
-# --- 5. Render Classes ---
 class BaseRenderer(ABC):
     @abstractmethod
     def render(self, tree_data: List[Union[Certificate, Any]]) -> str:
@@ -174,7 +169,6 @@ class TrustStoreRenderer:
             raise ValueError(_("Unknown format: {}").format(format_type))
         return renderer.render(tree_data)
 
-# --- 6. The Analyzer Class ---
 class TrustStoreAnalyzer:
     def __init__(self, yaml_path: str, debug: bool = False):
         self.yaml_path: Path = Path(yaml_path)
@@ -313,9 +307,7 @@ class TrustStoreAnalyzer:
 
         return tree
 
-# --- 7. Main Execution ---
 def main() -> None:
-    # Dummy calls for xgettext to pick up Status names
     _("ERROR"); _("WARNING"); _("OK"); _("INFO")
 
     def valid_file(path_str: str) -> Path:
