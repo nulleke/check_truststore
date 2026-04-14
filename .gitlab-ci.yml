@@ -5,14 +5,16 @@ stages:
 variables:
   PYTHONUNBUFFERED: "1"
 
-# Template to prepare the environment
+# Template om de omgeving voor te bereiden
 .test_setup:
   image: python:3.9-slim
   before_script:
     - pip install PyYAML cryptography pydantic
     - mkdir -p tests/certs/prod
+    # Genereer dummy certificaten
     - openssl req -x509 -newkey rsa:2048 -keyout tests/certs/prod/root.key -out tests/certs/prod/root.crt -days 365 -nodes -subj "/CN=Test Root CA"
     - openssl req -newkey rsa:2048 -keyout tests/certs/prod/server.key -out tests/certs/prod/server.crt -nodes -subj "/CN=Test Server"
+    # Genereer de test configuratie
     - |
       cat <<EOF > tests/test_config.yaml
       env: "prod"
@@ -32,7 +34,7 @@ test_healthy_chain:
     - echo "Running healthy chain test..."
     - python3 check_truststore tests/test_config.yaml --format text
 
-# Test scenario 2: Missing Files (Moet falen of debug melding geven)
+# Test scenario 2: Missing Files
 test_missing_files:
   extends: .test_setup
   stage: test
