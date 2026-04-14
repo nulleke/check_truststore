@@ -4,16 +4,30 @@ stages:
 variables:
   PYTHONUNBUFFERED: "1"
 
-test_healthy_chain:
-  image: python:3.9-slim
+test_full_compatibility:
   stage: test
+  image: python:${PYTHON_VERSION}-slim
+  parallel:
+    matrix:
+      - PYTHON_VERSION: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14-rc"]
   before_script:
+    # Voor Python 3.6 moeten we soms pip upgraden voor moderne cryptography libraries
+    - python3 -m pip install --upgrade pip
     - pip install PyYAML cryptography pydantic
     - mkdir -p tests/certs/prod
-    # Genereer dummy certificaten
-    - openssl req -x509 -newkey rsa:2048 -keyout tests/certs/prod/root.crt -out tests/certs/prod/root.crt -days 365 -nodes -subj "/CN=Test Root CA"
-    - openssl req -newkey rsa:2048 -keyout tests/certs/prod/server.crt -out tests/certs/prod/server.crt -nodes -subj "/CN=Test Server"
-    # Genereer de test configuratie
+    
+    # 1. Genereer Root CA
+    - openssl req -x509 -newkey rsa:2048 -keyout tests/certs/prod/root.key -out tests/certs/prod/root.crt -days 365 -nodes -subj "/CN=Test Root CA"
+    
+    # 2. Genereer Intermediate CA (CSR -> Sign met Root)
+    - openssl req -newkey rsa:2048 -keyout tests/certs/prod/intermediate.key -out tests/certs/prod/intermediate.csr -nodes -subj "/CN=Test Intermediate CA"
+    - openssl x509 -req -in tests/certs/prod/intermediate.csr -CA tests/certs/prod/root.crt -CAkey tests/certs/prod/root.key -CAcreateserial -out tests/certs/prod/intermediate.crt -days 365
+    
+    # 3. Genereer Server Cert (CSR -> Sign met Intermediate)
+    - openssl req -newkey rsa:2048 -keyout tests/certs/prod/server.key -out tests/certs/prod/server.csr -nodes -subj "/CN=Test Server"
+    - openssl x509 -req -in tests/certs/prod/server.csr -CA tests/certs/prod/intermediate.crt -CAkey tests/certs/prod/intermediate.key -CAcreateserial -out tests/certs/prod/server.crt -days 365
+
+    # 4. Genereer de test configuratie met de volledige keten
     - |
       cat <<EOF > tests/test_config.yaml
       env: "prod"
@@ -22,29 +36,11 @@ test_healthy_chain:
         - cert_src_dir: "tests/certs/{{ env }}/"
           cert_chain:
             - link: "root"
+            - link: "intermediate"
             - link: "server"
       EOF
   script:
-    - echo "Running healthy chain test..."
+    - echo "Testing on Python ${PYTHON_VERSION} with 3-tier chain (Root -> Intermediate -> Server)"
     - python3 check_truststore tests/test_config.yaml --format text
-
-test_json_output:
-  image: python:3.9-slim
-  stage: test
-  before_script:
-    - pip install PyYAML cryptography pydantic
-    - mkdir -p tests/certs/prod
-    - openssl req -x509 -newkey rsa:2048 -keyout tests/certs/prod/root.crt -out tests/certs/prod/root.crt -days 365 -nodes -subj "/CN=Test Root CA"
-    - |
-      cat <<EOF > tests/test_config.yaml
-      env: "prod"
-      certificate_file_extension: ".crt"
-      truststores:
-        - cert_src_dir: "tests/certs/{{ env }}/"
-          cert_chain:
-            - link: "root"
-      EOF
-  script:
-    - echo "Validating JSON structure..."
     - python3 check_truststore tests/test_config.yaml --format json > output.json
     - python3 -m json.tool output.json
