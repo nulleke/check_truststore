@@ -1,93 +1,162 @@
-# check_truststore
+# TrustStore Analyzer
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![Python: 3.6+](https://img.shields.io/badge/python-3.6+-green.svg)](https://www.python.org/)
 
+A tool for system administrators and security engineers to audit certificate truststores. This utility transforms flat certificate directories into logical hierarchies, making it easy to spot broken chains or expiring certificates.
 
+## 🚀 Features
 
-## Getting started
+* **Smart Hierarchy Building:** Automatically links certificates based on Issuer/Subject relationships and visualizes them in a tree.
+* **Format Support:** Specifically designed for **X.509 certificates** in **PEM encoding**.
+* **Health Monitoring:** Visual status indicators (✅ Valid, ⏳ Expiring Soon, ❌ Invalid) based on a 30-day threshold.
+* **Collision Intelligence:** Detects "Name Collisions" (👥) where different certificates share the same Common Name.
+* **Hybrid Pydantic Support:** Uses Pydantic for data validation if available, with a built-in fallback.
+* **Internationalization:** Full support for localized logging and output via `gettext`.
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## 🛠 Configuration (YAML)
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+The script expects a YAML file that defines your environments and certificate locations. Example structure:
 
-## Add your files
-
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
+```yaml
+env: "prod"
+certificate_file_extension: ".crt"
+truststores:
+  - cert_src_dir: "/etc/ssl/certs/{{ env }}/"
+    cert_chain:
+      - link: "root_ca"
+      - link: "intermediate_ca"
+      - link: "server_cert"
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/nulleke/check_truststore.git
-git branch -M main
-git push -uf origin main
-```
 
-## Integrate with your tools
+## Overview
+This tool parses certificate files (CRTs) defined in a central YAML configuration, verifies their validity and expiration dates, and reconstructs the issuer/subject hierarchy. It supports output in both human-readable text trees and machine-readable JSON.
 
-* [Set up project integrations](https://gitlab.com/nulleke/check_truststore/-/settings/integrations)
+## Key Features
+* **Chain Visualization:** Automatically builds a tree structure of your certificate hierarchy.
+* **Collision Detection:** Identifies certificates with identical Common Names but different contents.
+* **Expiration Alerts:** Highlights certificates expiring within a 30-day threshold.
+* **Hybrid Pydantic Support:** Uses Pydantic for data validation if available, with a built-in fallback for environments without it.
+* **Internationalization:** Ready for translation via `gettext`.
 
-## Collaborate with your team
-
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+## Requirements
+* Python 3.6+
+* `PyYAML`
+* `cryptography`
+* *Optional:* `pydantic` (for enhanced data validation)
 
 ## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+Run the script by providing a path to your truststore YAML configuration:
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+```bash
+./check_truststore config.yaml --format text --debug
+```
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+## 📊 Output Examples
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+The tool provides different views of your truststore health depending on your needs.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+### JSON based output (Default)
+```json
+[
+  {
+    "commonName": "Root CA",
+    "isValid": true,
+    "isExpiringSoon": false,
+    "expiryDate": "2030-01-01T00:00:00+00:00",
+    "children": [
+      {
+        "commonName": "Intermediate CA",
+        "isValid": true,
+        "isExpiringSoon": false,
+        "expiryDate": "2028-06-15T00:00:00+00:00",
+        "children": [
+          {
+            "commonName": "Web Server",
+            "isValid": true,
+            "isExpiringSoon": true,
+            "expiryDate": "2026-05-01T12:00:00+00:00"
+          }
+        ]
+      }
+    ]
+  }
+]
+```
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+### Text-Based Hierarchy (Human Readable)
+Ideal for a quick visual audit of the certificate chains. It uses ANSI colors in the terminal for better visibility.
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+```text
+Certificate Hierarchy:
+├── Root CA [✅] (2030-01-01)
+│   ├── Intermediate CA [✅] (2028-06-15)
+│   │   └── Web Server [✅] (2026-05-01)
+│   └── Old Intermediate [⏳] (2026-04-20)
+├── EXTERNAL_OR_MISSING_ISSUER [❓]
+│   └── Third-Party Cert [❌] (2024-12-31)
+└── MULTIPLE_CA_COLLISION [👥]
+    ├── GlobalSign Root (Collision) [✅] (2029-12-31)
+    └── GlobalSign Root (Collision) [❌] (2022-01-15)
+```
 
-## License
-For open source projects, say how it is licensed.
+## 🔍 Debugging & Scenario Analysis
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+When running with the `--debug` flag, the tool outputs detailed logs to `stderr`. This is essential for understanding how the certificate tree is being constructed and where potential issues lie.
+
+### Healthy Execution (Success)
+When all certificates are found, validated, and hashes are unique.
+```text
+🔵 INFO         | Configuration loaded           | Processing 3 certificate paths
+✅ OK           | GlobalRoot_CA                  | 2030-01-01 12:00
+✅ OK           | Intermediate_CA_V1             | 2028-06-15 12:00
+✅ OK           | Production_Webserver           | 2026-05-01 12:00
+```
+
+### Missing Files (I/O Errors)
+Occurs when a filename defined in the YAML does not exist in the source directory.
+```text
+❌ READ_ERROR   | missing_cert.crt               | File not found
+```
+
+### Missing Root or Intermediate (Untrusted Chain)
+Occurs when a certificate's issuer is not present in the current truststore batch. These are grouped under the EXTERNAL_OR_MISSING_ISSUER node in the output.
+```text
+❓ UNTRUSTED    | External_CA_Provider           | Missing issuer for: My_Intermediate_Cert
+```
+
+### Redundant Certificates (Duplicate Content)
+If the same certificate is present multiple times (even under different filenames), the tool identifies the identical SHA-256 hash and skips processing to prevent loops and clutter.
+```text
+⏳ WARNING      | copy_of_root.crt               | Duplicate content
+```
+
+### Name Collisions (Same Name, Different Content)
+A critical scenario where two different certificates use the same Common Name. The tool detects this and treats them as separate entities to avoid merging incorrect chains.
+```text
+👥 COLLISION    | Corporate_Root_CA              | Name collision (different content)
+
+```
+
+### Invalid or Corrupted PEM
+If a file is present but cannot be parsed as a valid X509 certificate.
+```text
+❌ READ_ERROR   | invalid_format.crt             | Unable to load PEM certificate
+```
+
+### Expired or Expiring Soon
+The tool checks the current system time against the certificate's validity window.
+```text
+⏳ WARNING      | Soon_To_Expire_Cert            | 2026-04-25 10:00
+❌ ERROR        | Old_Expired_Cert               | 2023-12-31 23:59
+```
+
+## ⚖️ License
+
+**Copyright (C) 2026 Serge van Thillo**
+
+This program is free software: you can redistribute it and/or modify it under the terms of the **GNU General Public License** as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the [GNU General Public License](https://www.gnu.org/licenses/gpl-3.0) for more details.
+
+---
+**Status:** Active Development | **Logic validated for current system date:** April 15, 2026
