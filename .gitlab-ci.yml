@@ -4,15 +4,16 @@ stages:
 variables:
   PYTHONUNBUFFERED: "1"
 
-# We definiëren de jobs nu direct zonder template om syntax-verwarring te voorkomen
 test_healthy_chain:
   image: python:3.9-slim
   stage: test
   before_script:
     - pip install PyYAML cryptography pydantic
     - mkdir -p tests/certs/prod
-    - openssl req -x509 -newkey rsa:2048 -keyout tests/certs/prod/root.key -out tests/certs/prod/root.crt -days 365 -nodes -subj "/CN=Test Root CA"
-    - openssl req -newkey rsa:2048 -keyout tests/certs/prod/server.key -out tests/certs/prod/server.crt -nodes -subj "/CN=Test Server"
+    # Genereer dummy certificaten
+    - openssl req -x509 -newkey rsa:2048 -keyout tests/certs/prod/root.crt -out tests/certs/prod/root.crt -days 365 -nodes -subj "/CN=Test Root CA"
+    - openssl req -newkey rsa:2048 -keyout tests/certs/prod/server.crt -out tests/certs/prod/server.crt -nodes -subj "/CN=Test Server"
+    # Genereer de test configuratie
     - |
       cat <<EOF > tests/test_config.yaml
       env: "prod"
@@ -23,10 +24,9 @@ test_healthy_chain:
             - link: "root"
             - link: "server"
       EOF
-    - chmod +x ./check_truststore
   script:
     - echo "Running healthy chain test..."
-    - ./check_truststore tests/test_config.yaml --format text
+    - python3 check_truststore tests/test_config.yaml --format text
 
 test_json_output:
   image: python:3.9-slim
@@ -34,7 +34,7 @@ test_json_output:
   before_script:
     - pip install PyYAML cryptography pydantic
     - mkdir -p tests/certs/prod
-    - openssl req -x509 -newkey rsa:2048 -keyout tests/certs/prod/root.key -out tests/certs/prod/root.crt -days 365 -nodes -subj "/CN=Test Root CA"
+    - openssl req -x509 -newkey rsa:2048 -keyout tests/certs/prod/root.crt -out tests/certs/prod/root.crt -days 365 -nodes -subj "/CN=Test Root CA"
     - |
       cat <<EOF > tests/test_config.yaml
       env: "prod"
@@ -44,8 +44,7 @@ test_json_output:
           cert_chain:
             - link: "root"
       EOF
-    - chmod +x ./check_truststore
   script:
     - echo "Validating JSON structure..."
-    - ./check_truststore tests/test_config.yaml --format json > output.json
+    - python3 check_truststore tests/test_config.yaml --format json > output.json
     - python3 -m json.tool output.json
