@@ -1,4 +1,17 @@
 #!/usr/bin/python3
+# -----------------------------------------------------------------------------
+# TrustStore Analyzer & Visualizer
+# -----------------------------------------------------------------------------
+# Main Architect & Lead Developer: Serge van Thillo <nulleke76@gmail.com>
+# Development Assistant: AI (Refactoring & Pydantic compatibility)
+# Date: 2026
+#
+# Logic & Design:
+# This tool was architected to analyze certificate truststores via YAML. 
+# The core logic for chain reconstruction and collision detection was 
+# designed by the Lead Developer. AI was used to assist with syntax 
+# optimization and cross-version Python support.
+#
 # Copyright (C) 2026 Serge van Thillo <nulleke76@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
