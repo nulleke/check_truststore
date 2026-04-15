@@ -88,6 +88,7 @@ Ideal for a quick visual audit of the certificate chains. It uses ANSI colors in
 
 ```text
 Certificate Hierarchy:
+├── GlobalSign Root [✅] (2030-01-01)
 ├── Root CA [✅] (2030-01-01)
 │   ├── Intermediate CA [✅] (2028-06-15)
 │   │   └── Web Server [✅] (2026-05-01)
