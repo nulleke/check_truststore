@@ -63,6 +63,9 @@ Run the script by providing a path to your truststore YAML configuration:
 
 # Export to JSON for integration with other monitoring tools
 ./check_truststore vars/prod/stores.yml --format json > audit_report.json
+
+# Export to simple JSON for file status monitoring
+./check_truststore vars/prod/stores.yml --format status
 ```
 
 ## 📊 Output Examples
@@ -162,6 +165,49 @@ Certificaat Hiërarchie:
 │       └── Expired Server Cert [❌]  (2026-04-16)
 └── EXTERNAL ISSUER / MISSING ROOT [❓] 
     └── Orphan Certificate [✅]  (2027-04-16)
+```
+
+### File status based JSON
+Ideal for a status check for all the mentioned files and status in the input list
+
+#### 🚦 Status Code Definitions
+
+When using the --format status output, each certificate is assigned a numeric statusCode. This allows for easy integration with alerting triggers.
+
+| Code | Label | Description |
+| :--- | :--- | :--- |
+| **0**	| VALID	| Certificate is within its validity period and has a trusted path to a root in the store. |
+| **1**	| EXPIRING_SOON	| Certificate is valid but expires within the 30-day threshold. |
+| **2**	| UNTRUSTED	| The certificate is technically valid (dates are OK), but its issuer was not found in the truststore (Orphan). |
+| **3**	| EXPIRED	| The certificate's notAfter date has passed or it is not yet valid (notBefore). |
+| **4**	| INVALID	| The file could not be parsed or contains structural errors. |
+
+#### Output
+
+```json
+[
+  {
+    "fileName": "root_ca.crt",
+    "commonName": "Root CA",
+    "statusCode": 0,
+    "statusLabel": "VALID",
+    "expiryDate": "2036-04-13T06:37:12Z"
+  },
+  {
+    "fileName": "intermediate.crt",
+    "commonName": "Intermediate CA",
+    "statusCode": 1,
+    "statusLabel": "EXPIRING_SOON",
+    "expiryDate": "2026-04-26T06:38:21Z"
+  },
+  {
+    "fileName": "orphan.crt",
+    "commonName": "Orphan Certificate",
+    "statusCode": 2,
+    "statusLabel": "UNTRUSTED",
+    "expiryDate": "2027-04-16T07:42:39Z"
+  }
+]
 ```
 
 ## 🔍 Debugging & Scenario Analysis
