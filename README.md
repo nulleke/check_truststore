@@ -48,7 +48,7 @@ This project is rigorously tested via **GitLab CI** across a full matrix of Pyth
 The tool uses **SKI/AKI (Subject/Authority Key Identifier)** to build a cryptographically accurate tree, even if multiple certificates share the same name.
 
 * **`EXTERNAL_OR_MISSING_ISSUER` [❓]**: A virtual node for certificates whose issuer (Root or Intermediate) was not found in the provided source directories.
-* **Name Collisions [👯]**: When two different certificates (different hashes) share the same Common Name, the tool adds this icon. They are kept as separate nodes in the tree to ensure an accurate audit of each unique certificate.
+* **Name Collisions [👯]**: When two different certificates (different hashes) share the same Common Name, the tool adds this icon as aditional icon.
 * **Deduplication**: If the exact same certificate (matching SHA-256 hash) is found in multiple paths, it is processed only once to keep the report clean.
 
 ## Usage
@@ -80,21 +80,18 @@ The tool provides different views of your truststore health depending on your ne
     "isValid": true,
     "isExpiringSoon": false,
     "expiryDate": "2036-04-13T06:37:12Z",
-    "isCollision": false,
     "children": [
       {
         "commonName": "Intermediate CA",
         "isValid": true,
         "isExpiringSoon": false,
         "expiryDate": "2027-04-16T06:37:42Z",
-        "isCollision": true,
         "children": [
           {
             "commonName": "Server Cert A",
             "isValid": true,
             "isExpiringSoon": false,
             "expiryDate": "2027-04-16T06:39:33Z",
-            "isCollision": false
           }
         ]
       },
@@ -103,14 +100,12 @@ The tool provides different views of your truststore health depending on your ne
         "isValid": true,
         "isExpiringSoon": true,
         "expiryDate": "2026-04-26T06:38:21Z",
-        "isCollision": true,
         "children": [
           {
             "commonName": "Server Cert B",
             "isValid": true,
             "isExpiringSoon": true,
             "expiryDate": "2026-04-21T07:33:10Z",
-            "isCollision": false
           }
         ]
       },
@@ -119,14 +114,12 @@ The tool provides different views of your truststore health depending on your ne
         "isValid": false,
         "isExpiringSoon": false,
         "expiryDate": "2026-04-16T07:29:59Z",
-        "isCollision": true,
         "children": [
           {
             "commonName": "Expired Server Cert",
             "isValid": false,
             "isExpiringSoon": false,
             "expiryDate": "2026-04-16T07:39:29Z",
-            "isCollision": false
           }
         ]
       }
@@ -137,14 +130,12 @@ The tool provides different views of your truststore health depending on your ne
     "isValid": false,
     "isExpiringSoon": false,
     "expiryDate": "1970-01-01T00:00:00Z",
-    "isCollision": false,
     "children": [
       {
         "commonName": "Orphan Certificate",
         "isValid": true,
         "isExpiringSoon": false,
         "expiryDate": "2027-04-16T07:42:39Z",
-        "isCollision": false
       }
     ]
   }
