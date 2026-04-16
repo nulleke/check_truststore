@@ -191,7 +191,7 @@ class TextRenderer(BaseRenderer):
             children = getattr(n, "children", None)
 
             icons = []
-            if name == ORPHAN_NODE_ID:
+            if raw_name == ORPHAN_NODE_ID:
                 icons.append(MISSING.ICON)
             else:
                 st = ERROR if not is_valid else (WARNING if is_soon else OK)
@@ -201,7 +201,7 @@ class TextRenderer(BaseRenderer):
 
             icon_str = "".join(["[{}]".format(ico) for ico in icons])
             date_str = ""
-            if expiry and name != ORPHAN_NODE_ID:
+            if expiry and raw_name != ORPHAN_NODE_ID:
                 ds = expiry.strftime('%Y-%m-%d') if isinstance(expiry, datetime) else str(expiry)[:10]
                 date_str = " ({})".format(ds)
 

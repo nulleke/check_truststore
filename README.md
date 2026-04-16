@@ -6,12 +6,13 @@ A tool for system administrators and security engineers to audit certificate tru
 
 ## 🚀 Features
 
-* **Smart Hierarchy Building:** Automatically links certificates based on Issuer/Subject relationships and visualizes them in a tree.
+* **Chain Visualization:** Automatically builds a tree structure of your certificate hierarchy.
 * **Format Support:** Specifically designed for **X.509 certificates** in **PEM encoding**.
 * **Health Monitoring:** Visual status indicators (✅ Valid, ⏳ Expiring Soon, ❌ Invalid) based on a 30-day threshold.
-* **Collision Intelligence:** Detects "Name Collisions" (👥) where different certificates share the same Common Name.
-* **Hybrid Pydantic Support:** Uses Pydantic for data validation if available, with a built-in fallback.
-* **Internationalization:** Full support for localized logging and output via `gettext`.
+* **Collision Intelligence:** Detects "Name Collisions" (👯) where different certificates share the same Common Name.
+* **True Hybrid Architecture:** Seamlessly supports **Pydantic v1** (legacy), **Pydantic v2** (modern), or a **Zero-Dependency Fallback** (standard Python). This ensures the tool remains functional on legacy RHEL/CentOS systems and the latest Python 3.14 environments alike.
+* **Expiration Alerts:** Highlights certificates expiring within a 30-day threshold.
+* **Internationalization:** Ready for translation via `gettext`.
 
 ## 🛠 Configuration (YAML)
 
@@ -31,24 +32,37 @@ truststores:
 ## Overview
 This tool parses certificate files (CRTs) defined in a central YAML configuration, verifies their validity and expiration dates, and reconstructs the issuer/subject hierarchy. It supports output in both human-readable text trees and machine-readable JSON.
 
-## Key Features
-* **Chain Visualization:** Automatically builds a tree structure of your certificate hierarchy.
-* **Collision Detection:** Identifies certificates with identical Common Names but different contents.
-* **Expiration Alerts:** Highlights certificates expiring within a 30-day threshold.
-* **Hybrid Pydantic Support:** Uses Pydantic for data validation if available, with a built-in fallback for environments without it.
-* **Internationalization:** Ready for translation via `gettext`.
+## 🧪 Reliability & CI/CD
+This project is rigorously tested via **GitLab CI** across a full matrix of Python versions. 
+* **Compatibility Matrix:** Automated tests run on every version from 3.6 to 3.14.
+* **Fallback Validation:** We explicitly test a "No-Pydantic" environment to guarantee that the core logic remains 100% functional even when third-party validation libraries are missing.
+* **Logic Verification:** All date-based logic is validated against current 2026 standards.
 
 ## Requirements
-* Python 3.6+
-* `PyYAML`
-* `cryptography`
-* *Optional:* `pydantic` (for enhanced data validation)
+* **Python 3.6+** (Fully tested from 3.6 up to 3.14)
+* **cryptography**: For X.509 parsing (compatible with legacy and UTC-aware versions).
+* **PyYAML**: For configuration management.
+* **pydantic** (Optional): v1.10+ or v2.0+ for enhanced schema validation. The tool automatically detects and adapts to the available version.
+
+## 🔍 Advanced Logic & Visual Indicators
+The tool uses **SKI/AKI (Subject/Authority Key Identifier)** to build a cryptographically accurate tree, even if multiple certificates share the same name.
+
+* **`EXTERNAL_OR_MISSING_ISSUER` [❓]**: A virtual node for certificates whose issuer (Root or Intermediate) was not found in the provided source directories.
+* **Name Collisions [👯]**: When two different certificates (different hashes) share the same Common Name, the tool adds this icon. They are kept as separate nodes in the tree to ensure an accurate audit of each unique certificate.
+* **Deduplication**: If the exact same certificate (matching SHA-256 hash) is found in multiple paths, it is processed only once to keep the report clean.
 
 ## Usage
 Run the script by providing a path to your truststore YAML configuration:
 
 ```bash
-./check_truststore config.yaml --format text --debug
+# Basic tree view
+./check_truststore vars/prod/stores.yml --format text
+
+# Deep dive with debug logs (shows skipped duplicates and I/O errors)
+./check_truststore vars/tst/stores.yml --format text -d
+
+# Export to JSON for integration with other monitoring tools
+./check_truststore vars/prod/stores.yml --format json > audit_report.json
 ```
 
 ## 📊 Output Examples
@@ -62,21 +76,72 @@ The tool provides different views of your truststore health depending on your ne
     "commonName": "Root CA",
     "isValid": true,
     "isExpiringSoon": false,
-    "expiryDate": "2030-01-01T00:00:00+00:00",
+    "expiryDate": "2036-04-13T06:37:12Z",
+    "isCollision": false,
     "children": [
       {
         "commonName": "Intermediate CA",
         "isValid": true,
         "isExpiringSoon": false,
-        "expiryDate": "2028-06-15T00:00:00+00:00",
+        "expiryDate": "2027-04-16T06:37:42Z",
+        "isCollision": true,
         "children": [
           {
-            "commonName": "Web Server",
+            "commonName": "Server Cert A",
             "isValid": true,
-            "isExpiringSoon": true,
-            "expiryDate": "2026-05-01T12:00:00+00:00"
+            "isExpiringSoon": false,
+            "expiryDate": "2027-04-16T06:39:33Z",
+            "isCollision": false
           }
         ]
+      },
+      {
+        "commonName": "Intermediate CA",
+        "isValid": true,
+        "isExpiringSoon": true,
+        "expiryDate": "2026-04-26T06:38:21Z",
+        "isCollision": true,
+        "children": [
+          {
+            "commonName": "Server Cert B",
+            "isValid": true,
+            "isExpiringSoon": true,
+            "expiryDate": "2026-04-21T07:33:10Z",
+            "isCollision": false
+          }
+        ]
+      },
+      {
+        "commonName": "Intermediate CA",
+        "isValid": false,
+        "isExpiringSoon": false,
+        "expiryDate": "2026-04-16T07:29:59Z",
+        "isCollision": true,
+        "children": [
+          {
+            "commonName": "Expired Server Cert",
+            "isValid": false,
+            "isExpiringSoon": false,
+            "expiryDate": "2026-04-16T07:39:29Z",
+            "isCollision": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "commonName": "EXTERNAL_OR_MISSING_ISSUER",
+    "isValid": false,
+    "isExpiringSoon": false,
+    "expiryDate": "1970-01-01T00:00:00Z",
+    "isCollision": false,
+    "children": [
+      {
+        "commonName": "Orphan Certificate",
+        "isValid": true,
+        "isExpiringSoon": false,
+        "expiryDate": "2027-04-16T07:42:39Z",
+        "isCollision": false
       }
     ]
   }
@@ -87,17 +152,16 @@ The tool provides different views of your truststore health depending on your ne
 Ideal for a quick visual audit of the certificate chains. It uses ANSI colors in the terminal for better visibility.
 
 ```text
-Certificate Hierarchy:
-├── GlobalSign Root [✅] (2030-01-01)
-├── Root CA [✅] (2030-01-01)
-│   ├── Intermediate CA [✅] (2028-06-15)
-│   │   └── Web Server [✅] (2026-05-01)
-│   └── Old Intermediate [⏳] (2026-04-20)
-├── EXTERNAL_OR_MISSING_ISSUER [❓]
-│   └── Third-Party Cert [❌] (2024-12-31)
-└── MULTIPLE_CA_COLLISION [👥]
-    ├── GlobalSign Root (Collision) [✅] (2029-12-31)
-    └── GlobalSign Root (Collision) [❌] (2022-01-15)
+Certificaat Hiërarchie:
+├── Root CA [✅]  (2036-04-13)
+│   ├── Intermediate CA [✅][👯]  (2027-04-16)
+│   │   └── Server Cert A [✅]  (2027-04-16)
+│   ├── Intermediate CA [⏳][👯]  (2026-04-26)
+│   │   └── Server Cert B [⏳]  (2026-04-21)
+│   └── Intermediate CA [❌][👯]  (2026-04-16)
+│       └── Expired Server Cert [❌]  (2026-04-16)
+└── EXTERNAL ISSUER / MISSING ROOT [❓] 
+    └── Orphan Certificate [✅]  (2027-04-16)
 ```
 
 ## 🔍 Debugging & Scenario Analysis
@@ -107,48 +171,48 @@ When running with the `--debug` flag, the tool outputs detailed logs to `stderr`
 ### Healthy Execution (Success)
 When all certificates are found, validated, and hashes are unique.
 ```text
-🔵 INFO         | Configuration loaded           | Processing 3 certificate paths
-✅ OK           | GlobalRoot_CA                  | 2030-01-01 12:00
-✅ OK           | Intermediate_CA_V1             | 2028-06-15 12:00
-✅ OK           | Production_Webserver           | 2026-05-01 12:00
+🔵 INFO         │      │ Configuration loaded           │ Processing 9 certificate paths
+❌ READ_ERROR   │      │ non_existing.crt               │ File not found
+✅ OK           │      │ Root CA                        │ 2036-04-13 06:37
+✅ OK           │  👯  │ Intermediate CA (SKI: e547708) │ 2027-04-16 06:37
+⏳ WARNING      │  👯  │ Intermediate CA (SKI: 43aff33) │ 2026-04-26 06:38
+❌ ERROR        │  👯  │ Intermediate CA (SKI: f847a79) │ 2026-04-16 07:29
+✅ OK           │      │ Server Cert A                  │ 2027-04-16 06:39
+⏳ WARNING      │      │ Server Cert B                  │ 2026-04-21 07:33
+❌ ERROR        │      │ Expired Server Cert            │ 2026-04-16 07:39
+✅ OK           │      │ Orphan Certificate             │ 2027-04-16 07:42
+❓ UNTRUSTED    │      │ AKI: 6d8e4e51                  │ Missing issuer for: Orphan Certificate
 ```
 
 ### Missing Files (I/O Errors)
 Occurs when a filename defined in the YAML does not exist in the source directory.
 ```text
-❌ READ_ERROR   | missing_cert.crt               | File not found
+❌ READ_ERROR   │      │ non_existing.crt               │ File not found
 ```
 
 ### Missing Root or Intermediate (Untrusted Chain)
 Occurs when a certificate's issuer is not present in the current truststore batch. These are grouped under the EXTERNAL_OR_MISSING_ISSUER node in the output.
 ```text
-❓ UNTRUSTED    | External_CA_Provider           | Missing issuer for: My_Intermediate_Cert
+❓ UNTRUSTED    │      │ AKI: 6d8e4e51                  │ Missing issuer for: Orphan Certificate
 ```
 
 ### Redundant Certificates (Duplicate Content)
 If the same certificate is present multiple times (even under different filenames), the tool identifies the identical SHA-256 hash and skips processing to prevent loops and clutter.
 ```text
-⏳ WARNING      | copy_of_root.crt               | Duplicate content
-```
-
-### Name Collisions (Same Name, Different Content)
-A critical scenario where two different certificates use the same Common Name. The tool detects this and treats them as separate entities to avoid merging incorrect chains.
-```text
-👥 COLLISION    | Corporate_Root_CA              | Name collision (different content)
-
+⏳ WARNING      │      │ copy_of_root.crt               │ Duplicate content
 ```
 
 ### Invalid or Corrupted PEM
 If a file is present but cannot be parsed as a valid X509 certificate.
 ```text
-❌ READ_ERROR   | invalid_format.crt             | Unable to load PEM certificate
+❌ READ_ERROR   │      │ invalid_format.crt             │ Unable to load PEM certificate
 ```
 
 ### Expired or Expiring Soon
 The tool checks the current system time against the certificate's validity window.
 ```text
-⏳ WARNING      | Soon_To_Expire_Cert            | 2026-04-25 10:00
-❌ ERROR        | Old_Expired_Cert               | 2023-12-31 23:59
+⏳ WARNING      │  👯  │ Intermediate CA (SKI: 43aff33) │ 2026-04-26 06:38
+❌ ERROR        │      │ Expired Server Cert            │ 2026-04-16 07:39
 ```
 
 ## ⚖️ License
@@ -160,4 +224,4 @@ This program is free software: you can redistribute it and/or modify it under th
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the [GNU General Public License](https://www.gnu.org/licenses/gpl-3.0) for more details.
 
 ---
-**Status:** Active Development | **Logic validated for current system date:** April 15, 2026
+**Status:** Stable / Production Ready | **Logic validated for current system date:** April 16, 2026
