@@ -1,0 +1,17 @@
+---
+env: tst
+certificate_file_extension: ".crt"
+
+truststores:
+  - name: internal_test_store
+    cert_src_dir: "files/certificates/{{ env }}/trust"
+    cert_chain:
+      - link: root
+      - link: int_valid
+      - link: int_soon
+      - link: int_expired
+      - link: server_a
+      - link: server_b
+      - link: server_expired
+      - link: orphan
+      - link: non_existing

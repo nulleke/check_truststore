@@ -7,9 +7,9 @@
 # Date: 2026
 #
 # Logic & Design:
-# This tool was architected to analyze certificate truststores via YAML. 
-# The core logic for chain reconstruction and collision detection was 
-# designed by the Lead Developer. AI was used to assist with syntax 
+# This tool was architected to analyze certificate truststores via YAML.
+# The core logic for chain reconstruction and collision detection was
+# designed by the Lead Developer. AI was used to assist with syntax
 # optimization and cross-version Python support.
 #
 # Copyright (C) 2026 Serge van Thillo <nulleke76@gmail.com>
@@ -37,21 +37,27 @@ from collections import defaultdict
 from typing import Any, Optional, List, Dict, Union, Set
 
 PYDANTIC_AVAILABLE = False
+PYDANTIC_V2 = False
 try:
-    from pydantic import BaseModel, Field, model_validator
+    from pydantic import BaseModel, Field
     try:
-        from pydantic import TypeAdapter # Pydantic v2
+        from pydantic import model_validator, TypeAdapter, ConfigDict
+        PYDANTIC_V2 = True
     except ImportError:
+        from pydantic import root_validator as model_validator
         TypeAdapter = None
+        PYDANTIC_V2 = False
     PYDANTIC_AVAILABLE = True
 except ImportError:
     class BaseModel: pass
+    model_validator = None
 
 base_path = os.path.dirname(os.path.abspath(__file__))
 locale_dir = os.path.join(base_path, "locale")
 t = gettext.translation("check_truststore", locale_dir, fallback=True)
 _ = t.gettext
 
+ORPHAN_NODE_ID = "EXTERNAL_OR_MISSING_ISSUER"
 EXPIRY_THRESHOLD_DAYS = 30
 
 class Status:
@@ -60,11 +66,30 @@ class Status:
         self.ICON: str = icon
         self.COLOR: str = color
 
-    def log(self, message: str, detail: str = "", label: Optional[str] = None) -> None:
+    def log(self, message: str, detail: str = "", label: Optional[str] = None, extra_icon: str = "  ") -> None:
         display_label = label if label else self.NAME
         reset = "\033[0m"
-        prefix = "{}{} {:<12} | {:<30} | ".format(self.COLOR, self.ICON, display_label, message[:30])
-        sys.stderr.write("{}{}{}{}\n".format(prefix, detail, reset, ""))
+        v_line = "\u2502"
+        sep = f"{reset}{v_line}{self.COLOR}"
+
+        icon_str = extra_icon.strip()
+        if icon_str:
+            formatted_icon = f" {icon_str} "
+        else:
+            formatted_icon = "    "
+
+        prefix = "{}{} {:<12} {} {} {} {:<40} {} ".format(
+            self.COLOR,
+            self.ICON,
+            display_label,
+            sep,
+            formatted_icon,
+            sep,
+            message[:40],
+            sep
+        )
+
+        sys.stderr.write("{}{}{}\n".format(prefix, detail, reset))
 
 RED, GREEN, YELLOW, CYAN, MAGENTA, BLUE = "\033[91m", "\033[92m", "\033[93m", "\033[96m", "\033[95m", "\033[94m"
 
@@ -75,41 +100,72 @@ MISSING = Status("MISSING", "\U00002753", MAGENTA, translate=False)     # ❓
 COLLISION = Status("COLLISION", "\U0001F46F", CYAN, translate=False)    # 👥
 INFO = Status("INFO", "\U0001F535", BLUE)                               # 🔵
 
-if PYDANTIC_AVAILABLE:
-    class Certificate(BaseModel):
-        common_name: str = Field(alias="commonName")
-        is_valid: bool = Field(alias="isValid")
-        is_expiring_soon: bool = Field(alias="isExpiringSoon")
-        expiry_date: datetime = Field(alias="expiryDate")
+class Certificate(BaseModel):
+    if PYDANTIC_AVAILABLE:
+        common_name: str = Field(..., alias="commonName")
+        is_valid: bool = Field(False, alias="isValid")
+        is_expiring_soon: bool = Field(False, alias="isExpiringSoon")
+        expiry_date: Union[datetime, str] = Field("1970-01-01", alias="expiryDate")
+        is_collision: bool = Field(False, alias="isCollision")
         children: Optional[List[Any]] = None
- 
-        @model_validator(mode='before')
-        @classmethod
-        def handle_special_nodes(cls, data: Dict[str, Any]) -> Dict[str, Any]:
-            if data.get("commonName") in ["EXTERNAL_OR_MISSING_ISSUER", "MULTIPLE_CA_COLLISION"]:
-                data.setdefault("isValid", False)
-                data.setdefault("isExpiringSoon", False)
-                data.setdefault("expiryDate", "1970-01-01T00:00:00+00:00")
-            return data
-else:
-    class Certificate:
-        def __init__(self, commonName: str, isValid: bool, isExpiringSoon: bool, expiryDate: datetime):
-            self.common_name: str = commonName
-            self.is_valid: bool = isValid
-            self.is_expiring_soon: bool = isExpiringSoon
-            self.expiry_date: datetime = expiryDate
-            self.children: Optional[List['Certificate']] = None
 
-        def model_dump(self) -> Dict[str, Any]:
-            obj = {
-                "commonName": self.common_name,
-                "isValid": self.is_valid,
-                "isExpiringSoon": self.is_expiring_soon,
-                "expiryDate": self.expiry_date.isoformat() if hasattr(self.expiry_date, "isoformat") else self.expiry_date,
+        if PYDANTIC_V2:
+            model_config = ConfigDict(populate_by_name=True, from_attributes=True)
+            @model_validator(mode='before')
+            @classmethod
+            def validate_node(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+                return cls._apply_special_logic(data)
+        else:
+            class Config:
+                allow_population_by_field_name = True
+
+            @model_validator(pre=True)
+            @classmethod
+            def validate_node(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+                return cls._apply_special_logic(values)
+
+        @staticmethod
+        def _apply_special_logic(data: Dict[str, Any]) -> Dict[str, Any]:
+            cn = data.get("common_name") or data.get("commonName")
+            if cn == ORPHAN_NODE_ID:
+                special = {
+                    "is_valid": False, "isValid": False,
+                    "is_expiring_soon": False, "isExpiringSoon": False,
+                    "expiry_date": datetime(1970, 1, 1, tzinfo=timezone.utc),
+                    "expiryDate": datetime(1970, 1, 1, tzinfo=timezone.utc)
+                }
+                if isinstance(data, dict): data.update(special)
+            return data
+    else:
+        def __init__(self, common_name=None, is_valid=False, is_expiring_soon=False, expiry_date="1970-01-01", is_collision=False, children=None, **kwargs):
+            self.common_name = common_name
+            self.is_valid = is_valid
+            self.is_expiring_soon = is_expiring_soon
+            self.expiry_date = expiry_date
+            self.is_collision = is_collision
+            self.children = children or []
+
+            mapping = {
+                "commonName": "common_name",
+                "isValid": "is_valid",
+                "isExpiringSoon": "is_expiring_soon",
+                "expiryDate": "expiry_date",
+                "isCollision": "is_collision"
             }
-        
-            if self.children:
-                obj["children"] = [c.model_dump() for c in self.children]
+
+            for k, v in kwargs.items():
+                setattr(self, mapping.get(k, k), v)
+
+            if self.common_name == ORPHAN_NODE_ID:
+                self.is_valid = False
+                self.is_expiring_soon = False
+                self.expiry_date = datetime(1970, 1, 1, tzinfo=timezone.utc)
+
+        def model_dump(self):
+            obj = {"commonName": self.common_name, "isValid": self.is_valid, "isExpiringSoon": self.is_expiring_soon,
+                 "expiryDate": self.expiry_date.isoformat() if isinstance(self.expiry_date, datetime) else self.expiry_date,
+                 "isCollision": self.is_collision}
+            if getattr(self, "children", None): obj["children"] = [c.model_dump() for c in self.children]
             return obj
 
 class BaseRenderer(ABC):
@@ -125,31 +181,32 @@ class TextRenderer(BaseRenderer):
 
     def _recursive_render(self, nodes: List[Union[Certificate, Any]], indent: str = "") -> str:
         lines = []
-        skip_date_nodes = ["EXTERNAL_OR_MISSING_ISSUER", "MULTIPLE_CA_COLLISION"]
-        
         for i, n in enumerate(nodes):
-            name = getattr(n, "common_name", "Unknown")
+            raw_name = getattr(n, "common_name", _("Unknown"))
+            name = _("EXTERNAL ISSUER / MISSING ROOT") if raw_name == ORPHAN_NODE_ID else raw_name
             is_valid = getattr(n, "is_valid", None)
             is_soon = getattr(n, "is_expiring_soon", None)
             expiry = getattr(n, "expiry_date", None)
+            is_collision = getattr(n, "is_collision", False)
             children = getattr(n, "children", None)
 
-            icon = ""
-            if name == "EXTERNAL_OR_MISSING_ISSUER": 
-                icon = "[{}]".format(MISSING.ICON)
-            elif name == "MULTIPLE_CA_COLLISION": 
-                icon = "[{}]".format(COLLISION.ICON)
-            elif is_valid is not None:
+            icons = []
+            if raw_name == ORPHAN_NODE_ID:
+                icons.append(MISSING.ICON)
+            else:
                 st = ERROR if not is_valid else (WARNING if is_soon else OK)
-                icon = "[{}]".format(st.ICON)
+                icons.append(st.ICON)
+                if is_collision:
+                    icons.append(COLLISION.ICON)
 
+            icon_str = "".join(["[{}]".format(ico) for ico in icons])
             date_str = ""
-            if expiry and name not in skip_date_nodes:
+            if expiry and raw_name != ORPHAN_NODE_ID:
                 ds = expiry.strftime('%Y-%m-%d') if isinstance(expiry, datetime) else str(expiry)[:10]
                 date_str = " ({})".format(ds)
 
             connector = "└── " if i == len(nodes) - 1 else "├── "
-            lines.append("{}{}{} {}{}".format(indent, connector, name, icon, date_str))
+            lines.append("{}{}{} {} {}".format(indent, connector, name, icon_str, date_str))
 
             if children:
                 new_indent = indent + ("    " if i == len(nodes) - 1 else "│   ")
@@ -158,16 +215,13 @@ class TextRenderer(BaseRenderer):
 
 class JsonRenderer(BaseRenderer):
     def render(self, tree_data: List[Union[Certificate, Any]]) -> str:
-        if PYDANTIC_AVAILABLE:
-            if TypeAdapter: # v2
-                ta = TypeAdapter(List[Certificate])
-                data = ta.dump_python(tree_data, mode='json', by_alias=True, exclude_none=True)
-            else: # v1 fallback
-                data = [n.dict(by_alias=True, exclude_none=True) for n in tree_data]
-            return json.dumps(data, indent=2)
+        if PYDANTIC_AVAILABLE and PYDANTIC_V2 and TypeAdapter:
+            ta = TypeAdapter(List[Certificate])
+            data = ta.dump_python(tree_data, mode='json', by_alias=True, exclude_none=True)
         else:
-            data = [c.model_dump() for c in tree_data]
-            return json.dumps(data, indent=2)   
+            data = [c.model_dump() if hasattr(c, 'model_dump') else c.dict(by_alias=True) for c in tree_data]
+
+        return json.dumps(data, indent=2, default=lambda o: o.isoformat() if isinstance(o, datetime) else str(o))
 
 class TrustStoreRenderer:
     def __init__(self):
@@ -187,16 +241,184 @@ class TrustStoreAnalyzer:
         self.yaml_path: Path = Path(yaml_path)
         self.debug: bool = debug
         self.cert_data: Dict[str, Certificate] = {}
-        self.cert_map: Dict[str, str] = {}
-        self.collisions: List[Certificate] = []
+        self.parent_map: Dict[str, str] = {}
+        self.name_count: Dict[str, int] = defaultdict(int)
         self.seen_hashes: Set[str] = set()
 
-    def get_paths_from_yaml(self) -> List[Path]:
+    def _get_extension_value(self, cert: x509.Certificate, oid: x509.ObjectIdentifier) -> Optional[str]:
+        try:
+            ext = cert.extensions.get_extension_for_oid(oid)
+            if oid == x509.ExtensionOID.SUBJECT_KEY_IDENTIFIER:
+                return ext.value.digest.hex()
+            elif oid == x509.ExtensionOID.AUTHORITY_KEY_IDENTIFIER:
+                return ext.value.key_identifier.hex() if ext.value.key_identifier else None
+        except x509.ExtensionNotFound:
+            return None
+        return None
+
+    def _get_common_name(self, cert) -> str:
+        try:
+            names = cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+            return names[0].value if names else _("Unknown")
+        except Exception:
+            return _("Unknown")
+
+    def analyze(self) -> List[Union[Certificate, Any]]:
+        _("READ_ERROR"); _("UNTRUSTED")
+
+        paths = self._get_paths_from_yaml()
+        if self.debug:
+            INFO.log(_("Configuration loaded"), _("Processing {count} certificate paths").format(count=len(paths)))
+
+        raw_certs = []
+        for path in paths:
+            try:
+                if not path.exists():
+                    if self.debug: ERROR.log(path.name, _("File not found"), label=_("READ_ERROR"))
+                    continue
+
+                with open(str(path), "rb") as f:
+                    content = f.read()
+                    c_hash = hashlib.sha256(content).hexdigest()
+
+                if c_hash in self.seen_hashes:
+                    if self.debug: WARNING.log(path.name, _("Duplicate content (skipped)"))
+                    continue
+
+                self.seen_hashes.add(c_hash)
+                cert = x509.load_pem_x509_certificate(content, default_backend())
+                raw_certs.append(cert)
+
+            except Exception as e:
+                if self.debug: ERROR.log(path.name, str(e), label=_("READ_ERROR"))
+
+        for cert in raw_certs:
+            cn = self._get_common_name(cert)
+            self.name_count[cn] += 1
+
+        for cert in raw_certs:
+            ski = self._get_extension_value(cert, x509.ExtensionOID.SUBJECT_KEY_IDENTIFIER)
+            aki = self._get_extension_value(cert, x509.ExtensionOID.AUTHORITY_KEY_IDENTIFIER)
+            cn = self._get_common_name(cert)
+
+            cert_id = ski if ski else hashlib.md5(cert.subject.public_bytes()).hexdigest()
+
+            try:
+                expiry = cert.not_valid_after_utc
+                start = cert.not_valid_before_utc
+            except AttributeError:
+                expiry = cert.not_valid_after.replace(tzinfo=timezone.utc)
+                start = cert.not_valid_before.replace(tzinfo=timezone.utc)
+
+            now = datetime.now(timezone.utc)
+            is_valid = start <= now <= expiry
+            is_soon = now <= expiry <= (now + timedelta(days=EXPIRY_THRESHOLD_DAYS))
+            is_coll = self.name_count[cn] > 1
+
+            if aki and aki != cert_id:
+                self.parent_map[cert_id] = aki
+            elif cert.subject != cert.issuer:
+                self.parent_map[cert_id] = ORPHAN_NODE_ID
+
+            if self.debug:
+                st = ERROR if not is_valid else (WARNING if is_soon else OK)
+                coll_marker = COLLISION.ICON if is_coll else "  "
+                log_msg = f"{cn} (SKI: {cert_id[:8]})" if is_coll else cn
+                st.log(log_msg, expiry.strftime("%Y-%m-%d %H:%M"), extra_icon=coll_marker)
+
+            cert_fields = {
+                "commonName": cn,
+                "isValid": is_valid,
+                "isExpiringSoon": is_soon,
+                "expiryDate": expiry,
+                "isCollision": is_coll
+            }
+
+            if PYDANTIC_AVAILABLE:
+                self.cert_data[cert_id] = Certificate(**cert_fields)
+            else:
+                self.cert_data[cert_id] = Certificate(
+                    cn,
+                    is_valid,
+                    is_soon,
+                    expiry,
+                    is_coll
+                )
+
+        if self.debug:
+            known_skis = set(self.cert_data.keys())
+            missing_issuer_map = defaultdict(list)
+
+            for c_id, c_obj in self.cert_data.items():
+                aki = self.parent_map.get(c_id)
+                if aki and aki not in known_skis and aki != ORPHAN_NODE_ID:
+                    missing_issuer_map[f"AKI: {aki[:8]}"].append(c_obj.common_name)
+
+            for issuer, dependents in missing_issuer_map.items():
+                MISSING.log(
+                    issuer,
+                    "{}: {}".format(_("Missing issuer for"), ", ".join(dependents)),
+                    label=_("UNTRUSTED")
+                )
+
+        return self._build_tree()
+
+    def _create_virtual_node(self, name: str) -> Union['Certificate', Any]:
+        epoch_date = datetime(1970, 1, 1, tzinfo=timezone.utc)
+
+        if PYDANTIC_AVAILABLE:
+            return Certificate(
+                commonName=name,
+                isValid=False,
+                isExpiringSoon=False,
+                expiryDate=epoch_date,
+                isCollision=False
+            )
+        else:
+            return Certificate(
+                name,       # commonName
+                False,      # isValid
+                False,      # isExpiringSoon
+                epoch_date, # expiryDate
+                False       # isCollision
+            )
+
+    def _build_tree(self) -> List[Union[Certificate, Any]]:
+        known_skis = set(self.cert_data.keys())
+        children_by_aki = defaultdict(list)
+        for ski, aki in self.parent_map.items():
+            children_by_aki[aki].append(ski)
+
+        processed: Set[str] = set()
+
+        def node_to_obj(ski: str) -> Union[Certificate, Any]:
+            processed.add(ski)
+            cert = self.cert_data[ski]
+            child_skis = children_by_aki.get(ski, [])
+            if child_skis:
+                cert.children = [node_to_obj(c_ski) for c_ski in child_skis]
+            else:
+                cert.children = None
+            return cert
+
+        roots = [ski for ski in known_skis if ski not in self.parent_map]
+        tree = [node_to_obj(r) for r in roots]
+
+        orphans = known_skis - processed
+        if orphans:
+            ext_node = self._create_virtual_node(ORPHAN_NODE_ID)
+            top_orphans = [o for o in orphans if self.parent_map.get(o) not in known_skis]
+            ext_node.children = [node_to_obj(o) for o in top_orphans]
+
+            tree.append(ext_node)
+
+        return tree
+
+    def _get_paths_from_yaml(self) -> List[Path]:
         with open(str(self.yaml_path), "r") as f:
             data = yaml.safe_load(f)
-        
         env = data.get("env", "acc")
-        ext = data.get("certificate_file_extension", "crt")
+        ext = data.get("certificate_file_extension", ".crt")
         paths = []
         for ts in data.get("truststores", []):
             src = ts.get("cert_src_dir", "").replace("{{ env }}", env)
@@ -205,120 +427,6 @@ class TrustStoreAnalyzer:
                     p = Path(os.path.abspath(os.path.join(src, link["link"] + ext)))
                     if p not in paths: paths.append(p)
         return paths
-
-    def analyze(self) -> List[Union[Certificate, Any]]:
-        paths = self.get_paths_from_yaml()
-        if self.debug:
-            INFO.log("Configuration loaded", "Processing {count} certificate paths".format(count=len(paths)))
-
-        for path in paths:
-            try:
-                if not path.exists():
-                    ERROR.log(path.name, _("File not found"), label=_("READ_ERROR"))
-                    continue
-
-                with open(str(path), "rb") as f:
-                    content = f.read()
-                    c_hash = hashlib.sha256(content).hexdigest()
-
-                if c_hash in self.seen_hashes:
-                    if self.debug: WARNING.log(path.name, _("Duplicate content"))
-                    continue
-
-                cert = x509.load_pem_x509_certificate(content, default_backend())
-                
-                try:
-                    expiry = cert.not_valid_after_utc
-                    start = cert.not_valid_before_utc
-                except AttributeError:
-                    expiry = cert.not_valid_after.replace(tzinfo=timezone.utc)
-                    start = cert.not_valid_before.replace(tzinfo=timezone.utc)
-
-                cn_attr = cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
-                subject = cn_attr[0].value if cn_attr else _("Unknown")
-                
-                iss_attr = cert.issuer.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
-                issuer = iss_attr[0].value if iss_attr else _("Unknown")
-
-                now = datetime.now(timezone.utc)
-                is_valid = start <= now <= expiry
-                is_soon = now <= expiry <= (now + timedelta(days=EXPIRY_THRESHOLD_DAYS))
-
-                cert_obj = Certificate(
-                    commonName=subject, isValid=is_valid, 
-                    isExpiringSoon=is_soon, expiryDate=expiry
-                ) if PYDANTIC_AVAILABLE else Certificate(subject, is_valid, is_soon, expiry)
-
-                if self.debug:
-                    st = ERROR if not is_valid else (WARNING if is_soon else OK)
-                    st.log(subject, expiry.strftime("%Y-%m-%d %H:%M"))
-
-                if subject in self.cert_map:
-                    self.collisions.append(cert_obj)
-                    continue
-
-                self.cert_data[subject] = cert_obj
-                self.cert_map[subject] = issuer
-                self.seen_hashes.add(c_hash)
-            except Exception as e:
-                if self.debug: ERROR.log(path.name, str(e), label=_("READ_ERROR"))
-        
-        return self._build_tree()
-
-    def _build_tree(self) -> List[Union[Certificate, Any]]:
-        children_by_issuer = defaultdict(list)
-        processed: Set[str] = set()
-        for s, i in self.cert_map.items():
-            if s != i:
-                children_by_issuer[i].append(s)
-
-        def node_to_obj(name: str) -> Union[Certificate, Any]:
-            processed.add(name)
-            cert = self.cert_data[name]
-            child_names = children_by_issuer.get(name, [])
-            cert.children = [node_to_obj(c) for c in child_names] if child_names else None
-            return cert
-
-        roots = [s for s, i in self.cert_map.items() if s == i]
-        tree = [node_to_obj(r) for r in roots]
-
-        orphans = [s for s in self.cert_map if s not in processed]
-        if orphans:
-            missing_issuer_map = defaultdict(list)
-            top_level_orphans = [o for o in orphans if self.cert_map.get(o) not in self.cert_map]
-            
-            for o in orphans:
-                required_issuer = self.cert_map.get(o, _("Unknown"))
-                if required_issuer not in self.cert_map:
-                    missing_issuer_map[required_issuer].append(o)
-
-            if self.debug:
-                for issuer, dependents in missing_issuer_map.items():
-                    MISSING.log(issuer, "{}: {}".format(_("Missing issuer for"), ", ".join(dependents)), label=_("UNTRUSTED"))
-
-            ext_node_data = {"commonName": "EXTERNAL_OR_MISSING_ISSUER", "isValid": False, "isExpiringSoon": False, "expiryDate": datetime(1970, 1, 1, tzinfo=timezone.utc)}
-            ext_node = Certificate(**ext_node_data) if PYDANTIC_AVAILABLE else Certificate(ext_node_data["commonName"], False, False, ext_node_data["expiryDate"])
-            
-            ext_node.children = [node_to_obj(o) for o in top_level_orphans]
-            tree.append(ext_node)
-
-        if self.collisions:
-            if self.debug:
-                for c in self.collisions:
-                    COLLISION.log(c.common_name, _("Name collision (different content)"))
-            
-            for c in self.collisions:
-                collision_suffix = " ({})".format(_("Collision"))
-                if not c.common_name.endswith(collision_suffix):
-                    c.common_name += collision_suffix
-                c.children = None
-
-            coll_node_data = {"commonName": "MULTIPLE_CA_COLLISION", "isValid": False, "isExpiringSoon": False, "expiryDate": datetime(1970, 1, 1, tzinfo=timezone.utc)}
-            coll_node = Certificate(**coll_node_data) if PYDANTIC_AVAILABLE else Certificate(coll_node_data["commonName"], False, False, coll_node_data["expiryDate"])
-            coll_node.children = self.collisions
-            tree.append(coll_node)
-
-        return tree
 
 def main() -> None:
     _("ERROR"); _("WARNING"); _("OK"); _("INFO")
@@ -350,6 +458,6 @@ def main() -> None:
     except Exception as e:
         ERROR.log(_("Rendering failed"), str(e))
         sys.exit(1)
-        
+
 if __name__ == "__main__":
     main()
