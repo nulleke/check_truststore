@@ -14,33 +14,21 @@ test_full_compatibility:
     # Voor Python 3.6 moeten we soms pip upgraden voor moderne cryptography libraries
     - python3 -m pip install --upgrade pip
     - pip install PyYAML cryptography pydantic
-    - mkdir -p tests/certs/prod
-    
-    # 1. Genereer Root CA
-    - openssl req -x509 -newkey rsa:2048 -keyout tests/certs/prod/root.key -out tests/certs/prod/root.crt -days 365 -nodes -subj "/CN=Test Root CA"
-    
-    # 2. Genereer Intermediate CA (CSR -> Sign met Root)
-    - openssl req -newkey rsa:2048 -keyout tests/certs/prod/intermediate.key -out tests/certs/prod/intermediate.csr -nodes -subj "/CN=Test Intermediate CA"
-    - openssl x509 -req -in tests/certs/prod/intermediate.csr -CA tests/certs/prod/root.crt -CAkey tests/certs/prod/root.key -CAcreateserial -out tests/certs/prod/intermediate.crt -days 365
-    
-    # 3. Genereer Server Cert (CSR -> Sign met Intermediate)
-    - openssl req -newkey rsa:2048 -keyout tests/certs/prod/server.key -out tests/certs/prod/server.csr -nodes -subj "/CN=Test Server"
-    - openssl x509 -req -in tests/certs/prod/server.csr -CA tests/certs/prod/intermediate.crt -CAkey tests/certs/prod/intermediate.key -CAcreateserial -out tests/certs/prod/server.crt -days 365
-
-    # 4. Genereer de test configuratie met de volledige keten
-    - |
-      cat <<EOF > tests/test_config.yaml
-      env: "prod"
-      certificate_file_extension: ".crt"
-      truststores:
-        - cert_src_dir: "tests/certs/{{ env }}/"
-          cert_chain:
-            - link: "root"
-            - link: "intermediate"
-            - link: "server"
-      EOF
+  
   script:
-    - echo "Testing on Python ${PYTHON_VERSION} with 3-tier chain (Root -> Intermediate -> Server)"
-    - python3 check_truststore tests/test_config.yaml --format text
-    - python3 check_truststore tests/test_config.yaml --format json > output.json
+    - echo "Testing on Python ${PYTHON_VERSION} against TST environment files"
+    - python3 check_truststore vars/tst/stores.yml --format text -d
+    - python3 check_truststore vars/tst/stores.yml --format json > output.json
     - python3 -m json.tool output.json
+
+test_no_pydantic_fallback:
+  stage: test
+  image: python:3.6-slim
+  before_script:
+    - python3 -m pip install --upgrade pip
+    - pip install PyYAML cryptography
+  script:
+    - echo "Testing Fallback-mode (No Pydantic) on Python 3.6"
+    - python3 check_truststore vars/tst/stores.yml --format text -d
+    - python3 check_truststore vars/tst/stores.yml --format json > output_fallback.json
+    - python3 -m json.tool output_fallback.json

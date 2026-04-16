@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-13 13:43+0200\n"
+"POT-Creation-Date: 2026-04-16 13:10+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,92 +17,96 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: utils/check_truststore:114
+#: check_truststore:163
 msgid "Certificate Hierarchy:"
 msgstr ""
 
-#: utils/check_truststore:174
-msgid "Unknown format: {}"
-msgstr ""
-
-#: utils/check_truststore:206
-msgid "File not found"
-msgstr ""
-
-#: utils/check_truststore:206 utils/check_truststore:253
-msgid "READ_ERROR"
-msgstr ""
-
-#: utils/check_truststore:214
-msgid "Duplicate content"
-msgstr ""
-
-#: utils/check_truststore:227 utils/check_truststore:230
-#: utils/check_truststore:280
+#: check_truststore:170 check_truststore:250 check_truststore:252
 msgid "Unknown"
 msgstr ""
 
-#: utils/check_truststore:286
-msgid "Missing issuer for"
+#: check_truststore:171
+msgid "EXTERNAL ISSUER / MISSING ROOT"
 msgstr ""
 
-#: utils/check_truststore:286
+#: check_truststore:224
+msgid "Unknown format: {}"
+msgstr ""
+
+#: check_truststore:255 check_truststore:265 check_truststore:281
+msgid "READ_ERROR"
+msgstr ""
+
+#: check_truststore:255 check_truststore:349
 msgid "UNTRUSTED"
 msgstr ""
 
-#: utils/check_truststore:297
-msgid "Name collision (different content)"
+#: check_truststore:259
+msgid "Configuration loaded"
 msgstr ""
 
-#: utils/check_truststore:300
-msgid "Collision"
+#: check_truststore:259
+#, python-brace-format
+msgid "Processing {count} certificate paths"
 msgstr ""
 
-#: utils/check_truststore:315
+#: check_truststore:265
+msgid "File not found"
+msgstr ""
+
+#: check_truststore:273
+msgid "Duplicate content (skipped)"
+msgstr ""
+
+#: check_truststore:348
+msgid "Missing issuer for"
+msgstr ""
+
+#: check_truststore:420
 msgid "ERROR"
 msgstr ""
 
-#: utils/check_truststore:315
+#: check_truststore:420
 msgid "WARNING"
 msgstr ""
 
-#: utils/check_truststore:315
+#: check_truststore:420
 msgid "OK"
 msgstr ""
 
-#: utils/check_truststore:315
+#: check_truststore:420
 msgid "INFO"
 msgstr ""
 
-#: utils/check_truststore:320
+#: check_truststore:425
 #, python-brace-format
 msgid "File '{path}' does not exist."
 msgstr ""
 
-#: utils/check_truststore:324
+#: check_truststore:429
 msgid "Analyze certificate truststores and visualize the chain hierarchy."
 msgstr ""
 
-#: utils/check_truststore:325
+#: check_truststore:430
 msgid "Compatible with Python 3.6+"
 msgstr ""
 
-#: utils/check_truststore:327
+#: check_truststore:433
 msgid "Path to the YAML file"
 msgstr ""
 
-#: utils/check_truststore:328
+#: check_truststore:434
 msgid "Show this help message and exit"
 msgstr ""
 
-#: utils/check_truststore:329
+#: check_truststore:435
 msgid "Output format"
 msgstr ""
 
-#: utils/check_truststore:330
+#: check_truststore:436
 msgid "Show debug info"
 msgstr ""
 
-#: utils/check_truststore:341
+#: check_truststore:447
 msgid "Rendering failed"
 msgstr ""
