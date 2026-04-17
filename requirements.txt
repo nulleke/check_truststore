@@ -1,0 +1,4 @@
+PyYAML
+cryptography
+pydantic<2.0.0; python_version < '3.7'
+pydantic>=2.0.0; python_version >= '3.7'

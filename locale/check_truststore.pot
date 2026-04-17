@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-17 12:54+0200\n"
+"POT-Creation-Date: 2026-04-18 13:47+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,27 +17,96 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: check_truststore:199
+#: check_truststore:237
 msgid "Certificate Hierarchy:"
 msgstr ""
 
-#: check_truststore:206 check_truststore:446 check_truststore:448
+#: check_truststore:245 check_truststore:586 check_truststore:588
 msgid "Unknown"
 msgstr ""
 
-#: check_truststore:209
+#: check_truststore:248
 msgid "UNTRUSTED (NOT IN YAML OR SYSTEM)"
 msgstr ""
 
-#: check_truststore:211
+#: check_truststore:250
 msgid "EXTERNAL ISSUER / MISSING ROOT"
 msgstr ""
 
-#: check_truststore:357
+#: check_truststore:452
 msgid "Unknown format: {}"
 msgstr ""
 
-#: check_truststore:425
+#: check_truststore:549
+msgid "Invalid certificate structure or corrupt Base64"
+msgstr ""
+
+#: check_truststore:553
+msgid "Unexpected error"
+msgstr ""
+
+#: check_truststore:557
+#, python-brace-format
+msgid "File not found: {path}"
+msgstr ""
+
+#: check_truststore:558 check_truststore:563 check_truststore:568
+#: check_truststore:591
+msgid "READ_ERROR"
+msgstr ""
+
+#: check_truststore:562
+#, python-brace-format
+msgid "Permission denied: {path}"
+msgstr ""
+
+#: check_truststore:567
+#, python-brace-format
+msgid "Read error: {error}"
+msgstr ""
+
+#: check_truststore:591 check_truststore:755
+msgid "UNTRUSTED"
+msgstr ""
+
+#: check_truststore:591
+msgid "SIG_ERR"
+msgstr ""
+
+#: check_truststore:591
+msgid "INVALID"
+msgstr ""
+
+#: check_truststore:606
+msgid "Configuration loaded"
+msgstr ""
+
+#: check_truststore:606
+#, python-brace-format
+msgid "Processing {count} certificate paths"
+msgstr ""
+
+#: check_truststore:755
+msgid "Missing issuer for"
+msgstr ""
+
+#: check_truststore:870
+msgid "ERROR"
+msgstr ""
+
+#: check_truststore:870
+msgid "WARNING"
+msgstr ""
+
+#: check_truststore:870
+msgid "OK"
+msgstr ""
+
+#: check_truststore:870
+msgid "INFO"
+msgstr ""
+
+#: check_truststore:875
 #, python-brace-format
 msgid "Inner parse error: {e}"
 msgstr ""
@@ -84,38 +153,38 @@ msgstr ""
 msgid "File '{path}' does not exist."
 msgstr ""
 
-#: check_truststore:684
+#: check_truststore:879
 msgid "Analyze certificate truststores and visualize the chain hierarchy."
 msgstr ""
 
-#: check_truststore:685
+#: check_truststore:880
 msgid "Compatible with Python 3.6+"
 msgstr ""
 
-#: check_truststore:688
+#: check_truststore:883
 msgid "Path to the YAML file"
 msgstr ""
 
-#: check_truststore:689
+#: check_truststore:884
 msgid "Show this help message and exit"
 msgstr ""
 
-#: check_truststore:690
+#: check_truststore:885
 msgid "Output format"
 msgstr ""
 
-#: check_truststore:691
+#: check_truststore:886
 msgid "Show debug info"
 msgstr ""
 
-#: check_truststore:692
+#: check_truststore:887
 msgid "Incorporate system truststore"
 msgstr ""
 
-#: check_truststore:693
+#: check_truststore:888
 msgid "Expiration threshold in days (default: 30)"
 msgstr ""
 
-#: check_truststore:705
+#: check_truststore:900
 msgid "Rendering failed"
 msgstr ""

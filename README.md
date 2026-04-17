@@ -6,22 +6,17 @@ A tool for system administrators and security engineers to audit certificate tru
 
 ## ✨ Features
 
-* **🔍 Chain Reconstruction:** Automatically maps the parent-child relationship between certificates using SKI/AKI identifiers.
-* **👯 Collision Detection:** Identifies duplicate certificates appearing under different filenames or Common Names.
-* **📅 Expiry Alerts:** Integrated visual indicators for expired certificates or those approaching their expiration window.
-* **💻 System Integration:** Capability to merge local system truststores (Linux, macOS, Windows) into the analysis for a "total view."
-* **📊 Multi-format Output:** Supports `text` (interactive-style tree), `json` (for programmatic processing), and `status` (ideal for monitoring/CI dashboards).
-
----
-
-## 🤖 Automation & Ansible Integration
-
-While many tools are strictly command-line based, this analyzer is built to be **fully importable**. This makes it an ideal engine for **Ansible Custom Modules** or larger Python orchestration projects.
-
-#### 💡 Why use it as an Import?
-* **Zero Disk I/O:** Pass configuration data directly as Python dictionaries (e.g., from Ansible `hostvars`), avoiding the need to write temporary files to the target disk.
-* **Programmatic Control:** Use the `tree_data` object directly to trigger custom logic or alerts.
-* **CI/CD Friendly:** Easily wrap the analyzer into a module to validate certificate integrity during infrastructure deployment.
+* **Chain Visualization:** Automatically builds a tree structure of your certificate hierarchy.
+* **Format Support:** Specifically designed for **X.509 certificates** in **PEM encoding**.
+* **Dynamic Health Monitoring:** Visual status indicators (✅ Valid, ⏳ Expiring Soon, ❌ Invalid). The "Expiring Soon" alert is fully configurable via a custom threshold (default is 30 days).
+* **Collision Intelligence:** Detects "Name Collisions" (👯) where different certificates share the same Common Name.
+* **True Hybrid Architecture:** Seamlessly supports **Pydantic v1** (legacy), **Pydantic v2** (modern), or a **Zero-Dependency Fallback** (standard Python). This ensures the tool remains functional on legacy RHEL/CentOS systems and the latest Python 3.14 environments alike.
+* **Expiration Alerts:** Highlights certificates expiring within a 30-day threshold.
+* **Internationalization:** Ready for translation via `gettext`.
+* **🔐 Signature Verification:** Beyond just mapping IDs, the tool cryptographically verifies signatures (RSA/ECDSA) between certificates in the chain.
+    * 🔒 **Locked:** Signature is valid and verified.
+    * 💥 **Broken:** Signature verification failed.
+    * ❓ **Unknown:** Issuer certificate missing, cannot verify.
 
 ## 🛠 Configuration (YAML)
 
@@ -47,7 +42,7 @@ This project is rigorously tested via **GitLab CI** across a full matrix of Pyth
 * **Fallback Validation:** We explicitly test a "No-Pydantic" environment to guarantee that the core logic remains 100% functional even when third-party validation libraries are missing.
 * **Logic Verification:** All date-based logic is validated against current 2026 standards.
 
-## Requirements
+## 📦 Requirements
 * **Python 3.6+** (Fully tested from 3.6 up to 3.14)
 * **cryptography**: For X.509 parsing (compatible with legacy and UTC-aware versions).
 * **PyYAML**: For configuration management.
@@ -56,12 +51,26 @@ This project is rigorously tested via **GitLab CI** across a full matrix of Pyth
 ## 🔍 Advanced Logic & Visual Indicators
 The tool uses **SKI/AKI (Subject/Authority Key Identifier)** to build a cryptographically accurate tree, even if multiple certificates share the same name.
 
+### 🔍 Visual Indicators
+The tool uses the following icons to provide a quick overview of certificate health and chain integrity:
+
+| Icon | Status | Description |
+| :--- | :--- | :--- |
+| ✅ | **OK** | Valid and trusted. |
+| ⏳ | **WARNING** | Expiring soon (within the defined threshold). |
+| ❌ | **ERROR** | Expired, not yet valid, or structurally invalid. |
+| 🔒 | **LOCKED** | Signature verified and cryptographically valid. |
+| 💥 | **BROKEN** | Signature verification failed (security alert). |
+| ❓ | **UNKNOWN** | Missing issuer; signature could not be verified. |
+| 👯 | **COLLISION** | Name collision detected (same Common Name, different hash). |
+| 💻 | **SYSTEM** | Certificate was loaded from the OS truststore. |
+
+### Core Logic
 * **`EXTERNAL_OR_MISSING_ISSUER` [❓]**: A virtual node for certificates whose issuer (Root or Intermediate) was not found in the provided source directories.
-* **Name Collisions [👯]**: When two different certificates (different hashes) share the same Common Name, the tool adds this icon as aditional icon.
+* **Name Collisions [👯]**: Even with AKI/SKI tracking, name collisions can occur (e.g., two different CAs using the same Common Name, or a re-issued certificate with a new key). The tool detects these based on differing SHA-256 hashes and flags them, ensuring you can distinguish between them even if they appear identical in the hierarchy.
 * **Deduplication**: If the exact same certificate (matching SHA-256 hash) is found in multiple paths, it is processed only once to keep the report clean.
 
 ## 🛡️ System Truststore Integration
-
 By default, the tool only analyzes the certificates explicitly defined in your YAML configuration. However, to verify if your local chain is ultimately trusted by the operating system, you can enable system integration.
 
 * **Default:** Disabled.
@@ -165,19 +174,19 @@ The tool provides different views of your truststore health depending on your ne
 ```
 
 ### Text-Based Hierarchy (Human Readable)
-Ideal for a quick visual audit of the certificate chains. It uses ANSI colors in the terminal for better visibility.
+The tree view combines multiple layers of intelligence: identity validation, date checking, and cryptographic verification.
 
 ```text
-Certificaat Hiërarchie:
-├── Root CA [✅]  (2036-04-13)
-│   ├── Intermediate CA [✅][👯]  (2027-04-16)
-│   │   └── Server Cert A [✅]  (2027-04-16)
-│   ├── Intermediate CA [⏳][👯]  (2026-04-26)
-│   │   └── Server Cert B [⏳]  (2026-04-21)
-│   └── Intermediate CA [❌][👯]  (2026-04-16)
-│       └── Expired Server Cert [❌]  (2026-04-16)
+Certificate Hierarchy:
+├── Root CA [✅][🔒]  (2036-04-13)
+│   ├── Intermediate CA [✅][🔒][👯]  (2027-04-16)
+│   │   └── Server Cert A [✅][🔒]  (2027-04-16)
+│   └── Intermediate CA [❌][🔒][👯]  (2026-04-16)
+│       └── Expired Server Cert [❌][🔒]  (2026-04-16)
+├── Trusted Root CA [⏳][🔒]  (2026-05-18)
+│   └── Broken Signature Leaf [❌][💥]  (2026-07-17)
 └── EXTERNAL ISSUER / MISSING ROOT [❓] 
-    └── Orphan Certificate [✅]  (2027-04-16)
+    └── Orphan Certificate [✅][❓]  (2027-04-16)
 ```
 
 ### File status based JSON
@@ -185,15 +194,19 @@ Ideal for a status check for all the mentioned files and status in the input lis
 
 #### 🚦 Status Code Definitions
 
-When using the --format status output, each certificate is assigned a numeric statusCode. This allows for easy integration with alerting triggers.
+When using the `--format status` output, each certificate is assigned a numeric `statusCode`. This allows for easy integration with alerting triggers and automated monitoring.
 
 | Code | Label | Description |
 | :--- | :--- | :--- |
-| **0**	| VALID	| Certificate is within its validity period and has a trusted path to a root in the store. |
-| **1**	| EXPIRING_SOON	| Certificate is valid but expires within the 30-day threshold. |
-| **2**	| UNTRUSTED	| The certificate is technically valid (dates are OK), but its issuer was not found in the truststore (Orphan). |
-| **3**	| EXPIRED	| The certificate's notAfter date has passed or it is not yet valid (notBefore). |
-| **4**	| INVALID	| The file could not be parsed or contains structural errors. |
+| **0** | VALID | Certificate is within its validity period and has a trusted path to a root. |
+| **1** | EXPIRING_SOON | Certificate is valid but expires within the defined threshold (default: 30 days). |
+| **2** | UNTRUSTED | Valid dates, but the issuer was not found in the truststore (Orphan). |
+| **3** | EXPIRED | The certificate's `notAfter` date has passed. |
+| **4** | NOT_YET_VALID | The certificate's `notBefore` date is in the future. |
+| **5** | INVALID | Structural error: The file could not be parsed as a valid X.509 certificate. |
+| **6** | SIG_ERR | **Critical:** The cryptographic signature verification failed against the issuer's public key. |
+
+> **Note on Thresholds:** The transition from `VALID` (0) to `EXPIRING_SOON` (1) is triggered when a certificate is within the `N`-day window defined by the `--threshold` argument.
 
 #### Output
 
@@ -228,19 +241,17 @@ When using the --format status output, each certificate is assigned a numeric st
 When running with the `--debug` flag, the tool outputs detailed logs to `stderr`. This is essential for understanding how the certificate tree is being constructed and where potential issues lie.
 
 ### Healthy Execution (Success)
-When all certificates are found, validated, and hashes are unique.
+The tool displays the signature status (🔒) for verified chains.
 ```text
-🔵 INFO         │      │ Configuration loaded           │ Processing 9 certificate paths
-❌ READ_ERROR   │      │ non_existing.crt               │ File not found
-✅ OK           │      │ Root CA                        │ 2036-04-13 06:37
-✅ OK           │  👯  │ Intermediate CA (SKI: e547708) │ 2027-04-16 06:37
-⏳ WARNING      │  👯  │ Intermediate CA (SKI: 43aff33) │ 2026-04-26 06:38
-❌ ERROR        │  👯  │ Intermediate CA (SKI: f847a79) │ 2026-04-16 07:29
-✅ OK           │      │ Server Cert A                  │ 2027-04-16 06:39
-⏳ WARNING      │      │ Server Cert B                  │ 2026-04-21 07:33
-❌ ERROR        │      │ Expired Server Cert            │ 2026-04-16 07:39
-✅ OK           │      │ Orphan Certificate             │ 2027-04-16 07:42
-❓ UNTRUSTED    │      │ AKI: 6d8e4e51                  │ Missing issuer for: Orphan Certificate
+🔵 INFO         │      │ Configuration loaded           │ Processing 11 certificate paths
+✅ OK           │ 🔒   │ Root CA                        │ 2036-04-13 06:37
+✅ OK           │ 🔒👯 │ Intermediate CA (SKI: e547708) │ 2027-04-16 06:37
+```
+
+### Signature Verification Failure (Security Alert)
+If a signature does not match the issuer's public key, it is flagged with the `SIG_ERR` label and a 💥 icon.
+```text
+❌ SIG_ERR      │ 💥   │ Broken Signature Leaf          │ 2026-07-17 09:05
 ```
 
 ### Missing Files (I/O Errors)
@@ -250,7 +261,7 @@ Occurs when a filename defined in the YAML does not exist in the source director
 ```
 
 ### Missing Root or Intermediate (Untrusted Chain)
-Occurs when a certificate's issuer is not present in the current truststore batch. These are grouped under the EXTERNAL_OR_MISSING_ISSUER node in the output.
+Occurs when a certificate's issuer is not present in the current truststore batch. These are grouped under the `EXTERNAL_OR_MISSING_ISSUER` node in the output.
 ```text
 ❓ UNTRUSTED    │      │ AKI: 6d8e4e51                  │ Missing issuer for: Orphan Certificate
 ```
@@ -273,6 +284,22 @@ The tool checks the current system time against the certificate's validity windo
 ⏳ WARNING      │  👯  │ Intermediate CA (SKI: 43aff33) │ 2026-04-26 06:38
 ❌ ERROR        │      │ Expired Server Cert            │ 2026-04-16 07:39
 ```
+
+## 🌐 Internationalization (i18n)
+
+The tool supports multiple languages via standard `gettext` locales.
+* **Language Selection:** The tool respects the `LANG` environment variable.
+* **Scope:** Only human-readable outputs (Debug logs and Text trees) are translated. Machine-to-machine outputs (JSON and Status formats) remain in technical English for stability.
+
+```bash
+# Run in Dutch
+LANG=nl_NL.UTF-8 ./check_truststore vars/prod/stores.yml -d
+```
+
+## 🤝 Contributing
+Contributions are welcome! Whether it's reporting a bug, suggesting an enhancement, or submitting a pull request, your help is appreciated.
+
+Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for details on our development standards, legacy environment support (RHEL 8), and how to get started.
 
 ## ⚖️ License
 
