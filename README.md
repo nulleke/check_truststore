@@ -51,6 +51,13 @@ The tool uses **SKI/AKI (Subject/Authority Key Identifier)** to build a cryptogr
 * **Name Collisions [👯]**: When two different certificates (different hashes) share the same Common Name, the tool adds this icon as aditional icon.
 * **Deduplication**: If the exact same certificate (matching SHA-256 hash) is found in multiple paths, it is processed only once to keep the report clean.
 
+## 🛡️ System Truststore Integration
+
+By default, the tool only analyzes the certificates explicitly defined in your YAML configuration. However, to verify if your local chain is ultimately trusted by the operating system, you can enable system integration.
+
+* **Default:** Disabled.
+* **Behavior:** When enabled, the tool scans common system paths (e.g., `/etc/ssl/certs/ca-certificates.crt` on Linux, the Keychain on macOS, or the Windows Certificate Store) to resolve missing root issuers.
+
 ## Usage
 Run the script by providing a path to your truststore YAML configuration:
 
@@ -58,8 +65,14 @@ Run the script by providing a path to your truststore YAML configuration:
 # Basic tree view
 ./check_truststore vars/prod/stores.yml --format text
 
-# Deep dive with debug logs (shows skipped duplicates and I/O errors)
-./check_truststore vars/tst/stores.yml --format text -d
+# Combine local certificates with the system truststore for full chain validation
+./check_truststore vars/prod/stores.yml --format text --system
+
+# Run with full debug output and system truststore enabled
+./check_truststore vars/prod/stores.yml --format text --debug --system
+
+# Custom expiration check (e.g., alert if certificates expire within 90 days)
+./check_truststore vars/prod/stores.yml --format text --threshold 90
 
 # Export to JSON for integration with other monitoring tools
 ./check_truststore vars/prod/stores.yml --format json > audit_report.json
