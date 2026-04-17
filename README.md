@@ -4,15 +4,24 @@
 
 A tool for system administrators and security engineers to audit certificate truststores. This utility transforms flat certificate directories into logical hierarchies, making it easy to spot broken chains or expiring certificates.
 
-## 🚀 Features
+## ✨ Features
 
-* **Chain Visualization:** Automatically builds a tree structure of your certificate hierarchy.
-* **Format Support:** Specifically designed for **X.509 certificates** in **PEM encoding**.
-* **Health Monitoring:** Visual status indicators (✅ Valid, ⏳ Expiring Soon, ❌ Invalid) based on a 30-day threshold.
-* **Collision Intelligence:** Detects "Name Collisions" (👯) where different certificates share the same Common Name.
-* **True Hybrid Architecture:** Seamlessly supports **Pydantic v1** (legacy), **Pydantic v2** (modern), or a **Zero-Dependency Fallback** (standard Python). This ensures the tool remains functional on legacy RHEL/CentOS systems and the latest Python 3.14 environments alike.
-* **Expiration Alerts:** Highlights certificates expiring within a 30-day threshold.
-* **Internationalization:** Ready for translation via `gettext`.
+* **🔍 Chain Reconstruction:** Automatically maps the parent-child relationship between certificates using SKI/AKI identifiers.
+* **👯 Collision Detection:** Identifies duplicate certificates appearing under different filenames or Common Names.
+* **📅 Expiry Alerts:** Integrated visual indicators for expired certificates or those approaching their expiration window.
+* **💻 System Integration:** Capability to merge local system truststores (Linux, macOS, Windows) into the analysis for a "total view."
+* **📊 Multi-format Output:** Supports `text` (interactive-style tree), `json` (for programmatic processing), and `status` (ideal for monitoring/CI dashboards).
+
+---
+
+## 🤖 Automation & Ansible Integration
+
+While many tools are strictly command-line based, this analyzer is built to be **fully importable**. This makes it an ideal engine for **Ansible Custom Modules** or larger Python orchestration projects.
+
+#### 💡 Why use it as an Import?
+* **Zero Disk I/O:** Pass configuration data directly as Python dictionaries (e.g., from Ansible `hostvars`), avoiding the need to write temporary files to the target disk.
+* **Programmatic Control:** Use the `tree_data` object directly to trigger custom logic or alerts.
+* **CI/CD Friendly:** Easily wrap the analyzer into a module to validate certificate integrity during infrastructure deployment.
 
 ## 🛠 Configuration (YAML)
 
