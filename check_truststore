@@ -27,7 +27,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import sys, os, yaml, json, argparse, gettext, hashlib
+import warnings
+import os
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", message=".*serial number.*")
+
+import sys, yaml, json, argparse, gettext, hashlib, platform
 from abc import ABC, abstractmethod
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
@@ -58,7 +64,6 @@ t = gettext.translation("check_truststore", locale_dir, fallback=True)
 _ = t.gettext
 
 ORPHAN_NODE_ID = "EXTERNAL_OR_MISSING_ISSUER"
-EXPIRY_THRESHOLD_DAYS = 30
 
 class Status:
     def __init__(self, name: str, icon: str, color: str, translate: bool = True):
@@ -97,8 +102,9 @@ ERROR = Status("ERROR", "\U0000274C", RED)                              # ❌
 OK = Status("OK", "\U00002705", GREEN)                                  # ✅
 WARNING = Status("WARNING", "\U000023F3", YELLOW)                       # ⏳
 MISSING = Status("MISSING", "\U00002753", MAGENTA, translate=False)     # ❓
-COLLISION = Status("COLLISION", "\U0001F46F", CYAN, translate=False)    # 👥
+COLLISION = Status("COLLISION", "\U0001F46F", CYAN, translate=False)    # 👯
 INFO = Status("INFO", "\U0001F535", BLUE)                               # 🔵
+SYSTEM = Status("SYSTEM", "\U0001F4BB", BLUE, translate=False)          # 💻
 
 class Certificate(BaseModel):
     if PYDANTIC_AVAILABLE:
@@ -109,6 +115,7 @@ class Certificate(BaseModel):
         is_expiring_soon: bool = Field(False, alias="isExpiringSoon")
         expiry_date: Union[datetime, str] = Field("1970-01-01", alias="expiryDate")
         is_collision: bool = Field(False, alias="isCollision")
+        is_system_cert: bool = Field(False, alias="isSystemCert")
         children: Optional[List[Any]] = None
 
         if PYDANTIC_V2:
@@ -139,7 +146,7 @@ class Certificate(BaseModel):
                 if isinstance(data, dict): data.update(special)
             return data
     else:
-        def __init__(self, common_name=None, is_valid=False, is_expiring_soon=False, expiry_date="1970-01-01", is_collision=False, file_name="", sha256_hash="", children=None, **kwargs):
+        def __init__(self, common_name=None, is_valid=False, is_expiring_soon=False, expiry_date="1970-01-01", is_collision=False, is_system=False, file_name="", sha256_hash="", children=None, **kwargs):
             self.common_name = common_name
             self.file_name = file_name
             self.sha256_hash = sha256_hash
@@ -147,6 +154,7 @@ class Certificate(BaseModel):
             self.is_expiring_soon = is_expiring_soon
             self.expiry_date = expiry_date
             self.is_collision = is_collision
+            self.is_system_cert = is_system
             self.children = children or []
 
             mapping = {
@@ -175,7 +183,8 @@ class Certificate(BaseModel):
                 "isValid": self.is_valid,
                 "isExpiringSoon": self.is_expiring_soon,
                 "expiryDate": self.expiry_date.isoformat() if isinstance(self.expiry_date, datetime) else self.expiry_date,
-                "isCollision": self.is_collision
+                "isCollision": self.is_collision,
+                "isSystemCert": self.is_system_cert
             }
             if getattr(self, "children", None): obj["children"] = [c.model_dump() for c in self.children]
             return obj
@@ -186,8 +195,9 @@ class BaseRenderer(ABC):
         pass
 
 class TextRenderer(BaseRenderer):
-    def render(self, tree_data: List[Union[Certificate, Any]]) -> str:
+    def render(self, tree_data: List[Union[Certificate, Any]], include_system: bool = False) -> str:
         output = ["", _("Certificate Hierarchy:")]
+        self.include_system = include_system
         output.append(self._recursive_render(tree_data))
         return "\n".join(output)
 
@@ -195,11 +205,18 @@ class TextRenderer(BaseRenderer):
         lines = []
         for i, n in enumerate(nodes):
             raw_name = getattr(n, "common_name", _("Unknown"))
-            name = _("EXTERNAL ISSUER / MISSING ROOT") if raw_name == ORPHAN_NODE_ID else raw_name
+            if raw_name == ORPHAN_NODE_ID:
+                if getattr(self, "include_system", False):
+                    name = _("UNTRUSTED (NOT IN YAML OR SYSTEM)")
+                else:
+                    name = _("EXTERNAL ISSUER / MISSING ROOT")
+            else:
+                name = raw_name
             is_valid = getattr(n, "is_valid", None)
             is_soon = getattr(n, "is_expiring_soon", None)
             expiry = getattr(n, "expiry_date", None)
             is_collision = getattr(n, "is_collision", False)
+            is_system = getattr(n, "is_system_cert", False)
             children = getattr(n, "children", None)
 
             icons = []
@@ -210,6 +227,8 @@ class TextRenderer(BaseRenderer):
                 icons.append(st.ICON)
                 if is_collision:
                     icons.append(COLLISION.ICON)
+                if is_system:
+                    icons.append(SYSTEM.ICON)
 
             icon_str = "".join(["[{}]".format(ico) for ico in icons])
             date_str = ""
@@ -333,20 +352,83 @@ class TrustStoreRenderer:
             "status": StatusRenderer()
         }
 
-    def render(self, tree_data: List[Union[Certificate, Any]], format_type: str) -> str:
+    def render(self, tree_data: List[Union[Certificate, Any]], format_type: str, include_system: bool = False) -> str:
         renderer = self._renderers.get(format_type)
         if not renderer:
             raise ValueError(_("Unknown format: {}").format(format_type))
+        
+        if isinstance(renderer, TextRenderer):
+            return renderer.render(tree_data, include_system)
+        
         return renderer.render(tree_data)
 
 class TrustStoreAnalyzer:
-    def __init__(self, yaml_path: str, debug: bool = False):
-        self.yaml_path: Path = Path(yaml_path)
+    def __init__(self, yaml_path: Optional[str] = None, debug: bool = False, include_system: bool = False, threshold_days: int = 30):
+        self.yaml_path: Path = Path(yaml_path) if yaml_path else None
         self.debug: bool = debug
+        self.include_system: bool = include_system
+        self.threshold_days: int = threshold_days
         self.cert_data: Dict[str, Certificate] = {}
         self.parent_map: Dict[str, str] = {}
         self.name_count: Dict[str, int] = defaultdict(int)
         self.seen_hashes: Set[str] = set()
+
+    def _get_system_ca_paths(self) -> List[Path]:
+        os_type = platform.system()
+        paths = []
+
+        if os_type == "Linux":
+            common_paths = [
+                "/etc/pki/tls/certs/ca-bundle.crt",                 # Fedora/RHEL
+                "/etc/ssl/certs/ca-certificates.crt",               # Debian/Ubuntu
+                "/etc/ca-certificates/extracted/tls-ca-bundle.pem"  # Arch/SuSE
+            ]
+
+            for p in common_paths:
+                if Path(p).exists():
+                    paths.append(Path(p))
+                    break
+
+        elif os_type == "Darwin":                                   # macOS
+            p = Path("/etc/ssl/cert.pem")
+            if p.exists(): paths.append(p)
+
+        return paths
+
+    def _load_certs_from_file(self, path: Path) -> List[Dict]:
+        certs_found = []
+        try:
+            with open(str(path), "rb") as f:
+                content = f.read()
+
+            import re
+            cert_blocks = re.findall(b"-----BEGIN (?:TRUSTED )?CERTIFICATE-----.*?-----END (?:TRUSTED )?CERTIFICATE-----", content, re.DOTALL)
+
+            for block in cert_blocks:
+                c_hash = hashlib.sha256(block).hexdigest()
+                if c_hash in self.seen_hashes:
+                    continue
+
+                self.seen_hashes.add(c_hash)
+
+                try:
+                    clean_block = block.replace(b"TRUSTED CERTIFICATE", b"CERTIFICATE")
+                    cert = x509.load_pem_x509_certificate(clean_block, default_backend())
+
+                    certs_found.append({
+                        "cert": cert,
+                        "path": path,
+                        "hash": c_hash
+                    })
+
+                except Exception as e:
+                    if self.debug:
+                        ERROR.log(path.name, _("Inner parse error: {e}"))
+
+        except Exception as e:
+            if self.debug: ERROR.log(path.name, str(e), label=_("READ_ERROR"))
+
+        return certs_found
 
     def _get_extension_value(self, cert: x509.Certificate, oid: x509.ObjectIdentifier) -> Optional[str]:
         try:
@@ -369,47 +451,59 @@ class TrustStoreAnalyzer:
     def analyze(self) -> List[Union[Certificate, Any]]:
         _("READ_ERROR"); _("UNTRUSTED")
 
-        paths = self._get_paths_from_yaml()
+        yaml_paths = self._get_paths_from_yaml() if self.yaml_path else []
+        system_paths = self._get_system_ca_paths() if self.include_system else []
+
+        all_certs_to_load = []
+
+        for p in yaml_paths:
+            all_certs_to_load.append((p, False))
+
+        if self.include_system:
+            for p in system_paths:
+                all_certs_to_load.append((p, True))
+
         if self.debug:
-            INFO.log(_("Configuration loaded"), _("Processing {count} certificate paths").format(count=len(paths)))
+            INFO.log(_("Configuration loaded"), _("Processing {count} certificate paths").format(count=len(yaml_paths)))
 
         raw_certs_with_meta = []
-        for path in paths:
-            try:
-                if not path.exists():
-                    if self.debug: ERROR.log(path.name, _("File not found"), label=_("READ_ERROR"))
-                    continue
+        for path, is_system in all_certs_to_load:
+            certs = self._load_certs_from_file(path)
+            for c in certs:
+                c["is_system"] = is_system
+                raw_certs_with_meta.append(c)
 
-                with open(str(path), "rb") as f:
-                    content = f.read()
-                    c_hash = hashlib.sha256(content).hexdigest()
+        if self.include_system and platform.system() == "Windows":
+            import ssl
+            for store_name in ["ROOT", "CA"]:
+                for cert_der in ssl.enum_certificates(store_name):
+                    try:
+                        cert = x509.load_der_x509_certificate(cert_der[0], default_backend())
+                        c_hash = hashlib.sha256(cert_der[0]).hexdigest()
+                        if c_hash not in self.seen_hashes:
+                            self.seen_hashes.add(c_hash)
+                            raw_certs_with_meta.append({
+                                "cert": cert,
+                                "path": Path(f"Windows-{store_name}-Store"),
+                                "hash": c_hash
+                            })
+                            cn = self._get_common_name(cert)
+                            self.name_count[cn] += 1
 
-                if c_hash in self.seen_hashes:
-                    if self.debug: WARNING.log(path.name, _("Duplicate content (skipped)"))
-                    continue
-
-                self.seen_hashes.add(c_hash)
-                cert = x509.load_pem_x509_certificate(content, default_backend())
-                raw_certs_with_meta.append({
-                    "cert": cert,
-                    "path": path,
-                    "hash": c_hash
-                })
-
-                cn = self._get_common_name(cert)
-                self.name_count[cn] += 1
-
-            except Exception as e:
-                if self.debug: ERROR.log(path.name, str(e), label=_("READ_ERROR"))
+                    except Exception as e:
+                        if self.debug: print(f"Windows Cert Error: {e}")                         
 
         for item in raw_certs_with_meta:
             cert = item["cert"]
             path = item["path"]
             c_hash = item["hash"]
+            is_system = item["is_system"]
 
             ski = self._get_extension_value(cert, x509.ExtensionOID.SUBJECT_KEY_IDENTIFIER)
             aki = self._get_extension_value(cert, x509.ExtensionOID.AUTHORITY_KEY_IDENTIFIER)
             cn = self._get_common_name(cert)
+
+            self.name_count[cn] += 1
 
             cert_id = ski if ski else hashlib.md5(cert.subject.public_bytes()).hexdigest()
 
@@ -422,19 +516,12 @@ class TrustStoreAnalyzer:
 
             now = datetime.now(timezone.utc)
             is_valid = start <= now <= expiry
-            is_soon = now <= expiry <= (now + timedelta(days=EXPIRY_THRESHOLD_DAYS))
-            is_coll = self.name_count[cn] > 1
+            is_soon = now <= expiry <= (now + timedelta(days=self.threshold_days))
 
             if aki and aki != cert_id:
                 self.parent_map[cert_id] = aki
             elif cert.subject != cert.issuer:
                 self.parent_map[cert_id] = ORPHAN_NODE_ID
-
-            if self.debug:
-                st = ERROR if not is_valid else (WARNING if is_soon else OK)
-                coll_marker = COLLISION.ICON if is_coll else "  "
-                log_msg = f"{cn} (SKI: {cert_id[:8]})" if is_coll else cn
-                st.log(log_msg, expiry.strftime("%Y-%m-%d %H:%M"), extra_icon=coll_marker)
 
             cert_fields = {
                 "commonName": cn,
@@ -443,37 +530,54 @@ class TrustStoreAnalyzer:
                 "isValid": is_valid,
                 "isExpiringSoon": is_soon,
                 "expiryDate": expiry,
-                "isCollision": is_coll
+                "isCollision": False,
+                "isSystemCert": is_system
             }
 
             if PYDANTIC_AVAILABLE:
                 self.cert_data[cert_id] = Certificate(**cert_fields)
             else:
                 self.cert_data[cert_id] = Certificate(
-                    common_name=cn,
-                    file_name=path.name,
+                    common_name = cn,
+                    file_name = path.name,
                     sha256_hash = c_hash,
                     is_valid=is_valid,
                     is_expiring_soon=is_soon,
                     expiry_date=expiry,
-                    is_collision=is_coll
+                    is_collision=False,
+                    is_system = is_system
                 )
+
+        target_skis = {ski for ski, cert in self.cert_data.items() if not cert.is_system_cert}
+        relevant_skis = set()
+        for ski in target_skis:
+            curr = ski
+            while curr and curr in self.cert_data:
+                relevant_skis.add(curr)
+                curr = self.parent_map.get(curr)
+
 
         if self.debug:
-            known_skis = set(self.cert_data.keys())
-            missing_issuer_map = defaultdict(list)
+            for ski in sorted(relevant_skis):
+                cert_obj = self.cert_data[ski]
+                is_coll = self.name_count[cert_obj.common_name] > 1
+                cert_obj.is_collision = is_coll
 
-            for c_id, c_obj in self.cert_data.items():
+                st = ERROR if not cert_obj.is_valid else (WARNING if cert_obj.is_expiring_soon else OK)
+                if cert_obj.is_system_cert:
+                    st = SYSTEM
+                
+                coll_marker = COLLISION.ICON if is_coll else "  "
+                log_msg = f"{cert_obj.common_name} (SKI: {ski[:8]})" if is_coll else cert_obj.common_name
+                st.log(log_msg, cert_obj.expiry_date.strftime("%Y-%m-%d %H:%M"), extra_icon=coll_marker)
+
+            known_skis = set(self.cert_data.keys())
+            for c_id in relevant_skis:
                 aki = self.parent_map.get(c_id)
                 if aki and aki not in known_skis and aki != ORPHAN_NODE_ID:
-                    missing_issuer_map[f"AKI: {aki[:8]}"].append(c_obj.common_name)
-
-            for issuer, dependents in missing_issuer_map.items():
-                MISSING.log(
-                    issuer,
-                    "{}: {}".format(_("Missing issuer for"), ", ".join(dependents)),
-                    label=_("UNTRUSTED")
-                )
+                    MISSING.log(f"AKI: {aki[:8]}", 
+                                f"{_('Missing issuer for')}: {self.cert_data[c_id].common_name}", 
+                                label=_("UNTRUSTED"))
 
         return self._build_tree()
 
@@ -486,7 +590,8 @@ class TrustStoreAnalyzer:
                 isValid=False,
                 isExpiringSoon=False,
                 expiryDate=epoch_date,
-                isCollision=False
+                isCollision=False,
+                isSystemCert=False
             )
         else:
             return Certificate(
@@ -494,39 +599,63 @@ class TrustStoreAnalyzer:
                 False,      # isValid
                 False,      # isExpiringSoon
                 epoch_date, # expiryDate
-                False       # isCollision
+                False,      # isCollision
+                False       # isSystemCert
             )
 
     def _build_tree(self) -> List[Union[Certificate, Any]]:
-        known_skis = set(self.cert_data.keys())
-        children_by_aki = defaultdict(list)
-        for ski, aki in self.parent_map.items():
-            children_by_aki[aki].append(ski)
+        target_skis = {
+            ski for ski, cert in self.cert_data.items() if not cert.is_system_cert
+        }
 
-        processed: Set[str] = set()
+        relevant_skis = set()
+        for ski in target_skis:
+            current = ski
+            while current:
+                relevant_skis.add(current)
+                parent_ski = self.parent_map.get(current)
+                if not parent_ski or parent_ski == ORPHAN_NODE_ID or parent_ski not in self.cert_data:
+                    break
+                current = parent_ski
+
+        roots = [ski for ski in relevant_skis if self.parent_map.get(ski) not in relevant_skis]
+
+        processed_skis = set()
+        children_by_parent = defaultdict(list)
+        for ski, p_ski in self.parent_map.items():
+            if ski in relevant_skis:
+                children_by_parent[p_ski].append(ski)
 
         def node_to_obj(ski: str) -> Union[Certificate, Any]:
-            processed.add(ski)
+            processed_skis.add(ski)
             cert = self.cert_data[ski]
-            child_skis = children_by_aki.get(ski, [])
+            child_skis = [c for c in children_by_parent.get(ski, []) if c in relevant_skis]
+            
             if child_skis:
-                cert.children = [node_to_obj(c_ski) for c_ski in child_skis]
+                cert.children = [node_to_obj(c_ski) for c_ski in sorted(child_skis, key=lambda x: self.cert_data[x].common_name)]
             else:
                 cert.children = None
+            
             return cert
+        
+        trusted_tree = []
+        orphan_skis = []
 
-        roots = [ski for ski in known_skis if ski not in self.parent_map]
-        tree = [node_to_obj(r) for r in roots]
+        for r_ski in roots:
+            parent_ski = self.parent_map.get(r_ski)
+            if parent_ski == ORPHAN_NODE_ID or (parent_ski and parent_ski not in self.cert_data):
+                orphan_skis.append(r_ski)
+            else:
+                trusted_tree.append(node_to_obj(r_ski))
 
-        orphans = known_skis - processed
-        if orphans:
+        trusted_tree.sort(key=lambda x: x.common_name)
+
+        if orphan_skis:
             ext_node = self._create_virtual_node(ORPHAN_NODE_ID)
-            top_orphans = [o for o in orphans if self.parent_map.get(o) not in known_skis]
-            ext_node.children = [node_to_obj(o) for o in top_orphans]
+            ext_node.children = [node_to_obj(o_ski) for o_ski in sorted(orphan_skis, key=lambda x: self.cert_data[x].common_name)]
+            trusted_tree.append(ext_node)
 
-            tree.append(ext_node)
-
-        return tree
+        return trusted_tree
 
     def _get_paths_from_yaml(self) -> List[Path]:
         with open(str(self.yaml_path), "r") as f:
@@ -534,6 +663,7 @@ class TrustStoreAnalyzer:
         env = data.get("env", "acc")
         ext = data.get("certificate_file_extension", ".crt")
         paths = []
+
         for ts in data.get("truststores", []):
             src = ts.get("cert_src_dir", "").replace("{{ env }}", env)
             for link in ts.get("cert_chain", []):
@@ -560,14 +690,17 @@ def main() -> None:
     parser.add_argument("-h", "--help", action="help", default=argparse.SUPPRESS, help=_("Show this help message and exit"))
     parser.add_argument("-f", "--format", choices=["json", "text", "status"], default="json", help=_("Output format"))
     parser.add_argument("-d", "--debug", action="store_true", default=False, help=_("Show debug info"))
+    parser.add_argument("-s", "--system", action="store_true", default=False, help=_("Incorporate system truststore"))
+    parser.add_argument("-t", "--threshold", type=int, default=30, help=_("Expiration threshold in days (default: 30)"))
+
     args = parser.parse_args()
 
-    analyzer = TrustStoreAnalyzer(args.input, args.debug)
+    analyzer = TrustStoreAnalyzer(args.input, args.debug, args.system, args.threshold)
     tree_data = analyzer.analyze()
 
     try:
         renderer = TrustStoreRenderer()
-        output = renderer.render(tree_data, args.format)
+        output = renderer.render(tree_data, args.format, include_system=args.system)
         print(output)
     except Exception as e:
         ERROR.log(_("Rendering failed"), str(e))

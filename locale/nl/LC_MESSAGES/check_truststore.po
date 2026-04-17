@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-16 13:10+0200\n"
+"POT-Creation-Date: 2026-04-17 12:54+0200\n"
 "PO-Revision-Date: 2026-04-13 11:08+0200\n"
 "Last-Translator: Serge van Thillo <nulleke76@gmail.com>\n"
 "Language-Team: Dutch <vertaling@vrijschrift.org>\n"
@@ -17,97 +17,105 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: check_truststore:163
+#: check_truststore:199
 msgid "Certificate Hierarchy:"
 msgstr "Certificaat Hiërarchie:"
 
-#: check_truststore:170 check_truststore:250 check_truststore:252
+#: check_truststore:206 check_truststore:446 check_truststore:448
 msgid "Unknown"
 msgstr "Onbekend"
 
-#: check_truststore:171
-msgid "EXTERNAL ISSUER / MISSING ROOT"
-msgstr "EXTERNE UITGEVER / ONBEKENDE BRON"
+#: check_truststore:209
+msgid "UNTRUSTED (NOT IN YAML OR SYSTEM)"
+msgstr "NIET VERTROUWD (NIET IN YAML OF SYSTEEM)"
 
-#: check_truststore:224
+#: check_truststore:211
+msgid "EXTERNAL ISSUER / MISSING ROOT"
+msgstr "EXTERNE UITGEVER / ONBEKENDE ROOT"
+
+#: check_truststore:357
 msgid "Unknown format: {}"
 msgstr "Onbekend formaat: {}"
 
-#: check_truststore:255 check_truststore:265 check_truststore:281
+#: check_truststore:425
+#, python-brace-format
+msgid "Inner parse error: {e}"
+msgstr "Interne parse-fout: {e}"
+
+#: check_truststore:428 check_truststore:451
 msgid "READ_ERROR"
 msgstr "LEES_FOUT"
 
-#: check_truststore:255 check_truststore:349
+#: check_truststore:451 check_truststore:579
 msgid "UNTRUSTED"
 msgstr "GEEN_TRUST"
 
-#: check_truststore:259
+#: check_truststore:466
 msgid "Configuration loaded"
 msgstr "Configuratie geladen"
 
-#: check_truststore:259
+#: check_truststore:466
 #, python-brace-format
 msgid "Processing {count} certificate paths"
 msgstr "Analyse van {count} certificaatlocaties"
 
-#: check_truststore:265
-msgid "File not found"
-msgstr "Bestand niet gevonden"
-
-#: check_truststore:273
-#, fuzzy
-msgid "Duplicate content (skipped)"
-msgstr "Dubbele inhoud"
-
-#: check_truststore:348
+#: check_truststore:578
 msgid "Missing issuer for"
 msgstr "Ontbrekende issuer voor"
 
-#: check_truststore:420
+#: check_truststore:675
 msgid "ERROR"
 msgstr "FOUT"
 
-#: check_truststore:420
+#: check_truststore:675
 msgid "WARNING"
 msgstr "WAARSCHUWING"
 
-#: check_truststore:420
+#: check_truststore:675
 msgid "OK"
-msgstr "CHECK"
+msgstr "OK"
 
-#: check_truststore:420
+#: check_truststore:675
 msgid "INFO"
 msgstr "INFO"
 
-#: check_truststore:425
+#: check_truststore:680
 #, python-brace-format
 msgid "File '{path}' does not exist."
 msgstr "Bestand '{path}' bestaat niet."
 
-#: check_truststore:429
+#: check_truststore:684
 msgid "Analyze certificate truststores and visualize the chain hierarchy."
 msgstr "Analyseer certificaat truststores en visualiseer de hiërarchie."
 
-#: check_truststore:430
+#: check_truststore:685
 msgid "Compatible with Python 3.6+"
 msgstr "Compatibel met Python 3.6+"
 
-#: check_truststore:433
+#: check_truststore:688
 msgid "Path to the YAML file"
 msgstr "Pad naar het YAML-bestand"
 
-#: check_truststore:434
+#: check_truststore:689
 msgid "Show this help message and exit"
 msgstr "Toon dit helpbericht en sluit af"
 
-#: check_truststore:435
+#: check_truststore:690
 msgid "Output format"
 msgstr "Output formaat"
 
-#: check_truststore:436
+#: check_truststore:691
 msgid "Show debug info"
 msgstr "Toon debug informatie"
 
-#: check_truststore:447
+#: check_truststore:692
+msgid "Incorporate system truststore"
+msgstr "Systeem-truststore betrekken bij analyse"
+
+#: check_truststore:693
+msgid "Expiration threshold in days (default: 30)"
+msgstr "Vervaldrempel in dagen (standaard: 30)"
+
+#: check_truststore:705
 msgid "Rendering failed"
 msgstr "Renderen mislukt"
