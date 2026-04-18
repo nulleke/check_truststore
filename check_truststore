@@ -32,6 +32,7 @@ import os
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", message=".*serial number.*")
+warnings.filterwarnings("ignore", message=".*Python 3.6 is no longer supported.*")
 
 import sys, yaml, json, argparse, gettext, hashlib, platform
 from abc import ABC, abstractmethod
@@ -72,26 +73,30 @@ class Status:
         self.COLOR: str = color
 
     def log(self, message: str, detail: str = "", label: Optional[str] = None, extra_icon: str = "  ") -> None:
-        display_label = label if label else self.NAME
+        display_label = _(label) if label else self.NAME
         reset = "\033[0m"
         v_line = "\u2502"
-        sep = f"{reset}{v_line}{self.COLOR}"
+        sep = f"{reset}{v_line}"
 
-        icon_str = extra_icon.strip()
-        if icon_str:
-            formatted_icon = f" {icon_str} "
-        else:
-            formatted_icon = "    "
+        clean_icons = extra_icon.strip()
+        visual_width = 0
+        for char in clean_icons:
+            visual_width += 2 if ord(char) > 127 else 1
 
-        prefix = "{}{} {:<12} {} {} {} {:<40} {} ".format(
+        padding = " " * max(0, 8 - visual_width)
+        formatted_icon = f" {clean_icons}{padding}"
+
+        prefix = "{}{} {:<14} {} {} {} {}{:<60} {}{} ".format(
             self.COLOR,
             self.ICON,
             display_label,
             sep,
             formatted_icon,
             sep,
-            message[:40],
-            sep
+            self.COLOR,
+            message[:60],
+            sep,
+            self.COLOR
         )
 
         sys.stderr.write("{}{}{}\n".format(prefix, detail, reset))
@@ -106,6 +111,14 @@ COLLISION = Status("COLLISION", "\U0001F46F", CYAN, translate=False)    # 👯
 INFO = Status("INFO", "\U0001F535", BLUE)                               # 🔵
 SYSTEM = Status("SYSTEM", "\U0001F4BB", BLUE, translate=False)          # 💻
 
+class Icons:
+    VALID = "\U00002705"                                                # ✅ (White Heavy Check Mark)
+    EXPIRED = "\U0000274C"                                              # ❌ (Cross Mark)
+    WARNING = "\U000026A0\U0000FE0F"                                    # ⚠️ (Warning Sign)
+    LOCKED = "\U0001F512"                                               # 🔒 (Locked)
+    BROKEN = "\U0001F4A5"                                               # 💥 (Broken Chain)
+    UNKNOWN = "\U00002753"                                              # ❓ (Black Question Mark Ornament)
+
 class Certificate(BaseModel):
     if PYDANTIC_AVAILABLE:
         common_name: str = Field(..., alias="commonName")
@@ -116,7 +129,17 @@ class Certificate(BaseModel):
         expiry_date: Union[datetime, str] = Field("1970-01-01", alias="expiryDate")
         is_collision: bool = Field(False, alias="isCollision")
         is_system_cert: bool = Field(False, alias="isSystemCert")
+        is_root: bool = Field(False, alias="isRoot")
+        signature_valid: Optional[bool] = None
         children: Optional[List[Any]] = None
+
+        @property
+        def signature_icon(self) -> str:
+            if self.signature_valid is True:
+                return Icons.LOCKED
+            if self.signature_valid is False:
+                return Icons.BROKEN
+            return Icons.UNKNOWN
 
         if PYDANTIC_V2:
             model_config = ConfigDict(populate_by_name=True, from_attributes=True)
@@ -141,12 +164,13 @@ class Certificate(BaseModel):
                     "is_valid": False, "isValid": False,
                     "is_expiring_soon": False, "isExpiringSoon": False,
                     "expiry_date": datetime(1970, 1, 1, tzinfo=timezone.utc),
-                    "expiryDate": datetime(1970, 1, 1, tzinfo=timezone.utc)
+                    "expiryDate": datetime(1970, 1, 1, tzinfo=timezone.utc),
+                    "signature_valid": None, "signatureValid": None
                 }
                 if isinstance(data, dict): data.update(special)
             return data
     else:
-        def __init__(self, common_name=None, is_valid=False, is_expiring_soon=False, expiry_date="1970-01-01", is_collision=False, is_system=False, file_name="", sha256_hash="", children=None, **kwargs):
+        def __init__(self, common_name=None, is_valid=False, is_expiring_soon=False, expiry_date="1970-01-01", is_collision=False, is_system=False, file_name="", sha256_hash="", is_root=False, signature_valid=None, children=None, **kwargs):
             self.common_name = common_name
             self.file_name = file_name
             self.sha256_hash = sha256_hash
@@ -155,6 +179,8 @@ class Certificate(BaseModel):
             self.expiry_date = expiry_date
             self.is_collision = is_collision
             self.is_system_cert = is_system
+            self.signature_valid = signature_valid
+            self.is_root = is_root
             self.children = children or []
 
             mapping = {
@@ -164,7 +190,9 @@ class Certificate(BaseModel):
                 "expiryDate": "expiry_date",
                 "isCollision": "is_collision",
                 "fileName": "file_name",
-                "sha256Hash": "sha256_hash"
+                "sha256Hash": "sha256_hash",
+                "signatureValid": "signature_valid",
+                "isRoot": "is_root"
             }
 
             for k, v in kwargs.items():
@@ -175,6 +203,14 @@ class Certificate(BaseModel):
                 self.is_expiring_soon = False
                 self.expiry_date = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
+        @property
+        def signature_icon(self) -> str:
+            if self.signature_valid is True:
+                return Icons.LOCKED
+            if self.signature_valid is False:
+                return Icons.BROKEN
+            return Icons.UNKNOWN
+
         def model_dump(self):
             obj = {
                 "commonName": self.common_name,
@@ -184,7 +220,9 @@ class Certificate(BaseModel):
                 "isExpiringSoon": self.is_expiring_soon,
                 "expiryDate": self.expiry_date.isoformat() if isinstance(self.expiry_date, datetime) else self.expiry_date,
                 "isCollision": self.is_collision,
-                "isSystemCert": self.is_system_cert
+                "isSystemCert": self.is_system_cert,
+                "signatureValid": self.signature_valid,
+                "isRoot": self.is_root
             }
             if getattr(self, "children", None): obj["children"] = [c.model_dump() for c in self.children]
             return obj
@@ -225,12 +263,16 @@ class TextRenderer(BaseRenderer):
             else:
                 st = ERROR if not is_valid else (WARNING if is_soon else OK)
                 icons.append(st.ICON)
+
+                icons.append(n.signature_icon)
+
                 if is_collision:
                     icons.append(COLLISION.ICON)
                 if is_system:
                     icons.append(SYSTEM.ICON)
 
             icon_str = "".join(["[{}]".format(ico) for ico in icons])
+
             date_str = ""
             if expiry and raw_name != ORPHAN_NODE_ID:
                 ds = expiry.strftime('%Y-%m-%d') if isinstance(expiry, datetime) else str(expiry)[:10]
@@ -246,39 +288,82 @@ class TextRenderer(BaseRenderer):
 
 class JsonRenderer(BaseRenderer):
     def render(self, tree_data: List[Union[Certificate, Any]]) -> str:
-        if PYDANTIC_AVAILABLE and PYDANTIC_V2 and TypeAdapter:
-            ta = TypeAdapter(List[Certificate])
-            raw_data = ta.dump_python(tree_data, mode='json', by_alias=True, exclude_none=True)
+        if PYDANTIC_AVAILABLE and PYDANTIC_V2 and 'TypeAdapter' in globals():
+            try:
+                ta = TypeAdapter(List[Certificate])
+                raw_data = ta.dump_python(tree_data, mode='json', by_alias=True, exclude_none=True)
+            except Exception:
+                raw_data = self._manual_dict_gen(tree_data)
         else:
-            raw_data = [c.model_dump() if hasattr(c, 'model_dump') else c.dict(by_alias=True) for c in tree_data]
+            raw_data = self._manual_dict_gen(tree_data)
 
         clean_data = self._filter_fields(raw_data)
-        return json.dumps(clean_data, indent=2, default=lambda o: o.isoformat() if isinstance(o, datetime) else str(o))
+        
+        return json.dumps(
+            clean_data,
+            indent=2,
+            default=lambda o: o.isoformat() if isinstance(o, datetime) else str(o)
+        )
+
+    def _manual_dict_gen(self, tree_data: list) -> list:
+        res = []
+        for c in tree_data:
+            try:
+                if hasattr(c, 'model_dump'):
+                    res.append(c.model_dump(exclude_none=True, by_alias=True))
+                    continue
+                elif hasattr(c, 'dict'):
+                    res.append(c.dict(exclude_none=True, by_alias=True))
+                    continue
+            except TypeError:
+                pass
+
+            if hasattr(c, 'model_dump'):
+                res.append(c.model_dump())
+            elif hasattr(c, 'dict'):
+                res.append(c.dict())
+            elif hasattr(c, '__dict__'):
+                res.append(c.__dict__)
+            else:
+                res.append(c)
+        return res
 
     def _filter_fields(self, data: Any) -> Any:
         if isinstance(data, list):
             return [self._filter_fields(item) for item in data]
-        
+
         if isinstance(data, dict):
+            mapping = {
+                "common_name": "commonName",
+                "is_valid": "isValid",
+                "is_expiring_soon": "isExpiringSoon",
+                "expiry_date": "expiryDate"
+            }
+
             allowed_fields = {"commonName", "isValid", "isExpiringSoon", "expiryDate", "children"}
-            
             new_dict = {}
+
             for key, value in data.items():
-                if key in allowed_fields:
-                    if key == "children" and value is not None:
-                        new_dict[key] = self._filter_fields(value)
+                json_key = mapping.get(key, key)
+
+                if json_key in allowed_fields:
+                    if json_key == "children":
+                        if value:
+                            new_dict[json_key] = self._filter_fields(value)
                     else:
-                        new_dict[key] = value
+                        new_dict[json_key] = value
             return new_dict
-        
-        return data    
+
+        return data
 class StatusRenderer(BaseRenderer):
     STATUS_MAP = {
         "VALID": {"code": 0, "label": "VALID"},
         "EXPIRING_SOON": {"code": 1, "label": "EXPIRING_SOON"},
         "UNTRUSTED": {"code": 2, "label": "UNTRUSTED"},
         "EXPIRED": {"code": 3, "label": "EXPIRED"},
-        "INVALID": {"code": 4, "label": "INVALID"}
+        "NOT_YET_VALID": {"code": 4, "label": "NOT_YET_VALID"},
+        "INVALID": {"code": 5, "label": "INVALID"},
+        "SIGNATURE": {"code": 6, "label": "INVALID_SIGNATURE"}
     }
 
     def render(self, tree_data: List[Certificate]) -> str:
@@ -301,18 +386,27 @@ class StatusRenderer(BaseRenderer):
 
         return json.dumps(status_output, indent=2)
 
-    def _get_status_info(self, cert: Certificate, tree_data) -> dict:
-        if not cert.is_valid:
-            return self.STATUS_MAP["EXPIRED"]
+    def _get_status_info(self, cert: Certificate, tree_data) -> Dict:
+        now = datetime.now(timezone.utc)
+        is_untrusted = self._is_untrusted(cert, tree_data)
 
-        if self._is_untrusted(cert, tree_data):
+        if not is_untrusted and cert.signature_valid is False:
+            return self.STATUS_MAP["SIGNATURE"]
+
+        if is_untrusted:
             return self.STATUS_MAP["UNTRUSTED"]
+
+        if hasattr(cert, "not_before") and cert.not_before > now:
+            return self.STATUS_MAP["NOT_YET_VALID"]
+
+        if cert.expiry_date < now:
+            return self.STATUS_MAP["EXPIRED"]
 
         if cert.is_expiring_soon:
             return self.STATUS_MAP["EXPIRING_SOON"]
-        
+
         return self.STATUS_MAP["VALID"]
-        
+
     def _is_untrusted(self, cert: Certificate, tree_data) -> bool:
         for root in tree_data:
             if getattr(root, "common_name", "") == ORPHAN_NODE_ID:
@@ -332,14 +426,14 @@ class StatusRenderer(BaseRenderer):
     def _flatten_tree(self, nodes: List[Certificate], seen_hashes: set = None) -> List[Certificate]:
         if seen_hashes is None:
             seen_hashes = set()
-        
+
         flat = []
         for n in nodes:
             cert_hash = getattr(n, "sha256_hash", n.common_name)
             if cert_hash not in seen_hashes:
                 flat.append(n)
                 seen_hashes.add(cert_hash)
-            
+
             if n.children:
                 flat.extend(self._flatten_tree(n.children, seen_hashes))
         return flat
@@ -356,10 +450,10 @@ class TrustStoreRenderer:
         renderer = self._renderers.get(format_type)
         if not renderer:
             raise ValueError(_("Unknown format: {}").format(format_type))
-        
+
         if isinstance(renderer, TextRenderer):
             return renderer.render(tree_data, include_system)
-        
+
         return renderer.render(tree_data)
 
 class TrustStoreAnalyzer:
@@ -369,9 +463,45 @@ class TrustStoreAnalyzer:
         self.include_system: bool = include_system
         self.threshold_days: int = threshold_days
         self.cert_data: Dict[str, Certificate] = {}
+        self.raw_certs: Dict[str, x509.Certificate] = {}
         self.parent_map: Dict[str, str] = {}
         self.name_count: Dict[str, int] = defaultdict(int)
         self.seen_hashes: Set[str] = set()
+
+    def _verify_signature(self, cert_to_check, issuer_cert) -> bool:
+        try:
+            from cryptography.hazmat.primitives.asymmetric import rsa, ec, padding as rsa_padding
+            from cryptography.hazmat.primitives import hashes
+
+            issuer_public_key = issuer_cert.public_key()
+            signature = cert_to_check.signature
+            data = cert_to_check.tbs_certificate_bytes
+            hash_algo = cert_to_check.signature_hash_algorithm
+
+            if isinstance(issuer_public_key, rsa.RSAPublicKey):
+                issuer_public_key.verify(
+                    signature,
+                    data,
+                    rsa_padding.PKCS1v15(),
+                    hash_algo
+                )
+                return True
+
+            elif isinstance(issuer_public_key, ec.EllipticCurvePublicKey):
+                try:
+                    issuer_public_key.verify(signature, data, ec.ECDSA(hash_algo))
+                except Exception:
+                    algo_name = hash_algo.name.upper()
+                    new_algo = getattr(hashes, algo_name)()
+                    issuer_public_key.verify(signature, data, ec.ECDSA(new_algo))
+                return True
+
+            else:
+                issuer_public_key.verify(signature, data, hash_algo)
+                return True
+
+        except Exception:
+            return False
 
     def _get_system_ca_paths(self) -> List[Path]:
         os_type = platform.system()
@@ -409,24 +539,33 @@ class TrustStoreAnalyzer:
                 if c_hash in self.seen_hashes:
                     continue
 
-                self.seen_hashes.add(c_hash)
-
                 try:
-                    clean_block = block.replace(b"TRUSTED CERTIFICATE", b"CERTIFICATE")
-                    cert = x509.load_pem_x509_certificate(clean_block, default_backend())
+                    cert = x509.load_pem_x509_certificate(block.replace(b"TRUSTED ", b""), default_backend())
+                    self.seen_hashes.add(c_hash)
+                    certs_found.append({"cert": cert, "path": path, "hash": c_hash})
 
-                    certs_found.append({
-                        "cert": cert,
-                        "path": path,
-                        "hash": c_hash
-                    })
+                except ValueError:
+                    if self.debug:
+                        ERROR.log(path.name, _("Invalid certificate structure or corrupt Base64"))
 
                 except Exception as e:
                     if self.debug:
-                        ERROR.log(path.name, _("Inner parse error: {e}"))
+                        ERROR.log(path.name, f"{_('Unexpected error')}: {str(e)}")
+
+        except FileNotFoundError:
+            if self.debug:
+                error_msg = _("File not found: {path}").format(path=path.absolute())
+                ERROR.log(path.name, error_msg, label=_("READ_ERROR"))
+
+        except PermissionError:
+            if self.debug:
+                error_msg = _("Permission denied: {path}").format(path=path.absolute())
+                ERROR.log(path.name, error_msg, label=_("READ_ERROR"))
 
         except Exception as e:
-            if self.debug: ERROR.log(path.name, str(e), label=_("READ_ERROR"))
+            if self.debug:
+                error_msg = _("Read error: {error}").format(error=str(e))
+                ERROR.log(path.name, error_msg(e), label=_("READ_ERROR"))
 
         return certs_found
 
@@ -449,7 +588,7 @@ class TrustStoreAnalyzer:
             return _("Unknown")
 
     def analyze(self) -> List[Union[Certificate, Any]]:
-        _("READ_ERROR"); _("UNTRUSTED")
+        _("READ_ERROR"); _("UNTRUSTED"); _("SIG_ERR"); _("INVALID")
 
         yaml_paths = self._get_paths_from_yaml() if self.yaml_path else []
         system_paths = self._get_system_ca_paths() if self.include_system else []
@@ -490,8 +629,8 @@ class TrustStoreAnalyzer:
                             cn = self._get_common_name(cert)
                             self.name_count[cn] += 1
 
-                    except Exception as e:
-                        if self.debug: print(f"Windows Cert Error: {e}")                         
+                    except Exception:
+                        pass
 
         for item in raw_certs_with_meta:
             cert = item["cert"]
@@ -504,8 +643,13 @@ class TrustStoreAnalyzer:
             cn = self._get_common_name(cert)
 
             self.name_count[cn] += 1
-
             cert_id = ski if ski else hashlib.md5(cert.subject.public_bytes()).hexdigest()
+            self.raw_certs[cert_id] = cert
+
+            is_root = (cert.subject == cert.issuer)
+            if aki and ski:
+                if aki == ski:
+                    is_root = True
 
             try:
                 expiry = cert.not_valid_after_utc
@@ -531,7 +675,8 @@ class TrustStoreAnalyzer:
                 "isExpiringSoon": is_soon,
                 "expiryDate": expiry,
                 "isCollision": False,
-                "isSystemCert": is_system
+                "isSystemCert": is_system,
+                "isRoot": is_root
             }
 
             if PYDANTIC_AVAILABLE:
@@ -545,41 +690,71 @@ class TrustStoreAnalyzer:
                     is_expiring_soon=is_soon,
                     expiry_date=expiry,
                     is_collision=False,
-                    is_system = is_system
+                    is_system = is_system,
+                    is_root = is_root
                 )
 
-        target_skis = {ski for ski, cert in self.cert_data.items() if not cert.is_system_cert}
-        relevant_skis = set()
-        for ski in target_skis:
-            curr = ski
-            while curr and curr in self.cert_data:
-                relevant_skis.add(curr)
-                curr = self.parent_map.get(curr)
+        tree_result = self._build_tree()
 
+        for ski, cert_obj in self.cert_data.items():
+            if cert_obj.signature_valid is False:
+                cert_obj.is_valid = False
 
         if self.debug:
-            for ski in sorted(relevant_skis):
-                cert_obj = self.cert_data[ski]
-                is_coll = self.name_count[cert_obj.common_name] > 1
-                cert_obj.is_collision = is_coll
+            target_skis = {ski for ski, cert in self.cert_data.items() if not cert.is_system_cert}
+            relevant_skis = set()
 
-                st = ERROR if not cert_obj.is_valid else (WARNING if cert_obj.is_expiring_soon else OK)
+            for ski in target_skis:
+                curr = ski
+                while curr and curr in self.cert_data:
+                    relevant_skis.add(curr)
+                    curr = self.parent_map.get(curr)
+
+            unique_relevant = list(set(relevant_skis))
+            def sort_key(ski):
+                obj = self.cert_data[ski]
+                sig_order = 0 if obj.signature_valid is True else (1 if obj.signature_valid is None else 2)
+                return (sig_order, obj.common_name.lower())
+
+            unique_relevant.sort(key=sort_key)
+
+            for ski in unique_relevant:
+                cert_obj = self.cert_data[ski]
+                cert_obj.is_collision = self.name_count[cert_obj.common_name] > 1
+
+                current_label = None
+                is_untrusted = self.parent_map.get(ski) == ORPHAN_NODE_ID
+
+                if cert_obj.signature_valid is False and not is_untrusted:
+                    st = ERROR
+                    current_label = "SIG_ERR"
+                elif not cert_obj.is_valid:
+                    st = ERROR
+                elif cert_obj.is_expiring_soon:
+                    st = WARNING
+                elif cert_obj.is_system_cert:
+                    st = SYSTEM
+                else:
+                    st = OK
+
                 if cert_obj.is_system_cert:
                     st = SYSTEM
-                
-                coll_marker = COLLISION.ICON if is_coll else "  "
-                log_msg = f"{cert_obj.common_name} (SKI: {ski[:8]})" if is_coll else cert_obj.common_name
-                st.log(log_msg, cert_obj.expiry_date.strftime("%Y-%m-%d %H:%M"), extra_icon=coll_marker)
+
+                sig_icon = cert_obj.signature_icon
+                coll_icon = COLLISION.ICON if cert_obj.is_collision else ""
+                combined_extra = f"{sig_icon}{coll_icon}"
+
+                log_name = f"{cert_obj.common_name} (SKI: {ski[:8]})" if cert_obj.is_collision else cert_obj.common_name
+
+                st.log(log_name, cert_obj.expiry_date.strftime("%Y-%m-%d %H:%M"), label=current_label, extra_icon=combined_extra)
 
             known_skis = set(self.cert_data.keys())
             for c_id in relevant_skis:
                 aki = self.parent_map.get(c_id)
                 if aki and aki not in known_skis and aki != ORPHAN_NODE_ID:
-                    MISSING.log(f"AKI: {aki[:8]}", 
-                                f"{_('Missing issuer for')}: {self.cert_data[c_id].common_name}", 
-                                label=_("UNTRUSTED"))
+                    MISSING.log(f"AKI: {aki[:8]}", f"{_('Missing issuer for')}: {self.cert_data[c_id].common_name}", label=_("UNTRUSTED"))
 
-        return self._build_tree()
+        return tree_result
 
     def _create_virtual_node(self, name: str) -> Union['Certificate', Any]:
         epoch_date = datetime(1970, 1, 1, tzinfo=timezone.utc)
@@ -626,18 +801,37 @@ class TrustStoreAnalyzer:
             if ski in relevant_skis:
                 children_by_parent[p_ski].append(ski)
 
-        def node_to_obj(ski: str) -> Union[Certificate, Any]:
-            processed_skis.add(ski)
-            cert = self.cert_data[ski]
+        def to_node(ski: str) -> Union[Certificate, Any]:
+            cert_info = self.cert_data[ski]
+            parent_ski = self.parent_map.get(ski)
+
+            raw_cert = self.raw_certs.get(ski)
+
+            if raw_cert:
+                is_actually_root = getattr(cert_info, 'is_root', False) or (parent_ski == ski) or (parent_ski is None)
+
+                if is_actually_root:
+                    cert_info.signature_valid = self._verify_signature(raw_cert, raw_cert)
+                elif parent_ski and parent_ski in self.raw_certs:
+                    raw_parent = self.raw_certs[parent_ski]
+                    cert_info.signature_valid = self._verify_signature(raw_cert, raw_parent)
+                else:
+                    cert_info.signature_valid = None
+
+                if cert_info.signature_valid is False:
+                    cert_info.is_valid = False
+
+            cert_info.is_collision = self.name_count[cert_info.common_name] > 1
+
             child_skis = [c for c in children_by_parent.get(ski, []) if c in relevant_skis]
-            
             if child_skis:
-                cert.children = [node_to_obj(c_ski) for c_ski in sorted(child_skis, key=lambda x: self.cert_data[x].common_name)]
+                sorted_children = sorted(child_skis, key=lambda x: self.cert_data[x].common_name)
+                cert_info.children = [to_node(c_ski) for c_ski in sorted_children]
             else:
-                cert.children = None
-            
-            return cert
-        
+                cert_info.children = None
+
+            return cert_info
+
         trusted_tree = []
         orphan_skis = []
 
@@ -646,13 +840,13 @@ class TrustStoreAnalyzer:
             if parent_ski == ORPHAN_NODE_ID or (parent_ski and parent_ski not in self.cert_data):
                 orphan_skis.append(r_ski)
             else:
-                trusted_tree.append(node_to_obj(r_ski))
+                trusted_tree.append(to_node(r_ski))
 
         trusted_tree.sort(key=lambda x: x.common_name)
 
         if orphan_skis:
             ext_node = self._create_virtual_node(ORPHAN_NODE_ID)
-            ext_node.children = [node_to_obj(o_ski) for o_ski in sorted(orphan_skis, key=lambda x: self.cert_data[x].common_name)]
+            ext_node.children = [to_node(o_ski) for o_ski in sorted(orphan_skis, key=lambda x: self.cert_data[x].common_name)]
             trusted_tree.append(ext_node)
 
         return trusted_tree

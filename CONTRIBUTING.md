@@ -26,13 +26,13 @@ As this project is licensed under **GPL v3.0**, all contributions you make will 
 
 **Clone your fork:**
 ```bash
-git clone [https://gitlab.com/nulleke/truststore-analyzer.git](https://gitlab.com/nulleke/truststore-analyzer.git)
-cd truststore-analyzer
+git clone https://gitlab.com/nulleke/check_truststore.git
+cd check_truststore
 ```
 
 **Install dependencies (for full feature set):**
 ```bash
-pip install PyYAML cryptography pydantic
+pip install -r requirements.txt
 ```
 
 **Verify Fallback Mode:**
@@ -41,6 +41,34 @@ pip install PyYAML cryptography pydantic
 pip uninstall pydantic
 python3 check_truststore path/to/config.yml --format text
 ```
+
+### 🌐 Updating Translations
+If you've added or changed UI strings wrapped in `_()`, you should update the translation files. We use a standard `gettext` workflow:
+
+```bash
+# 1. Extract strings from the script into the template (POT)
+xgettext -L Python -o locale/check_truststore.pot check_truststore
+
+# 2. Merge the new strings into the Dutch translation file (PO)
+msgmerge -U locale/nl/LC_MESSAGES/check_truststore.po locale/check_truststore.pot
+
+# 3. Compile the PO file into a machine-readable MO file
+msgfmt locale/nl/LC_MESSAGES/check_truststore.po -o locale/nl/LC_MESSAGES/check_truststore.mo
+```
+
+## Development Guidelines
+
+### Environment Support
+This project officially supports **Python 3.6+**, primarily to remain compatible with **RHEL 8** default environments. 
+
+### Dependency Management
+- **Local Development (RHEL/Fedora):** It is recommended to use system RPM packages where possible for stability:
+  `sudo dnf install python3-pyyaml python3-cryptography`
+  - **CI/CD & Virtual Environments:** We use `requirements.txt` for consistency across different Python versions. 
+  - **Legacy Compatibility:** We use environment markers in `requirements.txt` to handle version differences (e.g., Pydantic v1 for Python 3.6).
+
+  ### Code Style & Warnings
+  To keep the output clean in legacy environments, certain deprecation warnings (like those from the `cryptography` library on Python 3.6) are suppressed in the main entry point.
 
 ## 📝 Commit Messages
 
