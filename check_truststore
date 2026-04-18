@@ -123,16 +123,16 @@ class Icons:
 class Certificate(BaseModel):
     if PYDANTIC_AVAILABLE:
         common_name: str = Field(..., alias="commonName")
-        file_name: str = Field("", alias="fileName")
-        sha256_hash: str = Field("", alias="sha256Hash")
+        file_name: str = Field("", alias="fileName", exclude=True)
+        sha256_hash: str = Field("", alias="sha256Hash", exclude=True)
         is_valid: bool = Field(False, alias="isValid")
         is_expiring_soon: bool = Field(False, alias="isExpiringSoon")
         expiry_date: Union[datetime, str] = Field("1970-01-01", alias="expiryDate")
-        is_collision: bool = Field(False, alias="isCollision")
-        is_system_cert: bool = Field(False, alias="isSystemCert")
-        is_root: bool = Field(False, alias="isRoot")
-        san_names: List[str] = Field(default_factory=list, alias="sanNames")
-        signature_valid: Optional[bool] = None
+        is_collision: bool = Field(False, alias="isCollision", exclude=True)
+        is_system_cert: bool = Field(False, alias="isSystemCert", exclude=True)
+        is_root: bool = Field(False, alias="isRoot", exclude=True)
+        san_names: List[str] = Field(default_factory=list, alias="sanNames", exclude=True)
+        signature_valid: Optional[bool] = Field(None, exclude=True)
         children: Optional[List[Any]] = None
 
         @property
@@ -171,41 +171,61 @@ class Certificate(BaseModel):
                 }
                 if isinstance(data, dict): data.update(special)
             return data
+        
+        if not PYDANTIC_V2:
+            def model_dump(self, **kwargs):
+                return self.dict(
+                    by_alias=kwargs.get('by_alias', True),
+                    exclude_none=kwargs.get('exclude_none', True),
+                    exclude=kwargs.get('exclude')
+                )
+
     else:
-        def __init__(self, common_name=None, is_valid=False, is_expiring_soon=False, expiry_date="1970-01-01", is_collision=False, is_system=False, file_name="", sha256_hash="", is_root=False, signature_valid=None, children=None, san_names=None, **kwargs):
-            self.common_name = common_name
-            self.file_name = file_name
-            self.sha256_hash = sha256_hash
-            self.is_valid = is_valid
-            self.is_expiring_soon = is_expiring_soon
-            self.expiry_date = expiry_date
-            self.is_collision = is_collision
-            self.is_system_cert = is_system
-            self.signature_valid = signature_valid
-            self.is_root = is_root
-            self.san_names = san_names or []
-            self.children = children or []
+        def __init__(self, **kwargs):
+            fields = {
+                "common_name": None,
+                "file_name": "",
+                "sha256_hash": "",
+                "is_valid": False,
+                "is_expiring_soon": False,
+                "expiry_date": "1970-01-01",
+                "is_collision": False,
+                "is_system_cert": False,
+                "is_root": False,
+                "san_names": [],
+                "signature_valid": None,
+                "children": []
+            }
 
             mapping = {
                 "commonName": "common_name",
+                "fileName": "file_name",
+                "sha256Hash": "sha256_hash",
                 "isValid": "is_valid",
                 "isExpiringSoon": "is_expiring_soon",
                 "expiryDate": "expiry_date",
                 "isCollision": "is_collision",
-                "fileName": "file_name",
-                "sha256Hash": "sha256_hash",
-                "signatureValid": "signature_valid",
+                "isSystemCert": "is_system_cert",
                 "isRoot": "is_root",
-                "sanNames": "san_names"
+                "sanNames": "san_names",
+                "signatureValid": "signature_valid"
             }
 
-            for k, v in kwargs.items():
-                setattr(self, mapping.get(k, k), v)
+            normalized_kwargs = {mapping.get(k, k): v for k, v in kwargs.items()}
+
+            for field, default in fields.items():
+                setattr(self, field, normalized_kwargs.get(field, default))
 
             if self.common_name == ORPHAN_NODE_ID:
                 self.is_valid = False
                 self.is_expiring_soon = False
                 self.expiry_date = datetime(1970, 1, 1, tzinfo=timezone.utc)
+
+            if isinstance(self.expiry_date, str) and self.expiry_date != "1970-01-01":
+                try:
+                    self.expiry_date = datetime.fromisoformat(self.expiry_date.replace('Z', '+00:00'))
+                except (ValueError, AttributeError):
+                    pass
 
         @property
         def signature_icon(self) -> str:
@@ -218,18 +238,20 @@ class Certificate(BaseModel):
         def model_dump(self):
             obj = {
                 "commonName": self.common_name,
-                "fileName": self.file_name,
-                "sha256Hash": self.sha256_hash,
                 "isValid": self.is_valid,
                 "isExpiringSoon": self.is_expiring_soon,
                 "expiryDate": self.expiry_date.isoformat() if isinstance(self.expiry_date, datetime) else self.expiry_date,
-                "isCollision": self.is_collision,
-                "isSystemCert": self.is_system_cert,
-                "signatureValid": self.signature_valid,
-                "isRoot": self.is_root,
-                "sanNames": self.san_names
             }
-            if getattr(self, "children", None): obj["children"] = [c.model_dump() for c in self.children]
+
+            if self.file_name:
+                obj["fileName"] = self.file_name
+
+            if self.san_names:
+                obj["sanNames"] = self.san_names
+
+            if getattr(self, "children", None):
+                obj["children"] = [c.model_dump() for c in self.children]
+            
             return obj
 
 class BaseRenderer(ABC):
@@ -312,64 +334,15 @@ class JsonRenderer(BaseRenderer):
         else:
             raw_data = self._manual_dict_gen(tree_data)
 
-        clean_data = self._filter_fields(raw_data)
-
         return json.dumps(
-            clean_data,
+            raw_data,
             indent=2,
             default=lambda o: o.isoformat() if isinstance(o, datetime) else str(o)
         )
 
-    def _manual_dict_gen(self, tree_data: list) -> list:
-        res = []
-        for c in tree_data:
-            try:
-                if hasattr(c, 'model_dump'):
-                    res.append(c.model_dump(exclude_none=True, by_alias=True))
-                    continue
-                elif hasattr(c, 'dict'):
-                    res.append(c.dict(exclude_none=True, by_alias=True))
-                    continue
-            except TypeError:
-                pass
+    def _manual_dict_gen(self, tree_data: List[Any]) -> List[Dict[str, Any]]:
+        return [item.model_dump() for item in tree_data]
 
-            if hasattr(c, 'model_dump'):
-                res.append(c.model_dump())
-            elif hasattr(c, 'dict'):
-                res.append(c.dict())
-            elif hasattr(c, '__dict__'):
-                res.append(c.__dict__)
-            else:
-                res.append(c)
-        return res
-
-    def _filter_fields(self, data: Any) -> Any:
-        if isinstance(data, list):
-            return [self._filter_fields(item) for item in data]
-
-        if isinstance(data, dict):
-            mapping = {
-                "common_name": "commonName",
-                "is_valid": "isValid",
-                "is_expiring_soon": "isExpiringSoon",
-                "expiry_date": "expiryDate"
-            }
-
-            allowed_fields = {"commonName", "isValid", "isExpiringSoon", "expiryDate", "children"}
-            new_dict = {}
-
-            for key, value in data.items():
-                json_key = mapping.get(key, key)
-
-                if json_key in allowed_fields:
-                    if json_key == "children":
-                        if value:
-                            new_dict[json_key] = self._filter_fields(value)
-                    else:
-                        new_dict[json_key] = value
-            return new_dict
-
-        return data
 class StatusRenderer(BaseRenderer):
     STATUS_MAP = {
         "VALID": {"code": 0, "label": "VALID"},
@@ -713,21 +686,7 @@ class TrustStoreAnalyzer:
                 "sanNames": san_names
             }
 
-            if PYDANTIC_AVAILABLE:
-                self.cert_data[cert_id] = Certificate(**cert_fields)
-            else:
-                self.cert_data[cert_id] = Certificate(
-                    common_name = cn,
-                    file_name = path.name,
-                    sha256_hash = c_hash,
-                    is_valid=is_valid,
-                    is_expiring_soon=is_soon,
-                    expiry_date=expiry,
-                    is_collision=False,
-                    is_system = is_system,
-                    is_root = is_root,
-                    san_names = san_names
-                )
+            self.cert_data[cert_id] = Certificate(**cert_fields)
 
         tree_result = self._build_tree()
 
@@ -793,25 +752,14 @@ class TrustStoreAnalyzer:
 
     def _create_virtual_node(self, name: str) -> Union['Certificate', Any]:
         epoch_date = datetime(1970, 1, 1, tzinfo=timezone.utc)
-
-        if PYDANTIC_AVAILABLE:
-            return Certificate(
-                commonName=name,
-                isValid=False,
-                isExpiringSoon=False,
-                expiryDate=epoch_date,
-                isCollision=False,
-                isSystemCert=False
-            )
-        else:
-            return Certificate(
-                name,       # commonName
-                False,      # isValid
-                False,      # isExpiringSoon
-                epoch_date, # expiryDate
-                False,      # isCollision
-                False       # isSystemCert
-            )
+        return Certificate(
+            commonName=name,
+            isValid=False,
+            isExpiringSoon=False,
+            expiryDate=epoch_date,
+            isCollision=False,
+            isSystemCert=False
+        )
 
     def _build_tree(self) -> List[Union[Certificate, Any]]:
         target_skis = {
