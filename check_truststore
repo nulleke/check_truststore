@@ -38,6 +38,7 @@ import sys, yaml, json, argparse, gettext, hashlib, platform
 from abc import ABC, abstractmethod
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
+from cryptography.x509.oid import ExtensionOID, NameOID
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from collections import defaultdict
@@ -130,6 +131,7 @@ class Certificate(BaseModel):
         is_collision: bool = Field(False, alias="isCollision")
         is_system_cert: bool = Field(False, alias="isSystemCert")
         is_root: bool = Field(False, alias="isRoot")
+        san_names: List[str] = Field(default_factory=list, alias="sanNames")
         signature_valid: Optional[bool] = None
         children: Optional[List[Any]] = None
 
@@ -170,7 +172,7 @@ class Certificate(BaseModel):
                 if isinstance(data, dict): data.update(special)
             return data
     else:
-        def __init__(self, common_name=None, is_valid=False, is_expiring_soon=False, expiry_date="1970-01-01", is_collision=False, is_system=False, file_name="", sha256_hash="", is_root=False, signature_valid=None, children=None, **kwargs):
+        def __init__(self, common_name=None, is_valid=False, is_expiring_soon=False, expiry_date="1970-01-01", is_collision=False, is_system=False, file_name="", sha256_hash="", is_root=False, signature_valid=None, children=None, san_names=None, **kwargs):
             self.common_name = common_name
             self.file_name = file_name
             self.sha256_hash = sha256_hash
@@ -181,6 +183,7 @@ class Certificate(BaseModel):
             self.is_system_cert = is_system
             self.signature_valid = signature_valid
             self.is_root = is_root
+            self.san_names = san_names or []
             self.children = children or []
 
             mapping = {
@@ -192,7 +195,8 @@ class Certificate(BaseModel):
                 "fileName": "file_name",
                 "sha256Hash": "sha256_hash",
                 "signatureValid": "signature_valid",
-                "isRoot": "is_root"
+                "isRoot": "is_root",
+                "sanNames": "san_names"
             }
 
             for k, v in kwargs.items():
@@ -222,20 +226,22 @@ class Certificate(BaseModel):
                 "isCollision": self.is_collision,
                 "isSystemCert": self.is_system_cert,
                 "signatureValid": self.signature_valid,
-                "isRoot": self.is_root
+                "isRoot": self.is_root,
+                "sanNames": self.san_names
             }
             if getattr(self, "children", None): obj["children"] = [c.model_dump() for c in self.children]
             return obj
 
 class BaseRenderer(ABC):
     @abstractmethod
-    def render(self, tree_data: List[Union[Certificate, Any]]) -> str:
+    def render(self, tree_data: List[Union[Certificate, Any]], **kwargs) -> str:
         pass
 
 class TextRenderer(BaseRenderer):
-    def render(self, tree_data: List[Union[Certificate, Any]], include_system: bool = False) -> str:
+    def render(self, tree_data: List[Union[Certificate, Any]], **kwargs) -> str:
         output = ["", _("Certificate Hierarchy:")]
-        self.include_system = include_system
+        self.include_system = kwargs.get('system', False)
+        self.show_san = kwargs.get('show_san', False)
         output.append(self._recursive_render(tree_data))
         return "\n".join(output)
 
@@ -250,6 +256,15 @@ class TextRenderer(BaseRenderer):
                     name = _("EXTERNAL ISSUER / MISSING ROOT")
             else:
                 name = raw_name
+
+            san_display = ""
+            if getattr(self, "show_san", False):
+                san_names = getattr(n, "san_names", [])
+                extra_sans = [s for s in san_names if s != name]
+                if extra_sans:
+                    label = _("ALT")
+                    san_display = "({}: {})".format(label, ", ".join(extra_sans))
+
             is_valid = getattr(n, "is_valid", None)
             is_soon = getattr(n, "is_expiring_soon", None)
             expiry = getattr(n, "expiry_date", None)
@@ -279,7 +294,7 @@ class TextRenderer(BaseRenderer):
                 date_str = " ({})".format(ds)
 
             connector = "└── " if i == len(nodes) - 1 else "├── "
-            lines.append("{}{}{} {} {}".format(indent, connector, name, icon_str, date_str))
+            lines.append("{}{}{} {} {} {}".format(indent, connector, name, icon_str, san_display, date_str).replace("  ", " "))
 
             if children:
                 new_indent = indent + ("    " if i == len(nodes) - 1 else "│   ")
@@ -287,7 +302,7 @@ class TextRenderer(BaseRenderer):
         return "\n".join(lines)
 
 class JsonRenderer(BaseRenderer):
-    def render(self, tree_data: List[Union[Certificate, Any]]) -> str:
+    def render(self, tree_data: List[Union[Certificate, Any]], **kwargs) -> str:
         if PYDANTIC_AVAILABLE and PYDANTIC_V2 and 'TypeAdapter' in globals():
             try:
                 ta = TypeAdapter(List[Certificate])
@@ -298,7 +313,7 @@ class JsonRenderer(BaseRenderer):
             raw_data = self._manual_dict_gen(tree_data)
 
         clean_data = self._filter_fields(raw_data)
-        
+
         return json.dumps(
             clean_data,
             indent=2,
@@ -366,7 +381,7 @@ class StatusRenderer(BaseRenderer):
         "SIGNATURE": {"code": 6, "label": "INVALID_SIGNATURE"}
     }
 
-    def render(self, tree_data: List[Certificate]) -> str:
+    def render(self, tree_data: List[Certificate], **kwargs) -> str:
         flat_list = self._flatten_tree(tree_data)
         status_output = []
 
@@ -446,22 +461,21 @@ class TrustStoreRenderer:
             "status": StatusRenderer()
         }
 
-    def render(self, tree_data: List[Union[Certificate, Any]], format_type: str, include_system: bool = False) -> str:
+    def render(self, tree_data: List[Union[Certificate, Any]], format_type: str, **kwargs) -> str:
         renderer = self._renderers.get(format_type)
         if not renderer:
             raise ValueError(_("Unknown format: {}").format(format_type))
 
-        if isinstance(renderer, TextRenderer):
-            return renderer.render(tree_data, include_system)
-
-        return renderer.render(tree_data)
+        return renderer.render(tree_data, **kwargs)
 
 class TrustStoreAnalyzer:
-    def __init__(self, yaml_path: Optional[str] = None, debug: bool = False, include_system: bool = False, threshold_days: int = 30):
+    def __init__(self, yaml_path: Optional[str] = None, **kwargs):
         self.yaml_path: Path = Path(yaml_path) if yaml_path else None
-        self.debug: bool = debug
-        self.include_system: bool = include_system
-        self.threshold_days: int = threshold_days
+
+        self.debug: bool = kwargs.get('debug', False)
+        self.include_system: bool = kwargs.get('system', False)
+        self.threshold_days: int = kwargs.get('threshold', 30)
+
         self.cert_data: Dict[str, Certificate] = {}
         self.raw_certs: Dict[str, x509.Certificate] = {}
         self.parent_map: Dict[str, str] = {}
@@ -576,8 +590,16 @@ class TrustStoreAnalyzer:
                 return ext.value.digest.hex()
             elif oid == x509.ExtensionOID.AUTHORITY_KEY_IDENTIFIER:
                 return ext.value.key_identifier.hex() if ext.value.key_identifier else None
+            elif oid == x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME:
+                return [str(name.value) for name in ext.value if isinstance(name, x509.DNSName)]
         except x509.ExtensionNotFound:
+            if oid == x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME:
+                return []
             return None
+
+        if oid == x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME:
+            return []
+
         return None
 
     def _get_common_name(self, cert) -> str:
@@ -641,6 +663,7 @@ class TrustStoreAnalyzer:
             ski = self._get_extension_value(cert, x509.ExtensionOID.SUBJECT_KEY_IDENTIFIER)
             aki = self._get_extension_value(cert, x509.ExtensionOID.AUTHORITY_KEY_IDENTIFIER)
             cn = self._get_common_name(cert)
+            san_names = self._get_extension_value(cert, x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
 
             self.name_count[cn] += 1
             cert_id = ski if ski else hashlib.md5(cert.subject.public_bytes()).hexdigest()
@@ -676,7 +699,8 @@ class TrustStoreAnalyzer:
                 "expiryDate": expiry,
                 "isCollision": False,
                 "isSystemCert": is_system,
-                "isRoot": is_root
+                "isRoot": is_root,
+                "sanNames": san_names
             }
 
             if PYDANTIC_AVAILABLE:
@@ -691,7 +715,8 @@ class TrustStoreAnalyzer:
                     expiry_date=expiry,
                     is_collision=False,
                     is_system = is_system,
-                    is_root = is_root
+                    is_root = is_root,
+                    san_names = san_names
                 )
 
         tree_result = self._build_tree()
@@ -795,7 +820,6 @@ class TrustStoreAnalyzer:
 
         roots = [ski for ski in relevant_skis if self.parent_map.get(ski) not in relevant_skis]
 
-        processed_skis = set()
         children_by_parent = defaultdict(list)
         for ski, p_ski in self.parent_map.items():
             if ski in relevant_skis:
@@ -886,15 +910,16 @@ def main() -> None:
     parser.add_argument("-d", "--debug", action="store_true", default=False, help=_("Show debug info"))
     parser.add_argument("-s", "--system", action="store_true", default=False, help=_("Incorporate system truststore"))
     parser.add_argument("-t", "--threshold", type=int, default=30, help=_("Expiration threshold in days (default: 30)"))
+    parser.add_argument("-a", "--show-san", action="store_true", help=_("Display Subject Alternative Names (SAN) in the tree view"))
 
     args = parser.parse_args()
 
-    analyzer = TrustStoreAnalyzer(args.input, args.debug, args.system, args.threshold)
+    analyzer = TrustStoreAnalyzer(args.input, **vars(args))
     tree_data = analyzer.analyze()
 
     try:
         renderer = TrustStoreRenderer()
-        output = renderer.render(tree_data, args.format, include_system=args.system)
+        output = renderer.render(tree_data, args.format, include_system=args.system, show_san=args.show_san)
         print(output)
     except Exception as e:
         ERROR.log(_("Rendering failed"), str(e))

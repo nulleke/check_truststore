@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-18 13:47+0200\n"
+"POT-Creation-Date: 2026-04-18 16:01+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,174 +17,140 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: check_truststore:237
+#: check_truststore:242
 msgid "Certificate Hierarchy:"
 msgstr ""
 
-#: check_truststore:245 check_truststore:586 check_truststore:588
+#: check_truststore:251 check_truststore:609 check_truststore:611
 msgid "Unknown"
 msgstr ""
 
-#: check_truststore:248
+#: check_truststore:254
 msgid "UNTRUSTED (NOT IN YAML OR SYSTEM)"
 msgstr ""
 
-#: check_truststore:250
+#: check_truststore:256
 msgid "EXTERNAL ISSUER / MISSING ROOT"
 msgstr ""
 
-#: check_truststore:452
+#: check_truststore:265
+msgid "ALT"
+msgstr ""
+
+#: check_truststore:467
 msgid "Unknown format: {}"
 msgstr ""
 
-#: check_truststore:549
+#: check_truststore:564
 msgid "Invalid certificate structure or corrupt Base64"
 msgstr ""
 
-#: check_truststore:553
+#: check_truststore:568
 msgid "Unexpected error"
 msgstr ""
 
-#: check_truststore:557
+#: check_truststore:572
 #, python-brace-format
 msgid "File not found: {path}"
 msgstr ""
 
-#: check_truststore:558 check_truststore:563 check_truststore:568
-#: check_truststore:591
+#: check_truststore:573 check_truststore:578 check_truststore:583
+#: check_truststore:614
 msgid "READ_ERROR"
 msgstr ""
 
-#: check_truststore:562
+#: check_truststore:577
 #, python-brace-format
 msgid "Permission denied: {path}"
 msgstr ""
 
-#: check_truststore:567
+#: check_truststore:582
 #, python-brace-format
 msgid "Read error: {error}"
 msgstr ""
 
-#: check_truststore:591 check_truststore:755
+#: check_truststore:614 check_truststore:781
 msgid "UNTRUSTED"
 msgstr ""
 
-#: check_truststore:591
+#: check_truststore:614
 msgid "SIG_ERR"
 msgstr ""
 
-#: check_truststore:591
+#: check_truststore:614
 msgid "INVALID"
 msgstr ""
 
-#: check_truststore:606
+#: check_truststore:629
 msgid "Configuration loaded"
 msgstr ""
 
-#: check_truststore:606
+#: check_truststore:629
 #, python-brace-format
 msgid "Processing {count} certificate paths"
 msgstr ""
 
-#: check_truststore:755
+#: check_truststore:781
 msgid "Missing issuer for"
 msgstr ""
 
-#: check_truststore:870
+#: check_truststore:896
 msgid "ERROR"
 msgstr ""
 
-#: check_truststore:870
+#: check_truststore:896
 msgid "WARNING"
 msgstr ""
 
-#: check_truststore:870
+#: check_truststore:896
 msgid "OK"
 msgstr ""
 
-#: check_truststore:870
+#: check_truststore:896
 msgid "INFO"
 msgstr ""
 
-#: check_truststore:875
-#, python-brace-format
-msgid "Inner parse error: {e}"
-msgstr ""
-
-#: check_truststore:428 check_truststore:451
-msgid "READ_ERROR"
-msgstr ""
-
-#: check_truststore:451 check_truststore:579
-msgid "UNTRUSTED"
-msgstr ""
-
-#: check_truststore:466
-msgid "Configuration loaded"
-msgstr ""
-
-#: check_truststore:466
-#, python-brace-format
-msgid "Processing {count} certificate paths"
-msgstr ""
-
-#: check_truststore:578
-msgid "Missing issuer for"
-msgstr ""
-
-#: check_truststore:675
-msgid "ERROR"
-msgstr ""
-
-#: check_truststore:675
-msgid "WARNING"
-msgstr ""
-
-#: check_truststore:675
-msgid "OK"
-msgstr ""
-
-#: check_truststore:675
-msgid "INFO"
-msgstr ""
-
-#: check_truststore:680
+#: check_truststore:901
 #, python-brace-format
 msgid "File '{path}' does not exist."
 msgstr ""
 
-#: check_truststore:879
+#: check_truststore:905
 msgid "Analyze certificate truststores and visualize the chain hierarchy."
 msgstr ""
 
-#: check_truststore:880
+#: check_truststore:906
 msgid "Compatible with Python 3.6+"
 msgstr ""
 
-#: check_truststore:883
+#: check_truststore:909
 msgid "Path to the YAML file"
 msgstr ""
 
-#: check_truststore:884
+#: check_truststore:910
 msgid "Show this help message and exit"
 msgstr ""
 
-#: check_truststore:885
+#: check_truststore:911
 msgid "Output format"
 msgstr ""
 
-#: check_truststore:886
+#: check_truststore:912
 msgid "Show debug info"
 msgstr ""
 
-#: check_truststore:887
+#: check_truststore:913
 msgid "Incorporate system truststore"
 msgstr ""
 
-#: check_truststore:888
+#: check_truststore:914
 msgid "Expiration threshold in days (default: 30)"
 msgstr ""
 
-#: check_truststore:900
+#: check_truststore:915
+msgid "Display Subject Alternative Names (SAN) in the tree view"
+msgstr ""
+
+#: check_truststore:927
 msgid "Rendering failed"
 msgstr ""

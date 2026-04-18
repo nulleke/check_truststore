@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-18 13:43+0200\n"
+"POT-Creation-Date: 2026-04-18 16:01+0200\n"
 "PO-Revision-Date: 2026-04-13 11:08+0200\n"
 "Last-Translator: Serge van Thillo <nulleke76@gmail.com>\n"
 "Language-Team: Dutch <vertaling@vrijschrift.org>\n"
@@ -17,132 +17,140 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: check_truststore:237
+#: check_truststore:242
 msgid "Certificate Hierarchy:"
 msgstr "Certificaat Hiërarchie:"
 
-#: check_truststore:245 check_truststore:586 check_truststore:588
+#: check_truststore:251 check_truststore:609 check_truststore:611
 msgid "Unknown"
 msgstr "Onbekend"
 
-#: check_truststore:248
+#: check_truststore:254
 msgid "UNTRUSTED (NOT IN YAML OR SYSTEM)"
 msgstr "NIET VERTROUWD (NIET IN YAML OF SYSTEEM)"
 
-#: check_truststore:250
+#: check_truststore:256
 msgid "EXTERNAL ISSUER / MISSING ROOT"
 msgstr "EXTERNE UITGEVER / ONBEKENDE ROOT"
 
-#: check_truststore:452
+#: check_truststore:265
+msgid "ALT"
+msgstr "ALT"
+
+#: check_truststore:467
 msgid "Unknown format: {}"
 msgstr "Onbekend formaat: {}"
 
-#: check_truststore:549
+#: check_truststore:564
 msgid "Invalid certificate structure or corrupt Base64"
 msgstr "Ongeldige certificaat structuur of foute Base64"
 
-#: check_truststore:553
+#: check_truststore:568
 msgid "Unexpected error"
 msgstr "Onverwachte fout"
 
-#: check_truststore:557
+#: check_truststore:572
 #, python-brace-format
 msgid "File not found: {path}"
 msgstr "Bestand niet gevonden: {path}"
 
-#: check_truststore:558 check_truststore:563 check_truststore:568
-#: check_truststore:591
+#: check_truststore:573 check_truststore:578 check_truststore:583
+#: check_truststore:614
 msgid "READ_ERROR"
 msgstr "LEES_FOUT"
 
-#: check_truststore:562
+#: check_truststore:577
 #, python-brace-format
 msgid "Permission denied: {path}"
 msgstr "Toegang geweigerd: {path}"
 
-#: check_truststore:567
+#: check_truststore:582
 #, fuzzy, python-brace-format
 msgid "Read error: {error}"
 msgstr "Leesfout: {e}"
 
-#: check_truststore:591 check_truststore:755
+#: check_truststore:614 check_truststore:781
 msgid "UNTRUSTED"
 msgstr "GEEN_TRUST"
 
-#: check_truststore:591
+#: check_truststore:614
 msgid "SIG_ERR"
 msgstr "SIG_FOUT"
 
-#: check_truststore:591
+#: check_truststore:614
 msgid "INVALID"
 msgstr "ONGELDIG"
 
-#: check_truststore:606
+#: check_truststore:629
 msgid "Configuration loaded"
 msgstr "Configuratie geladen"
 
-#: check_truststore:606
+#: check_truststore:629
 #, python-brace-format
 msgid "Processing {count} certificate paths"
 msgstr "Analyse van {count} certificaatlocaties"
 
-#: check_truststore:755
+#: check_truststore:781
 msgid "Missing issuer for"
 msgstr "Ontbrekende issuer voor"
 
-#: check_truststore:870
+#: check_truststore:896
 msgid "ERROR"
 msgstr "FOUT"
 
-#: check_truststore:870
+#: check_truststore:896
 msgid "WARNING"
 msgstr "WAARSCHUWING"
 
-#: check_truststore:870
+#: check_truststore:896
 msgid "OK"
 msgstr "OK"
 
-#: check_truststore:870
+#: check_truststore:896
 msgid "INFO"
 msgstr "INFO"
 
-#: check_truststore:875
+#: check_truststore:901
 #, python-brace-format
 msgid "File '{path}' does not exist."
 msgstr "Bestand '{path}' bestaat niet."
 
-#: check_truststore:879
+#: check_truststore:905
 msgid "Analyze certificate truststores and visualize the chain hierarchy."
 msgstr "Analyseer certificaat truststores en visualiseer de hiërarchie."
 
-#: check_truststore:880
+#: check_truststore:906
 msgid "Compatible with Python 3.6+"
 msgstr "Compatibel met Python 3.6+"
 
-#: check_truststore:883
+#: check_truststore:909
 msgid "Path to the YAML file"
 msgstr "Pad naar het YAML-bestand"
 
-#: check_truststore:884
+#: check_truststore:910
 msgid "Show this help message and exit"
 msgstr "Toon dit helpbericht en sluit af"
 
-#: check_truststore:885
+#: check_truststore:911
 msgid "Output format"
 msgstr "Output formaat"
 
-#: check_truststore:886
+#: check_truststore:912
 msgid "Show debug info"
 msgstr "Toon debug informatie"
 
-#: check_truststore:887
+#: check_truststore:913
 msgid "Incorporate system truststore"
 msgstr "Systeem-truststore betrekken bij analyse"
 
-#: check_truststore:888
+#: check_truststore:914
 msgid "Expiration threshold in days (default: 30)"
 msgstr "Vervaldrempel in dagen (standaard: 30)"
 
-#: check_truststore:900
+#: check_truststore:915
+msgid "Display Subject Alternative Names (SAN) in the tree view"
+msgstr "Toon alternatieve namen (SAN) in de hiërarchie"
+
+#: check_truststore:927
 msgid "Rendering failed"
 msgstr "Renderen mislukt"
