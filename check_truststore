@@ -153,6 +153,8 @@ class Certificate(_CertificateStatusMixin, BaseModel):
         is_collision: bool = Field(False, alias="isCollision", exclude=True)
         is_system_cert: bool = Field(False, alias="isSystemCert", exclude=True)
         is_root: bool = Field(False, alias="isRoot", exclude=True)
+        cert_id: str = Field("", alias="certId", exclude=True)
+        ski: Optional[str] = Field(None, exclude=True)
         san_names: List[str] = Field(default_factory=list, alias="sanNames", exclude=True)
         signature_valid: Optional[bool] = Field(None, exclude=True)
         children: Optional[List[Any]] = None
@@ -206,6 +208,8 @@ class Certificate(_CertificateStatusMixin, BaseModel):
                 "is_collision": False,
                 "is_system_cert": False,
                 "is_root": False,
+                "cert_id": "",
+                "ski": None,
                 "san_names": [],
                 "signature_valid": None,
                 "children": []
@@ -221,6 +225,7 @@ class Certificate(_CertificateStatusMixin, BaseModel):
                 "isCollision": "is_collision",
                 "isSystemCert": "is_system_cert",
                 "isRoot": "is_root",
+                "certId": "cert_id",
                 "sanNames": "san_names",
                 "signatureValid": "signature_valid"
             }
@@ -435,7 +440,8 @@ class TrustChainBuilder:
             coll_icon = COLLISION.ICON if cert_obj.is_collision else ""
             combined_extra = f"{sig_icon}{coll_icon}"
 
-            log_name = f"{cert_obj.common_name} (SKI: {ski[:8]})" if cert_obj.is_collision else cert_obj.common_name
+            #log_name = f"{cert_obj.common_name} (SKI: {ski[:8]})" if cert_obj.is_collision else cert_obj.common_name
+            log_name = f"{cert_obj.common_name} (ID: {cert_obj.cert_id[:8]})" if cert_obj.is_collision else cert_obj.common_name
 
             st.log(
                 log_name,
@@ -475,16 +481,20 @@ class TrustChainBuilder:
         expiry = cert.not_valid_after_utc if hasattr(cert, 'not_valid_after_utc') else cert.not_valid_after.replace(tzinfo=timezone.utc)
         start_date = cert.not_valid_before_utc if hasattr(cert, 'not_valid_before_utc') else cert.not_valid_before.replace(tzinfo=timezone.utc)
         now = datetime.now(timezone.utc)
+        sans = self._get_extension(cert, x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME) or []
 
         self.cert_data[cert_id] = Certificate(
             commonName=cn,
+            certId=cert_id,
+            ski=ski,
             fileName=path.name,
             sha256Hash=c_hash,
             isValid=(start_date <= now <= expiry),
             isExpiringSoon=(now <= expiry <= (now + timedelta(days=self.threshold_days))),
             expiryDate=expiry,
             isSystemCert=is_system_cert,
-            isRoot=(cert.subject == cert.issuer)
+            isRoot=(cert.subject == cert.issuer),
+            sanNames=sans
         )
 
         if aki and aki != cert_id:
@@ -669,10 +679,15 @@ class TextRenderer(BaseRenderer):
             else:
                 name = raw_name
 
+            is_collision = getattr(n, "is_collision", False)
+            if is_collision and name != ORPHAN_NODE_ID:
+                cid = getattr(n, "cert_id", "???")
+                name = f"{name} (ID: {cid[:8]})"
+
             san_display = ""
             if getattr(self, "show_san", False):
                 san_names = getattr(n, "san_names", [])
-                extra_sans = [s for s in san_names if s != name]
+                extra_sans = [s for s in san_names if s != raw_name]
                 if extra_sans:
                     label = _("ALT")
                     san_display = "({}: {})".format(label, ", ".join(extra_sans))
@@ -923,19 +938,42 @@ class TrustStoreAnalyzer:
             )
 
         raw_certs = self.repo.load_from_files(input_paths)
-        if self.debug and raw_certs:
+        if self.debug:
             INFO.log(
                 _("Certificates loaded"),
                 _("Processing {count} certificate(s) from provider").format(count=len(raw_certs))
             )
 
+        system_certs_count = 0
         if self.include_system:
             system_certs = self.repo.load_from_system()
-            if self.debug:
-                INFO.log(_("System store"), _("Loaded {count} system certificates").format(count=len(system_certs)))
+            system_certs_count = len(system_certs)
             raw_certs.extend(system_certs)
 
-        return self.builder.build(raw_certs)
+        tree = self.builder.build(raw_certs)
+
+        if self.include_system and self.debug:
+            used_system_certs = [
+                cert for ski, cert in self.builder.cert_data.items() 
+                if cert.is_system_cert and any(self._is_in_tree(cert.sha256_hash, node) for node in tree)
+            ]
+            
+            INFO.log(
+                _("System usage"), 
+                _("Used {used} out of {total} system certificates in current chains").format(
+                    used=len(used_system_certs), 
+                    total=system_certs_count
+                )
+            )
+
+        return tree
+
+    def _is_in_tree(self, target_hash: str, node: Certificate) -> bool:
+        if getattr(node, 'sha256_hash', None) == target_hash:
+            return True
+        if node.children:
+            return any(self._is_in_tree(target_hash, child) for child in node.children)
+        return False
 
 def main() -> None:
     _("ERROR"); _("WARNING"); _("OK"); _("INFO")

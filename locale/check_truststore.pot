@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-19 12:48+0200\n"
+"POT-Creation-Date: 2026-04-19 14:41+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -48,153 +48,153 @@ msgstr ""
 msgid "INVALID"
 msgstr ""
 
-#: check_truststore:453
+#: check_truststore:457
 #, python-brace-format
 msgid "Missing issuer for: {name}"
 msgstr ""
 
-#: check_truststore:454
+#: check_truststore:458
 msgid "UNTRUSTED"
 msgstr ""
 
-#: check_truststore:601 check_truststore:603 check_truststore:659
+#: check_truststore:607 check_truststore:609 check_truststore:665
 msgid "Unknown"
 msgstr ""
 
-#: check_truststore:650
+#: check_truststore:656
 msgid "Certificate Hierarchy:"
 msgstr ""
 
-#: check_truststore:662
+#: check_truststore:668
 msgid "UNTRUSTED (NOT IN YAML OR SYSTEM)"
 msgstr ""
 
-#: check_truststore:664
+#: check_truststore:670
 msgid "EXTERNAL ISSUER / MISSING ROOT"
 msgstr ""
 
-#: check_truststore:673
+#: check_truststore:684
 msgid "ALT"
 msgstr ""
 
-#: check_truststore:834
+#: check_truststore:845
 msgid "Unknown format: {}"
 msgstr ""
 
-#: check_truststore:852
+#: check_truststore:863
 msgid "Package 'pyyaml' is required for YAML support."
 msgstr ""
 
-#: check_truststore:917
+#: check_truststore:928
 msgid "Provider active"
 msgstr ""
 
-#: check_truststore:918
+#: check_truststore:929
 #, python-brace-format
 msgid "Fetching paths from {provider_type}"
 msgstr ""
 
-#: check_truststore:924
+#: check_truststore:935
 msgid "Certificates loaded"
 msgstr ""
 
-#: check_truststore:925
+#: check_truststore:936
 #, python-brace-format
 msgid "Processing {count} certificate(s) from provider"
 msgstr ""
 
-#: check_truststore:931
-msgid "System store"
+#: check_truststore:954
+msgid "System usage"
 msgstr ""
 
-#: check_truststore:931
+#: check_truststore:955
 #, python-brace-format
-msgid "Loaded {count} system certificates"
+msgid "Used {used} out of {total} system certificates in current chains"
 msgstr ""
 
-#: check_truststore:937
+#: check_truststore:971
 msgid "ERROR"
 msgstr ""
 
-#: check_truststore:937
+#: check_truststore:971
 msgid "WARNING"
 msgstr ""
 
-#: check_truststore:937
+#: check_truststore:971
 msgid "OK"
 msgstr ""
 
-#: check_truststore:937
+#: check_truststore:971
 msgid "INFO"
 msgstr ""
 
-#: check_truststore:942
+#: check_truststore:976
 #, python-brace-format
 msgid "Path '{path}' does not exist."
 msgstr ""
 
-#: check_truststore:946
+#: check_truststore:980
 msgid "Analyze certificate truststores and visualize the chain hierarchy."
 msgstr ""
 
-#: check_truststore:947
+#: check_truststore:981
 msgid "Compatible with Python 3.6+"
 msgstr ""
 
-#: check_truststore:950
+#: check_truststore:984
 msgid "Path to the input source (e.g., config file or directory)"
 msgstr ""
 
-#: check_truststore:951
+#: check_truststore:985
 msgid "Show this help message and exit"
 msgstr ""
 
-#: check_truststore:952
+#: check_truststore:986
 msgid "Output format"
 msgstr ""
 
-#: check_truststore:953
+#: check_truststore:987
 msgid "Show debug info"
 msgstr ""
 
-#: check_truststore:954
+#: check_truststore:988
 msgid "Incorporate system truststore"
 msgstr ""
 
-#: check_truststore:955
+#: check_truststore:989
 msgid "Expiration threshold in days (default: 30)"
 msgstr ""
 
-#: check_truststore:956
+#: check_truststore:990
 msgid "Display Subject Alternative Names (SAN) in the tree view"
 msgstr ""
 
-#: check_truststore:961
+#: check_truststore:995
 msgid "Starting analysis"
 msgstr ""
 
-#: check_truststore:971
+#: check_truststore:1003
 msgid "Invalid input"
 msgstr ""
 
-#: check_truststore:971
+#: check_truststore:1003
 #, python-brace-format
 msgid "File '{path}' is not a valid YAML configuration."
 msgstr ""
 
-#: check_truststore:974
+#: check_truststore:1006
 #, python-brace-format
 msgid "Unknown input provided: {path}"
 msgstr ""
 
-#: check_truststore:981
+#: check_truststore:1013
 msgid "No certificates found to display."
 msgstr ""
 
-#: check_truststore:1001
+#: check_truststore:1033
 msgid "Analysis interrupted by user"
 msgstr ""
 
-#: check_truststore:1005
+#: check_truststore:1037
 msgid "An unexpected error occurred"
 msgstr ""
