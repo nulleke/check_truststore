@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-18 16:01+0200\n"
+"POT-Creation-Date: 2026-04-19 10:58+0200\n"
 "PO-Revision-Date: 2026-04-13 11:08+0200\n"
 "Last-Translator: Serge van Thillo <nulleke76@gmail.com>\n"
 "Language-Team: Dutch <vertaling@vrijschrift.org>\n"
@@ -17,82 +17,78 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: check_truststore:242
-msgid "Certificate Hierarchy:"
-msgstr "Certificaat Hiërarchie:"
+#: check_truststore:296
+msgid "Invalid certificate structure"
+msgstr "Ongeldige certificaat structuur"
 
-#: check_truststore:251 check_truststore:609 check_truststore:611
-msgid "Unknown"
-msgstr "Onbekend"
-
-#: check_truststore:254
-msgid "UNTRUSTED (NOT IN YAML OR SYSTEM)"
-msgstr "NIET VERTROUWD (NIET IN YAML OF SYSTEEM)"
-
-#: check_truststore:256
-msgid "EXTERNAL ISSUER / MISSING ROOT"
-msgstr "EXTERNE UITGEVER / ONBEKENDE ROOT"
-
-#: check_truststore:265
-msgid "ALT"
-msgstr "ALT"
-
-#: check_truststore:467
-msgid "Unknown format: {}"
-msgstr "Onbekend formaat: {}"
-
-#: check_truststore:564
-msgid "Invalid certificate structure or corrupt Base64"
-msgstr "Ongeldige certificaat structuur of foute Base64"
-
-#: check_truststore:568
-msgid "Unexpected error"
-msgstr "Onverwachte fout"
-
-#: check_truststore:572
+#: check_truststore:300
 #, python-brace-format
 msgid "File not found: {path}"
 msgstr "Bestand niet gevonden: {path}"
 
-#: check_truststore:573 check_truststore:578 check_truststore:583
-#: check_truststore:614
+#: check_truststore:301 check_truststore:306 check_truststore:311
 msgid "READ_ERROR"
 msgstr "LEES_FOUT"
 
-#: check_truststore:577
+#: check_truststore:305
 #, python-brace-format
 msgid "Permission denied: {path}"
 msgstr "Toegang geweigerd: {path}"
 
-#: check_truststore:582
-#, fuzzy, python-brace-format
+#: check_truststore:310
+#, python-brace-format
 msgid "Read error: {error}"
-msgstr "Leesfout: {e}"
+msgstr "Leesfout: {error}"
 
-#: check_truststore:614 check_truststore:781
-msgid "UNTRUSTED"
-msgstr "GEEN_TRUST"
-
-#: check_truststore:614
+#: check_truststore:423
 msgid "SIG_ERR"
 msgstr "SIG_FOUT"
 
-#: check_truststore:614
+#: check_truststore:426
 msgid "INVALID"
 msgstr "ONGELDIG"
 
-#: check_truststore:629
+#: check_truststore:453
+#, python-brace-format
+msgid "Missing issuer for: {name}"
+msgstr "Ontbrekende issuer voor: {name}"
+
+#: check_truststore:454
+msgid "UNTRUSTED"
+msgstr "GEEN_TRUST"
+
+#: check_truststore:601 check_truststore:603 check_truststore:659
+msgid "Unknown"
+msgstr "Onbekend"
+
+#: check_truststore:650
+msgid "Certificate Hierarchy:"
+msgstr "Certificaat Hiërarchie:"
+
+#: check_truststore:662
+msgid "UNTRUSTED (NOT IN YAML OR SYSTEM)"
+msgstr "NIET VERTROUWD (NIET IN YAML OF SYSTEEM)"
+
+#: check_truststore:664
+msgid "EXTERNAL ISSUER / MISSING ROOT"
+msgstr "EXTERNE UITGEVER / ONBEKENDE ROOT"
+
+#: check_truststore:673
+msgid "ALT"
+msgstr "ALT"
+
+#: check_truststore:834
+msgid "Unknown format: {}"
+msgstr "Onbekend formaat: {}"
+
+#: check_truststore:886
 msgid "Configuration loaded"
 msgstr "Configuratie geladen"
 
-#: check_truststore:629
+#: check_truststore:887
 #, python-brace-format
 msgid "Processing {count} certificate paths"
 msgstr "Analyse van {count} certificaatlocaties"
-
-#: check_truststore:781
-msgid "Missing issuer for"
-msgstr "Ontbrekende issuer voor"
 
 #: check_truststore:896
 msgid "ERROR"
@@ -151,6 +147,18 @@ msgstr "Vervaldrempel in dagen (standaard: 30)"
 msgid "Display Subject Alternative Names (SAN) in the tree view"
 msgstr "Toon alternatieve namen (SAN) in de hiërarchie"
 
+#: check_truststore:920
+msgid "Starting analysis"
+msgstr "Analyse wordt gestart"
+
 #: check_truststore:927
-msgid "Rendering failed"
-msgstr "Renderen mislukt"
+msgid "No certificates found to display."
+msgstr "Geen certificaten gevonden om weer te geven."
+
+#: check_truststore:947
+msgid "Analysis interrupted by user"
+msgstr "Analyse afgebroken door gebruiker"
+
+#: check_truststore:951
+msgid "An unexpected error occurred"
+msgstr "Er is een onverwachte fout opgetreden"
