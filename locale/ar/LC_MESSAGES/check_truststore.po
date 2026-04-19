@@ -1,200 +1,198 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# Arabische vertaling voor check_truststore.
+# Copyright (C) 2026
 # This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-04-19 23:04+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: 2026-04-19 23:15+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"Language-Team: Arabic\n"
+"Language: ar\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #: check_truststore:301
 msgid "Invalid certificate structure"
-msgstr ""
+msgstr "بنية شهادة غير صالحة"
 
 #: check_truststore:305
 #, python-brace-format
 msgid "File not found: {path}"
-msgstr ""
+msgstr "الملف غير موجود: {path}"
 
 #: check_truststore:306 check_truststore:311 check_truststore:316
 msgid "READ_ERROR"
-msgstr ""
+msgstr "خطأ_في_القراءة"
 
 #: check_truststore:310
 #, python-brace-format
 msgid "Permission denied: {path}"
-msgstr ""
+msgstr "تم رفض الإذن: {path}"
 
 #: check_truststore:315
 #, python-brace-format
 msgid "Read error: {error}"
-msgstr ""
+msgstr "خطأ في القراءة: {error}"
 
 #: check_truststore:428
 msgid "SIG_ERR"
-msgstr ""
+msgstr "خطأ_في_التوقيع"
 
 #: check_truststore:431
 msgid "INVALID"
-msgstr ""
+msgstr "غير صالح"
 
 #: check_truststore:463
 #, python-brace-format
 msgid "Missing issuer for: {name}"
-msgstr ""
+msgstr "مُصدر مفقود لـ: {name}"
 
 #: check_truststore:464
 msgid "UNTRUSTED"
-msgstr ""
+msgstr "غير موثوق"
 
 #: check_truststore:615 check_truststore:617 check_truststore:673
 msgid "Unknown"
-msgstr ""
+msgstr "غير معروف"
 
 #: check_truststore:664
 msgid "Certificate Hierarchy:"
-msgstr ""
+msgstr "تسلسل الشهادات:"
 
 #: check_truststore:676
 msgid "UNTRUSTED (NOT IN SOURCE OR SYSTEM)"
-msgstr ""
+msgstr "غير موثوق (ليس في المصدر أو النظام)"
 
 #: check_truststore:678
 msgid "EXTERNAL ISSUER / MISSING ROOT"
-msgstr ""
+msgstr "مُصدر خارجي / جذر مفقود"
 
 #: check_truststore:692
 msgid "ALT"
-msgstr ""
+msgstr "بديل"
 
 #: check_truststore:853
 msgid "Unknown format: {}"
-msgstr ""
+msgstr "تنسيق غير معروف: {}"
 
 #: check_truststore:871
 msgid "Package 'pyyaml' is required for YAML support."
-msgstr ""
+msgstr "حزمة 'pyyaml' مطلوبة لدعم YAML."
 
 #: check_truststore:936
 msgid "Provider active"
-msgstr ""
+msgstr "المزود نشط"
 
 #: check_truststore:937
 #, python-brace-format
 msgid "Fetching paths from {provider_type}"
-msgstr ""
+msgstr "جلب المسارات من {provider_type}"
 
 #: check_truststore:943
 msgid "Certificates loaded"
-msgstr ""
+msgstr "تم تحميل الشهادات"
 
 #: check_truststore:944
 #, python-brace-format
 msgid "Processing {count} certificate(s) from provider"
-msgstr ""
+msgstr "يتم معالجة {count} شهادة من المزود"
 
 #: check_truststore:962
 msgid "System usage"
-msgstr ""
+msgstr "استخدام النظام"
 
 #: check_truststore:963
 #, python-brace-format
 msgid "Used {used} out of {total} system certificates in current chains"
-msgstr ""
+msgstr "تم استخدام {used} من أصل {total} من شهادات النظام في السلاسل الحالية"
 
 #: check_truststore:979
 msgid "ERROR"
-msgstr ""
+msgstr "خطأ"
 
 #: check_truststore:979
 msgid "WARNING"
-msgstr ""
+msgstr "تحذير"
 
 #: check_truststore:979
 msgid "OK"
-msgstr ""
+msgstr "موافق"
 
 #: check_truststore:979
 msgid "INFO"
-msgstr ""
+msgstr "معلومات"
 
 #: check_truststore:984
 #, python-brace-format
 msgid "Path '{path}' does not exist."
-msgstr ""
+msgstr "المسار '{path}' غير موجود."
 
 #: check_truststore:988
 msgid "Analyze certificate truststores and visualize the chain hierarchy."
-msgstr ""
+msgstr "تحليل مخازن الثقة للشهادات وتصور تسلسل السلسلة."
 
 #: check_truststore:989
 msgid "Compatible with Python 3.6+"
-msgstr ""
+msgstr "متوافق مع بايثون 3.6+"
 
 #: check_truststore:992
 msgid "Path to the input source (e.g., config file or directory)"
-msgstr ""
+msgstr "المسار إلى مصدر الإدخال (مثلاً ملف تكوين أو دليل)"
 
 #: check_truststore:993
 msgid "Show this help message and exit"
-msgstr ""
+msgstr "إظهار رسالة المساعدة هذه والخروج"
 
 #: check_truststore:994
 msgid "Output format"
-msgstr ""
+msgstr "تنسيق المخرجات"
 
 #: check_truststore:995
 msgid "Show debug info"
-msgstr ""
+msgstr "إظهار معلومات التصحيح"
 
 #: check_truststore:996
 msgid "Incorporate system truststore"
-msgstr ""
+msgstr "دمج مخزن الثقة الخاص بالنظام"
 
 #: check_truststore:997
 msgid "Expiration threshold in days (default: 30)"
-msgstr ""
+msgstr "مهلة انتهاء الصلاحية بالأيام (افتراضي: 30)"
 
 #: check_truststore:998
 msgid "Display Subject Alternative Names (SAN) in the tree view"
-msgstr ""
+msgstr "عرض الأسماء البديلة للموضوع (SAN) في عرض الشجرة"
 
 #: check_truststore:1003
 msgid "Starting analysis"
-msgstr ""
+msgstr "بدء التحليل"
 
 #: check_truststore:1011
 msgid "Invalid input"
-msgstr ""
+msgstr "إدخال غير صالح"
 
 #: check_truststore:1011
 #, python-brace-format
 msgid "File '{path}' is not a valid YAML configuration."
-msgstr ""
+msgstr "الملف '{path}' ليس تكوين YAML صالح."
 
 #: check_truststore:1014
 #, python-brace-format
 msgid "Unknown input provided: {path}"
-msgstr ""
+msgstr "تم تقديم إدخال غير معروف: {path}"
 
 #: check_truststore:1021
 msgid "No certificates found to display."
-msgstr ""
+msgstr "لم يتم العثور على شهادات لعرضها."
 
 #: check_truststore:1041
 msgid "Analysis interrupted by user"
-msgstr ""
+msgstr "تم قطع التحليل من قبل المستخدم"
 
 #: check_truststore:1045
 msgid "An unexpected error occurred"
-msgstr ""
+msgstr "حدث خطأ غير متوقع"

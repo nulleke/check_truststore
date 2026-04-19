@@ -673,7 +673,7 @@ class TextRenderer(BaseRenderer):
             raw_name = getattr(n, "common_name", _("Unknown"))
             if raw_name == ORPHAN_NODE_ID:
                 if getattr(self, "include_system", False):
-                    name = _("UNTRUSTED (NOT IN YAML OR SYSTEM)")
+                    name = _("UNTRUSTED (NOT IN SOURCE OR SYSTEM)")
                 else:
                     name = _("EXTERNAL ISSUER / MISSING ROOT")
             else:

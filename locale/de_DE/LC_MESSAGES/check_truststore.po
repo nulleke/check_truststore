@@ -1,200 +1,200 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# German translations for check_truststore.
+# Copyright (C) 2026
 # This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-04-19 23:04+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: 2026-04-19 23:15+0200\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"Language-Team: German\n"
+"Language: de\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: check_truststore:301
 msgid "Invalid certificate structure"
-msgstr ""
+msgstr "Ungültige Zertifikatsstruktur"
 
 #: check_truststore:305
 #, python-brace-format
 msgid "File not found: {path}"
-msgstr ""
+msgstr "Datei nicht gefunden: {path}"
 
 #: check_truststore:306 check_truststore:311 check_truststore:316
 msgid "READ_ERROR"
-msgstr ""
+msgstr "LESEFEHLER"
 
 #: check_truststore:310
 #, python-brace-format
 msgid "Permission denied: {path}"
-msgstr ""
+msgstr "Zugriff verweigert: {path}"
 
 #: check_truststore:315
 #, python-brace-format
 msgid "Read error: {error}"
-msgstr ""
+msgstr "Lesefehler: {error}"
 
 #: check_truststore:428
 msgid "SIG_ERR"
-msgstr ""
+msgstr "SIG_FEHLER"
 
 #: check_truststore:431
 msgid "INVALID"
-msgstr ""
+msgstr "UNGÜLTIG"
 
 #: check_truststore:463
 #, python-brace-format
 msgid "Missing issuer for: {name}"
-msgstr ""
+msgstr "Fehlender Aussteller für: {name}"
 
 #: check_truststore:464
 msgid "UNTRUSTED"
-msgstr ""
+msgstr "NICHT VERTRAUENSWÜRDIG"
 
 #: check_truststore:615 check_truststore:617 check_truststore:673
 msgid "Unknown"
-msgstr ""
+msgstr "Unbekannt"
 
 #: check_truststore:664
 msgid "Certificate Hierarchy:"
-msgstr ""
+msgstr "Zertifikatshierarchie:"
 
 #: check_truststore:676
 msgid "UNTRUSTED (NOT IN SOURCE OR SYSTEM)"
-msgstr ""
+msgstr "NICHT VERTRAUENSWÜRDIG (NICHT IN QUELLE ODER SYSTEM)"
 
 #: check_truststore:678
 msgid "EXTERNAL ISSUER / MISSING ROOT"
-msgstr ""
+msgstr "EXTERNER AUSSTELLER / FEHLENDER ROOT"
 
 #: check_truststore:692
 msgid "ALT"
-msgstr ""
+msgstr "ALT"
 
 #: check_truststore:853
 msgid "Unknown format: {}"
-msgstr ""
+msgstr "Unbekanntes Format: {}"
 
 #: check_truststore:871
 msgid "Package 'pyyaml' is required for YAML support."
-msgstr ""
+msgstr "Paket 'pyyaml' wird für YAML-Unterstützung benötigt."
 
 #: check_truststore:936
 msgid "Provider active"
-msgstr ""
+msgstr "Provider aktiv"
 
 #: check_truststore:937
 #, python-brace-format
 msgid "Fetching paths from {provider_type}"
-msgstr ""
+msgstr "Pfade werden von {provider_type} abgerufen"
 
 #: check_truststore:943
 msgid "Certificates loaded"
-msgstr ""
+msgstr "Zertifikate geladen"
 
 #: check_truststore:944
 #, python-brace-format
 msgid "Processing {count} certificate(s) from provider"
-msgstr ""
+msgstr "Verarbeite {count} Zertifikat(e) vom Provider"
 
 #: check_truststore:962
 msgid "System usage"
-msgstr ""
+msgstr "Systemnutzung"
 
 #: check_truststore:963
 #, python-brace-format
 msgid "Used {used} out of {total} system certificates in current chains"
-msgstr ""
+msgstr "{used} von {total} Systemzertifikaten in aktuellen Ketten verwendet"
 
 #: check_truststore:979
 msgid "ERROR"
-msgstr ""
+msgstr "FEHLER"
 
 #: check_truststore:979
 msgid "WARNING"
-msgstr ""
+msgstr "WARNUNG"
 
 #: check_truststore:979
 msgid "OK"
-msgstr ""
+msgstr "OK"
 
 #: check_truststore:979
 msgid "INFO"
-msgstr ""
+msgstr "INFO"
 
 #: check_truststore:984
 #, python-brace-format
 msgid "Path '{path}' does not exist."
-msgstr ""
+msgstr "Pfad '{path}' existiert nicht."
 
 #: check_truststore:988
 msgid "Analyze certificate truststores and visualize the chain hierarchy."
 msgstr ""
+"Zertifikats-Truststores analysieren und die Kettenhierarchie visualisieren."
 
 #: check_truststore:989
 msgid "Compatible with Python 3.6+"
-msgstr ""
+msgstr "Kompatibel mit Python 3.6+"
 
 #: check_truststore:992
 msgid "Path to the input source (e.g., config file or directory)"
-msgstr ""
+msgstr "Pfad zur Eingabequelle (z. B. Konfigurationsdatei oder Verzeichnis)"
 
 #: check_truststore:993
 msgid "Show this help message and exit"
-msgstr ""
+msgstr "Diese Hilfemeldung anzeigen und beenden"
 
 #: check_truststore:994
 msgid "Output format"
-msgstr ""
+msgstr "Ausgabeformat"
 
 #: check_truststore:995
 msgid "Show debug info"
-msgstr ""
+msgstr "Debug-Informationen anzeigen"
 
 #: check_truststore:996
 msgid "Incorporate system truststore"
-msgstr ""
+msgstr "System-Truststore einbeziehen"
 
 #: check_truststore:997
 msgid "Expiration threshold in days (default: 30)"
-msgstr ""
+msgstr "Ablaufschwellenwert in Tagen (Standard: 30)"
 
 #: check_truststore:998
 msgid "Display Subject Alternative Names (SAN) in the tree view"
-msgstr ""
+msgstr "Subject Alternative Names (SAN) in der Baumansicht anzeigen"
 
 #: check_truststore:1003
 msgid "Starting analysis"
-msgstr ""
+msgstr "Analyse wird gestartet"
 
 #: check_truststore:1011
 msgid "Invalid input"
-msgstr ""
+msgstr "Ungültige Eingabe"
 
 #: check_truststore:1011
 #, python-brace-format
 msgid "File '{path}' is not a valid YAML configuration."
-msgstr ""
+msgstr "Datei '{path}' ist keine gültige YAML-Konfiguration."
 
 #: check_truststore:1014
 #, python-brace-format
 msgid "Unknown input provided: {path}"
-msgstr ""
+msgstr "Unbekannte Eingabe bereitgestellt: {path}"
 
 #: check_truststore:1021
 msgid "No certificates found to display."
-msgstr ""
+msgstr "Keine Zertifikate zum Anzeigen gefunden."
 
 #: check_truststore:1041
 msgid "Analysis interrupted by user"
-msgstr ""
+msgstr "Analyse durch Benutzer unterbrochen"
 
 #: check_truststore:1045
 msgid "An unexpected error occurred"
-msgstr ""
+msgstr "Ein unerwarteter Fehler ist aufgetreten"
