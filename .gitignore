@@ -1,0 +1,29 @@
+# --- Python & OS ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+.DS_Store
+*.orig
+
+# --- Gettext ---
+locale/*/LC_MESSAGES/*.mo
+*.po~
+
+# --- Certificats & Keys ---
+**/*.key
+**/*.csr
+**/*.srl
+**/*.cnf
+**/*.conf
+
+files/certificates/acc/
+files/certificates/prd/
+vars/acc/
+vars/prd/
+
+files/certificates/tst/
+!files/certificates/tst/trust/
+!files/certificates/tst/trust/*.crt
