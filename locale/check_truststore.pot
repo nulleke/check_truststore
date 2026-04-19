@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-18 16:01+0200\n"
+"POT-Creation-Date: 2026-04-19 10:58+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,81 +17,77 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: check_truststore:242
-msgid "Certificate Hierarchy:"
+#: check_truststore:296
+msgid "Invalid certificate structure"
 msgstr ""
 
-#: check_truststore:251 check_truststore:609 check_truststore:611
-msgid "Unknown"
-msgstr ""
-
-#: check_truststore:254
-msgid "UNTRUSTED (NOT IN YAML OR SYSTEM)"
-msgstr ""
-
-#: check_truststore:256
-msgid "EXTERNAL ISSUER / MISSING ROOT"
-msgstr ""
-
-#: check_truststore:265
-msgid "ALT"
-msgstr ""
-
-#: check_truststore:467
-msgid "Unknown format: {}"
-msgstr ""
-
-#: check_truststore:564
-msgid "Invalid certificate structure or corrupt Base64"
-msgstr ""
-
-#: check_truststore:568
-msgid "Unexpected error"
-msgstr ""
-
-#: check_truststore:572
+#: check_truststore:300
 #, python-brace-format
 msgid "File not found: {path}"
 msgstr ""
 
-#: check_truststore:573 check_truststore:578 check_truststore:583
-#: check_truststore:614
+#: check_truststore:301 check_truststore:306 check_truststore:311
 msgid "READ_ERROR"
 msgstr ""
 
-#: check_truststore:577
+#: check_truststore:305
 #, python-brace-format
 msgid "Permission denied: {path}"
 msgstr ""
 
-#: check_truststore:582
+#: check_truststore:310
 #, python-brace-format
 msgid "Read error: {error}"
 msgstr ""
 
-#: check_truststore:614 check_truststore:781
-msgid "UNTRUSTED"
-msgstr ""
-
-#: check_truststore:614
+#: check_truststore:423
 msgid "SIG_ERR"
 msgstr ""
 
-#: check_truststore:614
+#: check_truststore:426
 msgid "INVALID"
 msgstr ""
 
-#: check_truststore:629
+#: check_truststore:453
+#, python-brace-format
+msgid "Missing issuer for: {name}"
+msgstr ""
+
+#: check_truststore:454
+msgid "UNTRUSTED"
+msgstr ""
+
+#: check_truststore:601 check_truststore:603 check_truststore:659
+msgid "Unknown"
+msgstr ""
+
+#: check_truststore:650
+msgid "Certificate Hierarchy:"
+msgstr ""
+
+#: check_truststore:662
+msgid "UNTRUSTED (NOT IN YAML OR SYSTEM)"
+msgstr ""
+
+#: check_truststore:664
+msgid "EXTERNAL ISSUER / MISSING ROOT"
+msgstr ""
+
+#: check_truststore:673
+msgid "ALT"
+msgstr ""
+
+#: check_truststore:834
+msgid "Unknown format: {}"
+msgstr ""
+
+#: check_truststore:886
 msgid "Configuration loaded"
 msgstr ""
 
-#: check_truststore:629
+#: check_truststore:887
 #, python-brace-format
 msgid "Processing {count} certificate paths"
-msgstr ""
-
-#: check_truststore:781
-msgid "Missing issuer for"
 msgstr ""
 
 #: check_truststore:896
@@ -151,6 +147,18 @@ msgstr ""
 msgid "Display Subject Alternative Names (SAN) in the tree view"
 msgstr ""
 
+#: check_truststore:920
+msgid "Starting analysis"
+msgstr ""
+
 #: check_truststore:927
-msgid "Rendering failed"
+msgid "No certificates found to display."
+msgstr ""
+
+#: check_truststore:947
+msgid "Analysis interrupted by user"
+msgstr ""
+
+#: check_truststore:951
+msgid "An unexpected error occurred"
 msgstr ""
