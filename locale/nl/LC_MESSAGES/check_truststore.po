@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-19 14:41+0200\n"
+"POT-Creation-Date: 2026-04-19 23:04+0200\n"
 "PO-Revision-Date: 2026-04-13 11:08+0200\n"
 "Last-Translator: Serge van Thillo <nulleke76@gmail.com>\n"
 "Language-Team: Dutch <vertaling@vrijschrift.org>\n"
@@ -17,184 +17,184 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: check_truststore:296
+#: check_truststore:301
 msgid "Invalid certificate structure"
 msgstr "Ongeldige certificaat structuur"
 
-#: check_truststore:300
+#: check_truststore:305
 #, python-brace-format
 msgid "File not found: {path}"
 msgstr "Bestand niet gevonden: {path}"
 
-#: check_truststore:301 check_truststore:306 check_truststore:311
+#: check_truststore:306 check_truststore:311 check_truststore:316
 msgid "READ_ERROR"
 msgstr "LEES_FOUT"
 
-#: check_truststore:305
+#: check_truststore:310
 #, python-brace-format
 msgid "Permission denied: {path}"
 msgstr "Toegang geweigerd: {path}"
 
-#: check_truststore:310
+#: check_truststore:315
 #, python-brace-format
 msgid "Read error: {error}"
 msgstr "Leesfout: {error}"
 
-#: check_truststore:423
+#: check_truststore:428
 msgid "SIG_ERR"
 msgstr "SIG_FOUT"
 
-#: check_truststore:426
+#: check_truststore:431
 msgid "INVALID"
 msgstr "ONGELDIG"
 
-#: check_truststore:457
+#: check_truststore:463
 #, python-brace-format
 msgid "Missing issuer for: {name}"
 msgstr "Ontbrekende issuer voor: {name}"
 
-#: check_truststore:458
+#: check_truststore:464
 msgid "UNTRUSTED"
 msgstr "GEEN_TRUST"
 
-#: check_truststore:607 check_truststore:609 check_truststore:665
+#: check_truststore:615 check_truststore:617 check_truststore:673
 msgid "Unknown"
 msgstr "Onbekend"
 
-#: check_truststore:656
+#: check_truststore:664
 msgid "Certificate Hierarchy:"
 msgstr "Certificaat Hiërarchie:"
 
-#: check_truststore:668
-msgid "UNTRUSTED (NOT IN YAML OR SYSTEM)"
-msgstr "NIET VERTROUWD (NIET IN YAML OF SYSTEEM)"
+#: check_truststore:676
+msgid "UNTRUSTED (NOT IN SOURCE OR SYSTEM)"
+msgstr "NIET VERTROUWD (NIET IN BRON OF SYSTEEM)"
 
-#: check_truststore:670
+#: check_truststore:678
 msgid "EXTERNAL ISSUER / MISSING ROOT"
 msgstr "EXTERNE UITGEVER / ONBEKENDE ROOT"
 
-#: check_truststore:684
+#: check_truststore:692
 msgid "ALT"
 msgstr "ALT"
 
-#: check_truststore:845
+#: check_truststore:853
 msgid "Unknown format: {}"
 msgstr "Onbekend formaat: {}"
 
-#: check_truststore:863
+#: check_truststore:871
 msgid "Package 'pyyaml' is required for YAML support."
 msgstr "Pakket 'pyyaml' is vereist voor YAML-ondersteuning."
 
-#: check_truststore:928
+#: check_truststore:936
 msgid "Provider active"
 msgstr "Provider actief"
 
-#: check_truststore:929
+#: check_truststore:937
 #, python-brace-format
 msgid "Fetching paths from {provider_type}"
 msgstr "Paden ophalen via {provider_type}"
 
-#: check_truststore:935
+#: check_truststore:943
 msgid "Certificates loaded"
 msgstr "Certificaten geladen:"
 
-#: check_truststore:936
+#: check_truststore:944
 #, python-brace-format
 msgid "Processing {count} certificate(s) from provider"
 msgstr "Verwerken van {count} certificaatlocaties"
 
-#: check_truststore:954
+#: check_truststore:962
 msgid "System usage"
 msgstr "Systeemgebruik"
 
-#: check_truststore:955
+#: check_truststore:963
 #, python-brace-format
 msgid "Used {used} out of {total} system certificates in current chains"
 msgstr "{used} van de {total} systeem-certificaten gebruikt in huidige ketens"
 
-#: check_truststore:971
+#: check_truststore:979
 msgid "ERROR"
 msgstr "FOUT"
 
-#: check_truststore:971
+#: check_truststore:979
 msgid "WARNING"
 msgstr "WAARSCHUWING"
 
-#: check_truststore:971
+#: check_truststore:979
 msgid "OK"
 msgstr "OK"
 
-#: check_truststore:971
+#: check_truststore:979
 msgid "INFO"
 msgstr "INFO"
 
-#: check_truststore:976
+#: check_truststore:984
 #, python-brace-format
 msgid "Path '{path}' does not exist."
 msgstr "Pad '{path}' bestaat niet."
 
-#: check_truststore:980
+#: check_truststore:988
 msgid "Analyze certificate truststores and visualize the chain hierarchy."
 msgstr "Analyseer certificaat truststores en visualiseer de hiërarchie."
 
-#: check_truststore:981
+#: check_truststore:989
 msgid "Compatible with Python 3.6+"
 msgstr "Compatibel met Python 3.6+"
 
-#: check_truststore:984
+#: check_truststore:992
 msgid "Path to the input source (e.g., config file or directory)"
 msgstr "Pad naar de invoerbron (bijv. configuratiebestand of map)"
 
-#: check_truststore:985
+#: check_truststore:993
 msgid "Show this help message and exit"
 msgstr "Toon dit helpbericht en sluit af"
 
-#: check_truststore:986
+#: check_truststore:994
 msgid "Output format"
 msgstr "Output formaat"
 
-#: check_truststore:987
+#: check_truststore:995
 msgid "Show debug info"
 msgstr "Toon debug informatie"
 
-#: check_truststore:988
+#: check_truststore:996
 msgid "Incorporate system truststore"
 msgstr "Systeem-truststore betrekken bij analyse"
 
-#: check_truststore:989
+#: check_truststore:997
 msgid "Expiration threshold in days (default: 30)"
 msgstr "Vervaldrempel in dagen (standaard: 30)"
 
-#: check_truststore:990
+#: check_truststore:998
 msgid "Display Subject Alternative Names (SAN) in the tree view"
 msgstr "Toon alternatieve namen (SAN) in de hiërarchie"
 
-#: check_truststore:995
+#: check_truststore:1003
 msgid "Starting analysis"
 msgstr "Analyse wordt gestart"
 
-#: check_truststore:1003
+#: check_truststore:1011
 msgid "Invalid input"
 msgstr "Ongeldige invoer"
 
-#: check_truststore:1003
+#: check_truststore:1011
 #, python-brace-format
 msgid "File '{path}' is not a valid YAML configuration."
 msgstr "Bestand '{path}' is geen geldige YAML-configuratie."
 
-#: check_truststore:1006
+#: check_truststore:1014
 #, python-brace-format
 msgid "Unknown input provided: {path}"
 msgstr "Onbekende invoer opgegeven: {path}"
 
-#: check_truststore:1013
+#: check_truststore:1021
 msgid "No certificates found to display."
 msgstr "Geen certificaten gevonden om weer te geven."
 
-#: check_truststore:1033
+#: check_truststore:1041
 msgid "Analysis interrupted by user"
 msgstr "Analyse afgebroken door gebruiker"
 
-#: check_truststore:1037
+#: check_truststore:1045
 msgid "An unexpected error occurred"
 msgstr "Er is een onverwachte fout opgetreden"
