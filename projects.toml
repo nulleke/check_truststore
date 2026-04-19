@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "check_truststore"
+version = "1.1.0"
+description = "Audit tool for X.509 certificate truststores with chain visualization"
+readme = "README.md"
+requires-python = ">=3.6"
+license = { text = "GPL-3.0" }
+authors = [{ name = "Serge van Thillo" }]
+dependencies = [
+        "cryptography",
+]
+
+[project.optional-dependencies]
+yaml = ["PyYAML"]
+pydantic = ["pydantic>=1.10"]
+all = ["PyYAML", "pydantic>=1.10"]
+
+[project.scripts]
+check_truststore = "check_truststore:main"
+
+]
