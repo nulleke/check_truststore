@@ -21,5 +21,3 @@ all = ["PyYAML", "pydantic>=1.10"]
 
 [project.scripts]
 check_truststore = "check_truststore:main"
-
-]
