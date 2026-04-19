@@ -9,7 +9,7 @@ A tool for system administrators and security engineers to audit certificate tru
 * **Chain Visualization:** Automatically builds a tree structure of your certificate hierarchy.
 * **Format Support:** Specifically designed for **X.509 certificates** in **PEM encoding**.
 * **Dynamic Health Monitoring:** Visual status indicators (✅ Valid, ⏳ Expiring Soon, ❌ Invalid). The "Expiring Soon" alert is fully configurable via a custom threshold (default is 30 days).
-* **Collision Intelligence:** Detects "Name Collisions" (👯) where different certificates share the same Common Name.
+* **Collision Intelligence:** Detects "Name Collisions" (👯) where different certificates share the same Common Name but have different cryptographic identities.
 * **True Hybrid Architecture:** Seamlessly supports **Pydantic v1** (legacy), **Pydantic v2** (modern), or a **Zero-Dependency Fallback** (standard Python). This ensures the tool remains functional on legacy RHEL/CentOS systems and the latest Python 3.14 environments alike.
 * **Expiration Alerts:** Highlights certificates expiring within a 30-day threshold.
 * **Internationalization:** Ready for translation via `gettext`.
@@ -49,7 +49,7 @@ This project is rigorously tested via **GitLab CI** across a full matrix of Pyth
 * **pydantic** (Optional): v1.10+ or v2.0+ for enhanced schema validation. The tool automatically detects and adapts to the available version.
 
 ## 🔍 Advanced Logic & Visual Indicators
-The tool uses **SKI/AKI (Subject/Authority Key Identifier)** to build a cryptographically accurate tree, even if multiple certificates share the same name.
+The tool uses **SKI/AKI (Subject/Authority Key Identifier)** to build a cryptographically accurate tree. It uniquely identifies certificates using their Subject Key Identifier (SKI). If the SKI extension is missing, it falls back to a deterministic hash of the public key, ensuring consistent identification (labeled as **ID**) across all views.
 
 ### 🔍 Visual Indicators
 The tool uses the following icons to provide a quick overview of certificate health and chain integrity:
@@ -62,13 +62,17 @@ The tool uses the following icons to provide a quick overview of certificate hea
 | 🔒 | **LOCKED** | Signature verified and cryptographically valid. |
 | 💥 | **BROKEN** | Signature verification failed (security alert). |
 | ❓ | **UNKNOWN** | Missing issuer; signature could not be verified. |
-| 👯 | **COLLISION** | Name collision detected (same Common Name, different hash). |
+| 👯 | **COLLISION** | Name collision detected (same Common Name, different ID). |
 | 💻 | **SYSTEM** | Certificate was loaded from the OS truststore. |
 
-### Core Logic
-* **`EXTERNAL_OR_MISSING_ISSUER` [❓]**: A virtual node for certificates whose issuer (Root or Intermediate) was not found in the provided source directories.
-* **Name Collisions [👯]**: Even with AKI/SKI tracking, name collisions can occur (e.g., two different CAs using the same Common Name, or a re-issued certificate with a new key). The tool detects these based on differing SHA-256 hashes and flags them, ensuring you can distinguish between them even if they appear identical in the hierarchy.
-* **Deduplication**: If the exact same certificate (matching SHA-256 hash) is found in multiple paths, it is processed only once to keep the report clean.
+## 🧠 Core Logic & Identity Strategy
+* **Smart Deduplication**: To keep reports clean and efficient, the tool uses a dual-layer filtering process. First, it calculates a **SHA-256 fingerprint** for every file. If the exact same certificate (identical binary content) is found in multiple paths, it is processed only once. This prevents redundant entries and circular references in the tree.
+* **Persistent Identity (ID)**: The tool uniquely identifies certificates using their **Subject Key Identifier (SKI)**.
+    * If the official SKI extension is present, it is used as the primary identifier.
+    * If the extension is missing (common in legacy or custom test-certs), the tool generates a **deterministic MD5-hash** of the public key.
+    * **Result:** You get a consistent `(ID: abcdef12)` label across both the table and the hierarchy, allowing you to trace issuer/subject relationships with cryptographic certainty.
+* **Name Collisions [👯]**: Even with ID tracking, name collisions occur (e.g., two different CAs using the same Common Name). The tool detects these based on differing Public Key IDs and flags them. This ensures you can distinguish between them even if they appear identical in the hierarchy.
+* **`EXTERNAL_OR_MISSING_ISSUER` [❓]**: A virtual node for certificates whose issuer (Root or Intermediate) was not found in the provided source directories or the system truststore. The debug log will specify the exact **AKI (Authority Key Identifier)** needed to complete the chain.
 
 ## 🛡️ System Truststore Integration
 By default, the tool only analyzes the certificates explicitly defined in your YAML configuration. However, to verify if your local chain is ultimately trusted by the operating system, you can enable system integration.
@@ -189,9 +193,9 @@ The tree view combines multiple layers of intelligence: identity validation, dat
 ```text
 Certificate Hierarchy:
 ├── Root CA [✅][🔒]  (2036-04-13)
-│   ├── Intermediate CA [✅][🔒][👯]  (2027-04-16)
+│   ├── Intermediate CA (ID: e5477085) [✅][🔒][👯]  (2027-04-16)
 │   │   └── Server Cert A [✅][🔒]  (2027-04-16)
-│   └── Intermediate CA [❌][🔒][👯]  (2026-04-16)
+│   └── Intermediate CA (ID: f847a79d) [❌][🔒][👯]  (2026-04-16)
 │       └── Expired Server Cert [❌][🔒]  (2026-04-16)
 ├── Trusted Root CA [⏳][🔒]  (2026-05-18)
 │   └── Broken Signature Leaf [❌][💥]  (2026-07-17)
@@ -255,7 +259,7 @@ The tool displays the signature status (🔒) for verified chains.
 ```text
 🔵 INFO         │      │ Configuration loaded           │ Processing 11 certificate paths
 ✅ OK           │ 🔒   │ Root CA                        │ 2036-04-13 06:37
-✅ OK           │ 🔒👯 │ Intermediate CA (SKI: e547708) │ 2027-04-16 06:37
+✅ OK           │ 🔒👯 │ Intermediate CA (ID: e5477085) │ 2027-04-16 06:37
 ```
 
 ### Signature Verification Failure (Security Alert)
@@ -277,7 +281,7 @@ Occurs when a certificate's issuer is not present in the current truststore batc
 ```
 
 ### Redundant Certificates (Duplicate Content)
-If the same certificate is present multiple times (even under different filenames), the tool identifies the identical SHA-256 hash and skips processing to prevent loops and clutter.
+If the same certificate is present multiple times (even under different filenames), the tool identifies the identical fingerprint and skips processing to prevent loops and clutter.
 ```text
 ⏳ WARNING      │      │ copy_of_root.crt               │ Duplicate content
 ```
@@ -291,7 +295,7 @@ If a file is present but cannot be parsed as a valid X509 certificate.
 ### Expired or Expiring Soon
 The tool checks the current system time against the certificate's validity window.
 ```text
-⏳ WARNING      │  👯  │ Intermediate CA (SKI: 43aff33) │ 2026-04-26 06:38
+⏳ WARNING      │  👯  │ Intermediate CA (ID: 43aff331) │ 2026-04-26 06:38
 ❌ ERROR        │      │ Expired Server Cert            │ 2026-04-16 07:39
 ```
 
