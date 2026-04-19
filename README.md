@@ -77,7 +77,17 @@ By default, the tool only analyzes the certificates explicitly defined in your Y
 * **Behavior:** When enabled, the tool scans common system paths (e.g., `/etc/ssl/certs/ca-certificates.crt` on Linux, the Keychain on macOS, or the Windows Certificate Store) to resolve missing root issuers.
 
 ## Usage
-Run the script by providing a path to your truststore YAML configuration:
+The analyzer supports two types of input sources. It automatically detects the source type based on the path provided.
+
+### Directory Scan (Ad-hoc)
+Point the tool to a directory to scan for all common certificate files (`.crt`, `.pem`, `.cer`, `.der`).
+
+```bash
+./check_truststore files/certificates/prod/trust/
+```
+
+### YAML Configuration (Structured)
+Use a YAML file to define specific truststores and environments.
 
 ```bash
 # Basic tree view

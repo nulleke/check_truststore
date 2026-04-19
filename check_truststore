@@ -141,7 +141,7 @@ class _CertificateStatusMixin:
         if getattr(self, "is_system_cert", False):
             return "SYSTEM"
         return "VALID"
-    
+
 class Certificate(_CertificateStatusMixin, BaseModel):
     if PYDANTIC_AVAILABLE:
         common_name: str = Field(..., alias="commonName")
@@ -185,7 +185,7 @@ class Certificate(_CertificateStatusMixin, BaseModel):
                 }
                 if isinstance(data, dict): data.update(special)
             return data
-        
+
         if not PYDANTIC_V2:
             def model_dump(self, **kwargs):
                 return self.dict(
@@ -251,7 +251,7 @@ class Certificate(_CertificateStatusMixin, BaseModel):
 
             if getattr(self, "children", None):
                 obj["children"] = [c.model_dump() for c in self.children]
-            
+
             return obj
 
 class CertificateRepository:
@@ -315,7 +315,7 @@ class CertificateRepository:
     def load_from_system(self) -> List[Dict[str, Any]]:
         os_type = platform.system()
         results = []
-        
+
         if os_type == "Windows":
             results.extend(self._load_windows_store())
         else:
@@ -324,7 +324,7 @@ class CertificateRepository:
             for c in system_certs:
                 c["is_system"] = True
             results.extend(system_certs)
-            
+
         return results
 
     def _get_unix_ca_paths(self, os_type: str) -> List[Path]:
@@ -436,11 +436,11 @@ class TrustChainBuilder:
             combined_extra = f"{sig_icon}{coll_icon}"
 
             log_name = f"{cert_obj.common_name} (SKI: {ski[:8]})" if cert_obj.is_collision else cert_obj.common_name
-            
+
             st.log(
-                log_name, 
-                cert_obj.expiry_date.strftime("%Y-%m-%d %H:%M"), 
-                label=current_label, 
+                log_name,
+                cert_obj.expiry_date.strftime("%Y-%m-%d %H:%M"),
+                label=current_label,
                 extra_icon=combined_extra
             )
 
@@ -449,8 +449,8 @@ class TrustChainBuilder:
             aki = self.parent_map.get(c_id)
             if aki and aki not in known_skis and aki != ORPHAN_NODE_ID:
                 MISSING.log(
-                    f"AKI: {aki[:8]}", 
-                    _("Missing issuer for: {name}").format(name=self.cert_data[c_id].common_name), 
+                    f"AKI: {aki[:8]}",
+                    _("Missing issuer for: {name}").format(name=self.cert_data[c_id].common_name),
                     label=_("UNTRUSTED")
                 )
 
@@ -754,7 +754,7 @@ class StatusRenderer(BaseRenderer):
                 source = "system-store"
             else:
                 source = getattr(cert, "file_name", "unknown")
-            
+
             status_output.append({
                 "fileName": source,
                 "commonName": cert.common_name,
@@ -835,23 +835,37 @@ class TrustStoreRenderer:
 
         return renderer.render(tree_data, **kwargs)
 
-class YamlConfigLoader:
-    def __init__(self, yaml_path: Path):
-        self.yaml_path = yaml_path
+class BaseInputProvider(ABC):
+    @abstractmethod
+    def get_certificate_paths(self) -> List[Path]:
+        pass
 
-    def get_certificate_paths(self, env: str = "acc") -> List[Path]:
+class YamlInputProvider(BaseInputProvider):
+    def __init__(self, yaml_path: Path, env: str = "tst"):
+        self.yaml_path = yaml_path
+        self.env = env
+
+    def _get_yaml_content(self) -> Optional[dict]:
         try:
             import yaml
         except ImportError:
-            raise ImportError("Package 'pyyaml' is required for YAML support.")
+            raise ImportError(_("Package 'pyyaml' is required for YAML support."))
 
         if not self.yaml_path.exists():
+            return None
+
+        try:
+            with open(self.yaml_path, "r") as f:
+                return yaml.safe_load(f)
+        except (yaml.YAMLError, AttributeError):
+            return None
+
+    def get_certificate_paths(self) -> List[Path]:
+        data = self._get_yaml_content()
+        if not data or not isinstance(data, dict):
             return []
 
-        with open(self.yaml_path, "r") as f:
-            data = yaml.safe_load(f)
-        
-        env_name = data.get("env", env)
+        env_name = data.get("env", self.env)
         extension = data.get("certificate_file_extension", ".crt")
         paths = []
 
@@ -863,42 +877,69 @@ class YamlConfigLoader:
                 if link.get("link"):
                     filename = link["link"] + extension
                     p = (source_dir / filename).resolve()
-
                     if p not in paths:
                         paths.append(p)
         return paths
-    
+
+class DirectoryInputProvider(BaseInputProvider):
+    def __init__(self, folder_path: Path, extensions: Optional[List[str]] = None, recursive: bool = False):
+        self.folder_path = folder_path
+        self.extensions = extensions or [".crt", ".pem", ".cer", ".der"]
+        self.recursive = recursive
+
+    def get_certificate_paths(self) -> List[Path]:
+        if not self.folder_path.is_dir():
+            return []
+
+        all_paths = []
+        for ext in self.extensions:
+            pattern = f"**/*{ext}" if self.recursive else f"*{ext}"
+            all_paths.extend(self.folder_path.glob(pattern))
+
+        return sorted(list(set(p for p in all_paths if p.is_file())))
+
 class TrustStoreAnalyzer:
-    def __init__(self, yaml_path: Optional[str] = None, **kwargs):
+    def __init__(self, provider: Optional[BaseInputProvider] = None, **kwargs):
         self.debug = kwargs.get('debug', False)
         self.include_system = kwargs.get('system', False)
-        
+
         self.repo = CertificateRepository(debug=self.debug)
-        self.loader = YamlConfigLoader(Path(yaml_path)) if yaml_path else None
-        self.builder = TrustChainBuilder(threshold_days=kwargs.get('threshold', 30), debug=self.debug)
+        self.provider = provider
+        self.builder = TrustChainBuilder(
+            threshold_days=kwargs.get('threshold', 30),
+            debug=self.debug
+        )
 
     def analyze(self) -> List[Certificate]:
-        yaml_paths = self.loader.get_certificate_paths() if self.loader else []
-        raw_certs = self.repo.load_from_files(yaml_paths)
-
-        if self.debug:
+        input_paths = self.provider.get_certificate_paths() if self.provider else []
+        if self.debug and self.provider:
             INFO.log(
-                _("Configuration loaded"), 
-                _("Processing {count} certificate paths").format(count=len(raw_certs))
+                _("Provider active"),
+                _("Fetching paths from {provider_type}").format(provider_type=type(self.provider).__name__)
+            )
+
+        raw_certs = self.repo.load_from_files(input_paths)
+        if self.debug and raw_certs:
+            INFO.log(
+                _("Certificates loaded"),
+                _("Processing {count} certificate(s) from provider").format(count=len(raw_certs))
             )
 
         if self.include_system:
-            raw_certs.extend(self.repo.load_from_system())
+            system_certs = self.repo.load_from_system()
+            if self.debug:
+                INFO.log(_("System store"), _("Loaded {count} system certificates").format(count=len(system_certs)))
+            raw_certs.extend(system_certs)
 
         return self.builder.build(raw_certs)
 
 def main() -> None:
     _("ERROR"); _("WARNING"); _("OK"); _("INFO")
 
-    def valid_file(path_str: str) -> Path:
+    def valid_path(path_str: str) -> Path:
         path = Path(path_str)
-        if not path.is_file():
-            raise argparse.ArgumentTypeError(_("File '{path}' does not exist.").format(path=path_str))
+        if not path.exists():
+            raise argparse.ArgumentTypeError(_("Path '{path}' does not exist.").format(path=path_str))
         return path
 
     parser = argparse.ArgumentParser(
@@ -906,7 +947,7 @@ def main() -> None:
         epilog=_("Compatible with Python 3.6+"),
         add_help=False
     )
-    parser.add_argument("input", type=valid_file, help=_("Path to the YAML file"))
+    parser.add_argument("input", type=valid_path, help=_("Path to the input source (e.g., config file or directory)"))
     parser.add_argument("-h", "--help", action="help", default=argparse.SUPPRESS, help=_("Show this help message and exit"))
     parser.add_argument("-f", "--format", choices=["json", "text", "status"], default="json", help=_("Output format"))
     parser.add_argument("-d", "--debug", action="store_true", default=False, help=_("Show debug info"))
@@ -917,10 +958,23 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.debug:
-        INFO.log(_("Starting analysis"), f"File: {args.input.name}, System: {args.system}")
+        INFO.log(_("Starting analysis"), f"Source: {args.input}, System: {args.system}")
 
     try:
-        analyzer = TrustStoreAnalyzer(args.input, **vars(args))
+        if args.input.is_dir():
+            provider = DirectoryInputProvider(args.input, recursive=True)
+        elif args.input.suffix in ['.yml', '.yaml']:
+            temp_yaml_provider = YamlInputProvider(args.input)
+            if temp_yaml_provider._get_yaml_content() is not None:
+                provider = temp_yaml_provider
+            else:
+                ERROR.log(_("Invalid input"), _("File '{path}' is not a valid YAML configuration.").format(path=args.input.name))
+                sys.exit(1)
+        else:
+            ERROR.log(_("Unknown input provided: {path}").format(path=args.input))
+            sys.exit(1)
+
+        analyzer = TrustStoreAnalyzer(provider=provider, **vars(args))
         tree_data = analyzer.analyze()
 
         if not tree_data:

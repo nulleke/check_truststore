@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-19 10:58+0200\n"
+"POT-Creation-Date: 2026-04-19 12:48+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -81,84 +81,120 @@ msgstr ""
 msgid "Unknown format: {}"
 msgstr ""
 
-#: check_truststore:886
-msgid "Configuration loaded"
+#: check_truststore:852
+msgid "Package 'pyyaml' is required for YAML support."
 msgstr ""
 
-#: check_truststore:887
+#: check_truststore:917
+msgid "Provider active"
+msgstr ""
+
+#: check_truststore:918
 #, python-brace-format
-msgid "Processing {count} certificate paths"
+msgid "Fetching paths from {provider_type}"
 msgstr ""
 
-#: check_truststore:896
+#: check_truststore:924
+msgid "Certificates loaded"
+msgstr ""
+
+#: check_truststore:925
+#, python-brace-format
+msgid "Processing {count} certificate(s) from provider"
+msgstr ""
+
+#: check_truststore:931
+msgid "System store"
+msgstr ""
+
+#: check_truststore:931
+#, python-brace-format
+msgid "Loaded {count} system certificates"
+msgstr ""
+
+#: check_truststore:937
 msgid "ERROR"
 msgstr ""
 
-#: check_truststore:896
+#: check_truststore:937
 msgid "WARNING"
 msgstr ""
 
-#: check_truststore:896
+#: check_truststore:937
 msgid "OK"
 msgstr ""
 
-#: check_truststore:896
+#: check_truststore:937
 msgid "INFO"
 msgstr ""
 
-#: check_truststore:901
+#: check_truststore:942
 #, python-brace-format
-msgid "File '{path}' does not exist."
+msgid "Path '{path}' does not exist."
 msgstr ""
 
-#: check_truststore:905
+#: check_truststore:946
 msgid "Analyze certificate truststores and visualize the chain hierarchy."
 msgstr ""
 
-#: check_truststore:906
+#: check_truststore:947
 msgid "Compatible with Python 3.6+"
 msgstr ""
 
-#: check_truststore:909
-msgid "Path to the YAML file"
-msgstr ""
-
-#: check_truststore:910
-msgid "Show this help message and exit"
-msgstr ""
-
-#: check_truststore:911
-msgid "Output format"
-msgstr ""
-
-#: check_truststore:912
-msgid "Show debug info"
-msgstr ""
-
-#: check_truststore:913
-msgid "Incorporate system truststore"
-msgstr ""
-
-#: check_truststore:914
-msgid "Expiration threshold in days (default: 30)"
-msgstr ""
-
-#: check_truststore:915
-msgid "Display Subject Alternative Names (SAN) in the tree view"
-msgstr ""
-
-#: check_truststore:920
-msgid "Starting analysis"
-msgstr ""
-
-#: check_truststore:927
-msgid "No certificates found to display."
-msgstr ""
-
-#: check_truststore:947
-msgid "Analysis interrupted by user"
+#: check_truststore:950
+msgid "Path to the input source (e.g., config file or directory)"
 msgstr ""
 
 #: check_truststore:951
+msgid "Show this help message and exit"
+msgstr ""
+
+#: check_truststore:952
+msgid "Output format"
+msgstr ""
+
+#: check_truststore:953
+msgid "Show debug info"
+msgstr ""
+
+#: check_truststore:954
+msgid "Incorporate system truststore"
+msgstr ""
+
+#: check_truststore:955
+msgid "Expiration threshold in days (default: 30)"
+msgstr ""
+
+#: check_truststore:956
+msgid "Display Subject Alternative Names (SAN) in the tree view"
+msgstr ""
+
+#: check_truststore:961
+msgid "Starting analysis"
+msgstr ""
+
+#: check_truststore:971
+msgid "Invalid input"
+msgstr ""
+
+#: check_truststore:971
+#, python-brace-format
+msgid "File '{path}' is not a valid YAML configuration."
+msgstr ""
+
+#: check_truststore:974
+#, python-brace-format
+msgid "Unknown input provided: {path}"
+msgstr ""
+
+#: check_truststore:981
+msgid "No certificates found to display."
+msgstr ""
+
+#: check_truststore:1001
+msgid "Analysis interrupted by user"
+msgstr ""
+
+#: check_truststore:1005
 msgid "An unexpected error occurred"
 msgstr ""

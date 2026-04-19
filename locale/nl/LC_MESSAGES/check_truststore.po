@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-19 10:58+0200\n"
+"POT-Creation-Date: 2026-04-19 12:48+0200\n"
 "PO-Revision-Date: 2026-04-13 11:08+0200\n"
 "Last-Translator: Serge van Thillo <nulleke76@gmail.com>\n"
 "Language-Team: Dutch <vertaling@vrijschrift.org>\n"
@@ -81,84 +81,127 @@ msgstr "ALT"
 msgid "Unknown format: {}"
 msgstr "Onbekend formaat: {}"
 
-#: check_truststore:886
-msgid "Configuration loaded"
-msgstr "Configuratie geladen"
+#: check_truststore:852
+msgid "Package 'pyyaml' is required for YAML support."
+msgstr ""
 
-#: check_truststore:887
+#: check_truststore:917
+msgid "Provider active"
+msgstr ""
+
+#: check_truststore:918
 #, python-brace-format
-msgid "Processing {count} certificate paths"
+msgid "Fetching paths from {provider_type}"
+msgstr ""
+
+#: check_truststore:924
+#, fuzzy
+msgid "Certificates loaded"
+msgstr "Certificaat Hiërarchie:"
+
+#: check_truststore:925
+#, fuzzy, python-brace-format
+msgid "Processing {count} certificate(s) from provider"
 msgstr "Analyse van {count} certificaatlocaties"
 
-#: check_truststore:896
+#: check_truststore:931
+msgid "System store"
+msgstr ""
+
+#: check_truststore:931
+#, fuzzy, python-brace-format
+msgid "Loaded {count} system certificates"
+msgstr "Analyse van {count} certificaatlocaties"
+
+#: check_truststore:937
 msgid "ERROR"
 msgstr "FOUT"
 
-#: check_truststore:896
+#: check_truststore:937
 msgid "WARNING"
 msgstr "WAARSCHUWING"
 
-#: check_truststore:896
+#: check_truststore:937
 msgid "OK"
 msgstr "OK"
 
-#: check_truststore:896
+#: check_truststore:937
 msgid "INFO"
 msgstr "INFO"
 
-#: check_truststore:901
-#, python-brace-format
-msgid "File '{path}' does not exist."
+#: check_truststore:942
+#, fuzzy, python-brace-format
+msgid "Path '{path}' does not exist."
 msgstr "Bestand '{path}' bestaat niet."
 
-#: check_truststore:905
+#: check_truststore:946
 msgid "Analyze certificate truststores and visualize the chain hierarchy."
 msgstr "Analyseer certificaat truststores en visualiseer de hiërarchie."
 
-#: check_truststore:906
+#: check_truststore:947
 msgid "Compatible with Python 3.6+"
 msgstr "Compatibel met Python 3.6+"
 
-#: check_truststore:909
-msgid "Path to the YAML file"
-msgstr "Pad naar het YAML-bestand"
+#: check_truststore:950
+msgid "Path to the input source (e.g., config file or directory)"
+msgstr ""
 
-#: check_truststore:910
+#: check_truststore:951
 msgid "Show this help message and exit"
 msgstr "Toon dit helpbericht en sluit af"
 
-#: check_truststore:911
+#: check_truststore:952
 msgid "Output format"
 msgstr "Output formaat"
 
-#: check_truststore:912
+#: check_truststore:953
 msgid "Show debug info"
 msgstr "Toon debug informatie"
 
-#: check_truststore:913
+#: check_truststore:954
 msgid "Incorporate system truststore"
 msgstr "Systeem-truststore betrekken bij analyse"
 
-#: check_truststore:914
+#: check_truststore:955
 msgid "Expiration threshold in days (default: 30)"
 msgstr "Vervaldrempel in dagen (standaard: 30)"
 
-#: check_truststore:915
+#: check_truststore:956
 msgid "Display Subject Alternative Names (SAN) in the tree view"
 msgstr "Toon alternatieve namen (SAN) in de hiërarchie"
 
-#: check_truststore:920
+#: check_truststore:961
 msgid "Starting analysis"
 msgstr "Analyse wordt gestart"
 
-#: check_truststore:927
+#: check_truststore:971
+msgid "Invalid input"
+msgstr ""
+
+#: check_truststore:971
+#, python-brace-format
+msgid "File '{path}' is not a valid YAML configuration."
+msgstr ""
+
+#: check_truststore:974
+#, python-brace-format
+msgid "Unknown input provided: {path}"
+msgstr ""
+
+#: check_truststore:981
 msgid "No certificates found to display."
 msgstr "Geen certificaten gevonden om weer te geven."
 
-#: check_truststore:947
+#: check_truststore:1001
 msgid "Analysis interrupted by user"
 msgstr "Analyse afgebroken door gebruiker"
 
-#: check_truststore:951
+#: check_truststore:1005
 msgid "An unexpected error occurred"
 msgstr "Er is een onverwachte fout opgetreden"
+
+#~ msgid "Configuration loaded"
+#~ msgstr "Configuratie geladen"
+
+#~ msgid "Path to the YAML file"
+#~ msgstr "Pad naar het YAML-bestand"
