@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=42.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "check_truststore"
+version = "0.1"
+description = "Lightweight certificate trust chain analyzer"
+readme = "README.md"
+requires-python = ">=3.6"
+license = {text = "GPL-3.0+"}
+authors = [{name = "Serge van Thillo"}]
+
+dependencies = [
+        "cryptography",
+]
+
+[project.optional-dependencies]
+yaml = ["PyYAML"]
+pydantic = ["pydantic>=2.0.0; python_version >= '3.8'"]
+all = ["PyYAML", "pydantic>=2.0.0; python_version >= '3.8'"]
+
+[project.scripts]
+check_truststore = "check_truststore:main"
+
+[tool.setuptools]
+py-modules = ["check_truststore"]
