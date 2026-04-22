@@ -7,12 +7,15 @@ truststores:
     cert_src_dir: "files/certificates/{{ env }}/trust"
     cert_chain:
       - link: root
-      - link: int_valid
-      - link: int_soon
-      - link: int_expired
-      - link: server_a
-      - link: server_b
-      - link: server_expired
+      - link: int-valid
+      - link: int-expiring
+      - link: int-noca
+      - link: int-expired
+      - link: server-ok
+      - link: server-expiring
+      - link: server-broken
+      - link: server-legacy
+      - link: server-collision
       - link: orphan
       - link: root_fake
       - link: leaf_broken_sign

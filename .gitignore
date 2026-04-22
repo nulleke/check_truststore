@@ -24,6 +24,19 @@ files/certificates/prd/
 vars/acc/
 vars/prd/
 
-files/certificates/tst/
+files/certificates/tst/*
 !files/certificates/tst/trust/
 !files/certificates/tst/trust/*.crt
+output_*.json
+check_truststore.py
+UNKNOWN.egg-info/
+output_*.txt
+error_*.log
+debug_*.log
+output_*.json
+output_*.txt
+status_*.json
+debug_*.log
+error_*.log
+check_truststore.py
+UNKNOWN.egg-info/

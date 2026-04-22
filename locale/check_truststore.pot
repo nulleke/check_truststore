@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-19 23:04+0200\n"
+"POT-Creation-Date: 2026-04-22 17:37+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,184 +17,239 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: check_truststore:301
+#: check_truststore:327
+msgid "Skipping duplicate certificate (already loaded)"
+msgstr ""
+
+#: check_truststore:328
+msgid "DUPLICATE"
+msgstr ""
+
+#: check_truststore:346
 msgid "Invalid certificate structure"
 msgstr ""
 
-#: check_truststore:305
-#, python-brace-format
-msgid "File not found: {path}"
-msgstr ""
-
-#: check_truststore:306 check_truststore:311 check_truststore:316
+#: check_truststore:350 check_truststore:356
 msgid "READ_ERROR"
 msgstr ""
 
-#: check_truststore:310
-#, python-brace-format
-msgid "Permission denied: {path}"
+#: check_truststore:351
+msgid "File not found"
 msgstr ""
 
-#: check_truststore:315
-#, python-brace-format
-msgid "Read error: {error}"
+#: check_truststore:351
+msgid "Permission denied"
 msgstr ""
 
-#: check_truststore:428
+#: check_truststore:503 check_truststore:866
 msgid "SIG_ERR"
 msgstr ""
 
-#: check_truststore:431
+#: check_truststore:506 check_truststore:1286
 msgid "INVALID"
 msgstr ""
 
-#: check_truststore:463
+#: check_truststore:537
 #, python-brace-format
 msgid "Missing issuer for: {name}"
 msgstr ""
 
-#: check_truststore:464
+#: check_truststore:538
 msgid "UNTRUSTED"
 msgstr ""
 
-#: check_truststore:615 check_truststore:617 check_truststore:673
+#: check_truststore:745 check_truststore:747 check_truststore:832
 msgid "Unknown"
 msgstr ""
 
-#: check_truststore:664
+#: check_truststore:808
 msgid "Certificate Hierarchy:"
 msgstr ""
 
-#: check_truststore:676
-msgid "UNTRUSTED (NOT IN SOURCE OR SYSTEM)"
+#: check_truststore:814 check_truststore:817
+msgid "Unnamed Group"
 msgstr ""
 
-#: check_truststore:678
+#: check_truststore:825
+msgid "(No certificates found)"
+msgstr ""
+
+#: check_truststore:870 check_truststore:1286
+msgid "EXPIRED"
+msgstr ""
+
+#: check_truststore:872
 msgid "EXTERNAL ISSUER / MISSING ROOT"
 msgstr ""
 
-#: check_truststore:692
+#: check_truststore:882
 msgid "ALT"
 msgstr ""
 
-#: check_truststore:853
+#: check_truststore:1086
 msgid "Unknown format: {}"
 msgstr ""
 
-#: check_truststore:871
+#: check_truststore:1121
 msgid "Package 'pyyaml' is required for YAML support."
 msgstr ""
 
-#: check_truststore:936
-msgid "Provider active"
+#: check_truststore:1143
+msgid "Unnamed Store"
 msgstr ""
 
-#: check_truststore:937
+#: check_truststore:1162
+msgid "File exists but failed to load certificate."
+msgstr ""
+
+#: check_truststore:1162
+msgid "LOAD_ERR"
+msgstr ""
+
+#: check_truststore:1164
+msgid "Certificate file not found in {}"
+msgstr ""
+
+#: check_truststore:1164
+msgid "MISSING"
+msgstr ""
+
+#: check_truststore:1168
+msgid "Group Loaded"
+msgstr ""
+
+#: check_truststore:1168
 #, python-brace-format
-msgid "Fetching paths from {provider_type}"
+msgid "Group '{name}' loaded with {count} certificates."
 msgstr ""
 
-#: check_truststore:943
-msgid "Certificates loaded"
+#: check_truststore:1171
+msgid "Group has NO valid certificates."
 msgstr ""
 
-#: check_truststore:944
-#, python-brace-format
-msgid "Processing {count} certificate(s) from provider"
+#: check_truststore:1171
+msgid "EMPTY_GROUP"
 msgstr ""
 
-#: check_truststore:962
+#: check_truststore:1230
+msgid "Processing Group"
+msgstr ""
+
+#: check_truststore:1269
 msgid "System usage"
 msgstr ""
 
-#: check_truststore:963
+#: check_truststore:1270
 #, python-brace-format
-msgid "Used {used} out of {total} system certificates in current chains"
+msgid "Used {used} out of {total} system certs"
 msgstr ""
 
-#: check_truststore:979
+#: check_truststore:1285
 msgid "ERROR"
 msgstr ""
 
-#: check_truststore:979
+#: check_truststore:1285
 msgid "WARNING"
 msgstr ""
 
-#: check_truststore:979
+#: check_truststore:1285
 msgid "OK"
 msgstr ""
 
-#: check_truststore:979
+#: check_truststore:1285
 msgid "INFO"
 msgstr ""
 
-#: check_truststore:984
+#: check_truststore:1286
+msgid "CHAIN"
+msgstr ""
+
+#: check_truststore:1286
+msgid "EXPIRING"
+msgstr ""
+
+#: check_truststore:1286
+msgid "SYSTEM"
+msgstr ""
+
+#: check_truststore:1287
+msgid "PARENT_NOT_A_CA"
+msgstr ""
+
+#: check_truststore:1292
 #, python-brace-format
 msgid "Path '{path}' does not exist."
 msgstr ""
 
-#: check_truststore:988
+#: check_truststore:1296
 msgid "Analyze certificate truststores and visualize the chain hierarchy."
 msgstr ""
 
-#: check_truststore:989
+#: check_truststore:1297
 msgid "Compatible with Python 3.6+"
 msgstr ""
 
-#: check_truststore:992
-msgid "Path to the input source (e.g., config file or directory)"
+#: check_truststore:1300
+msgid "Path to the input source(s)"
 msgstr ""
 
-#: check_truststore:993
+#: check_truststore:1301
 msgid "Show this help message and exit"
 msgstr ""
 
-#: check_truststore:994
+#: check_truststore:1302
 msgid "Output format"
 msgstr ""
 
-#: check_truststore:995
+#: check_truststore:1303
 msgid "Show debug info"
 msgstr ""
 
-#: check_truststore:996
+#: check_truststore:1304
 msgid "Incorporate system truststore"
 msgstr ""
 
-#: check_truststore:997
+#: check_truststore:1305
 msgid "Expiration threshold in days (default: 30)"
 msgstr ""
 
-#: check_truststore:998
+#: check_truststore:1306
 msgid "Display Subject Alternative Names (SAN) in the tree view"
 msgstr ""
 
-#: check_truststore:1003
+#: check_truststore:1315
 msgid "Starting analysis"
 msgstr ""
 
-#: check_truststore:1011
+#: check_truststore:1327
 msgid "Invalid input"
 msgstr ""
 
-#: check_truststore:1011
+#: check_truststore:1327
 #, python-brace-format
-msgid "File '{path}' is not a valid YAML configuration."
+msgid "File '{path}' is not a valid configuration."
 msgstr ""
 
-#: check_truststore:1014
-#, python-brace-format
-msgid "Unknown input provided: {path}"
+#: check_truststore:1339
+msgid "Auto-context"
 msgstr ""
 
-#: check_truststore:1021
+#: check_truststore:1339
+msgid "Enabling system truststore for single file analysis"
+msgstr ""
+
+#: check_truststore:1342
+msgid "Ad-hoc Files"
+msgstr ""
+
+#: check_truststore:1345
 msgid "No certificates found to display."
 msgstr ""
 
-#: check_truststore:1041
+#: check_truststore:1370
 msgid "Analysis interrupted by user"
 msgstr ""
 
-#: check_truststore:1045
+#: check_truststore:1374
 msgid "An unexpected error occurred"
 msgstr ""
