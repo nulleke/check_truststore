@@ -10,25 +10,31 @@ test_full_compatibility:
   image: python:${PYTHON_VERSION}-slim
   parallel:
     matrix:
-      - PYTHON_VERSION: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+      - PYTHON_VERSION: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "3.15-rc"]
+  rules:
+    - if: $PYTHON_VERSION == "3.15-rc"
+      allow_failure: true
+    - allow_failure: false
   before_script:
+    - apt-get update && apt-get install -y gettext
     - python3 -m pip install --upgrade pip 2>&1 | grep -v "Running pip as the 'root' user" || true
-    - pip install -r requirements.txt 2>&1 | grep -v "Running pip as the 'root' user" || true
+    - |
+      if [ "$PYTHON_VERSION" == "3.6" ]; then
+        echo "Detected Python 3.6: Using legacy installation"
+        pip install cryptography PyYAML . 2>&1 | grep -v "root" || true
+      else
+        echo "Detected Python 3.7+: Using standard pyproject.toml installation"
+        pip install ".[all]" 2>&1 | grep -v "root" || true
+      fi
   
   script:
     - echo "Testing on Python ${PYTHON_VERSION} against TST environment files"
+    - msgfmt locale/nl/LC_MESSAGES/check_truststore.po -o /dev/null
     - python3 check_truststore vars/tst/stores.yml --format text -d
-    - python3 check_truststore vars/tst/stores.yml --format json > output.json
-    - python3 -m json.tool output.json
+    - python3 check_truststore vars/tst/stores.yml --format json > output_${PYTHON_VERSION}.json
+    - python3 -m json.tool output_${PYTHON_VERSION}.json
 
-test_no_pydantic_fallback:
-  stage: test
-  image: python:3.6-slim
-  before_script:
-    - python3 -m pip install --upgrade pip 2>&1 | grep -v "Running pip as the 'root' user" || true
-    - pip install PyYAML cryptography 2>&1 | grep -v "Running pip as the 'root' user" || true
-  script:
-    - echo "Testing Fallback-mode (No Pydantic) on Python 3.6"
-    - python3 check_truststore vars/tst/stores.yml --format text -d
-    - python3 check_truststore vars/tst/stores.yml --format json > output_fallback.json
-    - python3 -m json.tool output_fallback.json
+  artifacts:
+    paths:
+      - output_*.json
+    expire_in: 1 week
