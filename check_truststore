@@ -546,7 +546,7 @@ class TrustChainBuilder:
 
         ski = self._get_extension(cert, x509.ExtensionOID.SUBJECT_KEY_IDENTIFIER)
         cn = self._get_common_name(cert)
-        cert_id = ski if ski else hashlib.md5(cert.subject.public_bytes()).hexdigest()
+        cert_id = ski if ski else hashlib.sha256(cert.subject.public_bytes()).hexdigest()
         formatted_serial = self._get_serial_number(cert)
 
         if cert_id in self.cert_data:
@@ -712,12 +712,15 @@ class TrustChainBuilder:
                 cert_info.is_valid = False
                 cert_info.validation_error = f"CHAIN_{parent_status}"
 
-            child_skis = sorted(children_by_parent.get(ski, []), key=lambda x: self.cert_data[x].common_name)
-            if child_skis:
-                cert_info.children = [to_node(c, cert_info.status_label) for c in child_skis]
-            else:
-                cert_info.children = []
+            child_skis = children_by_parent.get(ski, [])
+            sorted_child_skis = sorted(child_skis, key=lambda x: self.cert_data[x].common_name)
 
+            processed_children = []
+            for c_ski in sorted_child_skis:
+                child_node = to_node(c_ski, cert_info.status_label)
+                processed_children.append(child_node)
+
+            cert_info.children = processed_children
             return cert_info
 
         trusted_tree = []
@@ -952,7 +955,7 @@ class JsonRenderer(BaseRenderer):
         return data
 
 class StatusRenderer(BaseRenderer):
-    VERSION = "1.1.1"
+    VERSION = "1.1.0"
     EXIT_CODES = {
         "OK": 0,
         "WARNING": 1,
@@ -999,7 +1002,8 @@ class StatusRenderer(BaseRenderer):
                         "serialNumber": getattr(cert, "serial_number", "UNKNOWN"),
                         "signatureValid": getattr(cert, "signature_valid", None),
                         "expiryDate": self._format_zulu(getattr(cert, "expiry_date", None)),
-                        "trustStatus": status_info["label"]
+                        "trustStatus": status_info["label"],
+                        "statusCode": status_info["code"]
                     }
 
                     if getattr(cert, "is_system_cert", False):
@@ -1043,15 +1047,21 @@ class StatusRenderer(BaseRenderer):
         is_expiring = getattr(cert, "is_expiring_soon", False)
         sig_valid = getattr(cert, "signature_valid", True)
         expiry = getattr(cert, "expiry_date", None)
-        v_err = getattr(cert, "validation_error", "") or ""
+        v_error = getattr(cert, "validation_error", "") or ""
+        is_orphan = getattr(cert, "is_orphan", False)
+        
+        now = datetime.now(timezone.utc)
 
         if sig_valid is False:
-            return {"code": 4, "label": "INVALID"}
+            return {"code": 4, "label": "SIG_ERR"}
 
-        if expiry and isinstance(expiry, datetime) and expiry < datetime.now(timezone.utc):
+        if v_error:
+            return {"code": 4, "label": v_error}
+
+        if expiry and isinstance(expiry, datetime) and expiry < now:
             return {"code": 2, "label": "EXPIRED"}
 
-        if "MISSING_ISSUER" in v_err or "ORPHAN" in v_err or getattr(cert, "is_orphan", False):
+        if is_orphan or "MISSING_ISSUER" in v_error:
              return {"code": 3, "label": "INCOMPLETE"}
 
         if not is_valid:
@@ -1169,6 +1179,51 @@ class YamlInputProvider(BaseInputProvider):
                 groups.append(TrustStoreGroup(name=store_name, targets=group_certs))
             else:
                 WARNING.log(store_name, _("Group has NO valid certificates."), label=_("EMPTY_GROUP"))
+
+        return groups
+
+class JsonInputProvider(BaseInputProvider):
+    def __init__(self, json_path: Path, debug: bool = False):
+        self.json_path = json_path
+        self.debug = debug
+
+    def _get_json_content(self) -> Optional[dict]:
+        import json
+        if not self.json_path.exists():
+            return None
+        try:
+            with open(self.json_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, PermissionError):
+            return None
+
+    def get_groups(self) -> List[TrustStoreGroup]:
+        data = self._get_json_content()
+        if not data or not isinstance(data, dict):
+            return []
+
+        groups = []
+        for store in data.get("truststores", []):
+            store_name = store.get("name", "Unnamed Store")
+            source_dir = Path(store.get("cert_src_dir", "")).resolve()
+
+            group_certs = []
+            for link in store.get("cert_chain", []):
+                filename = link.get("link")
+                if not filename:
+                    continue
+
+                p = source_dir / filename
+
+                if p.exists():
+                    cert = self.load_certificate(p)
+                    if cert:
+                        group_certs.append(cert)
+                elif self.debug:
+                    pass
+
+            if group_certs:
+                groups.append(TrustStoreGroup(name=store_name, targets=group_certs))
 
         return groups
 
@@ -1325,6 +1380,14 @@ def main() -> None:
                 groups = provider.get_groups()
                 if not groups:
                     ERROR.log(_("Invalid input"), _("File '{path}' is not a valid configuration.").format(path=path.name))
+                    continue
+                analysis_groups.extend(groups)
+
+            elif path.suffix == '.json':
+                provider = JsonInputProvider(json_path=path, debug=args.debug)
+                groups = provider.get_groups()
+                if not groups:
+                    ERROR.log(_("Invalid input"), _("File '{path}' is not a valid JSON configuration.").format(path=path.name))
                     continue
                 analysis_groups.extend(groups)
 

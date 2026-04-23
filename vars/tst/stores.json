@@ -1,0 +1,23 @@
+{
+  "truststores": [
+    {
+      "name": "Internal Test Store",
+      "cert_src_dir": "files/certificates/tst/trust",
+      "cert_chain": [
+        { "link": "root.crt" },
+        { "link": "int-valid.crt" },
+        { "link": "int-expiring.crt" },
+        { "link": "int-noca.crt" },
+        { "link": "int-expired.crt" },
+        { "link": "server-ok.crt" },
+        { "link": "server-expiring.crt" },
+        { "link": "server-legacy.crt" },
+        { "link": "server-collision.crt" },
+        { "link": "orphan.crt" },
+        { "link": "root_fake.crt" },
+        { "link": "leaf_broken_sign.crt" },
+        { "link": "non_existing.crt" }
+      ]
+    }
+  ]
+}
