@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=42.0.0", "wheel"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "check_truststore"
-version = "0.1"
+version = "0.9.0"
 description = "Lightweight certificate trust chain analyzer"
 readme = "README.md"
 requires-python = ">=3.6"
@@ -12,16 +12,30 @@ license = {text = "GPL-3.0+"}
 authors = [{name = "Serge van Thillo"}]
 
 dependencies = [
-        "cryptography",
+    "cryptography",
 ]
 
 [project.optional-dependencies]
-yaml = ["PyYAML"]
-pydantic = ["pydantic>=2.0.0; python_version >= '3.8'"]
-all = ["PyYAML", "pydantic>=2.0.0; python_version >= '3.8'"]
+yaml = [
+    "PyYAML"
+]
+pydantic = [
+    "pydantic>=2.0.0; python_version >= '3.8'"
+]
+# 'all' combineert nu de bovenstaande twee groepen
+all = [
+    "check_truststore[yaml]",
+    "check_truststore[pydantic]"
+]
 
 [project.scripts]
-check_truststore = "check_truststore:main"
+check_truststore = "check_truststore.cli:main"
 
 [tool.setuptools]
-py-modules = ["check_truststore"]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+check_truststore = ["locale/**/*.mo", "locale/**/*.po"]

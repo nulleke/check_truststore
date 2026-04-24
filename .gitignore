@@ -1,18 +1,25 @@
-# --- Python & OS ---
 __pycache__/
 *.py[cod]
 *$py.class
+*.egg-info/
+UNKNOWN.egg-info/
+dist/
+build/
 .venv/
 venv/
 ENV/
+
+.vscode/
+.idea/
 .DS_Store
 *.orig
+*.swp
 
-# --- Gettext ---
-locale/*/LC_MESSAGES/*.mo
+**/*.mo
 *.po~
 
-# --- Certificats & Keys ---
+logs/
+
 **/*.key
 **/*.csr
 **/*.srl
@@ -27,16 +34,4 @@ vars/prd/
 files/certificates/tst/*
 !files/certificates/tst/trust/
 !files/certificates/tst/trust/*.crt
-output_*.json
 check_truststore.py
-UNKNOWN.egg-info/
-output_*.txt
-error_*.log
-debug_*.log
-output_*.json
-output_*.txt
-status_*.json
-debug_*.log
-error_*.log
-check_truststore.py
-UNKNOWN.egg-info/
