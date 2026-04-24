@@ -12,29 +12,44 @@ test_full_compatibility:
     matrix:
       - PYTHON_VERSION: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "3.15-rc"]
   rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH != "main"'
+      when: manual
+      allow_failure: true
     - if: $PYTHON_VERSION == "3.15-rc"
       allow_failure: true
-    - allow_failure: false
+    - when: on_success
+
   before_script:
     - apt-get update && apt-get install -y gettext
-    - python3 -m pip install --upgrade pip 2>&1 | grep -v "Running pip as the 'root' user" || true
     - |
       if [ "$PYTHON_VERSION" == "3.6" ]; then
-        echo "Detected Python 3.6: Using legacy installation"
-        pip install cryptography PyYAML . 2>&1 | grep -v "root" || true
+        echo ">>> Environment: Legacy (3.6)"
+        python3 -m pip install --quiet --upgrade "pip<22.0"
+        pip install cryptography PyYAML
       else
-        echo "Detected Python 3.7+: Using standard pyproject.toml installation"
-        pip install ".[all]" 2>&1 | grep -v "root" || true
+        echo ">>> Environment: Modern ($PYTHON_VERSION)"
+        python3 -m pip install --quiet --upgrade pip
+        pip install -e ".[all]"
+      fi    
+    - |
+      echo ">>> Compiling Translations inside src structure"
+      LOCALE_PATH="src/check_truststore/locale/nl/LC_MESSAGES"
+      if [ -f "$LOCALE_PATH/check_truststore.po" ]; then
+        msgfmt "$LOCALE_PATH/check_truststore.po" -o "$LOCALE_PATH/check_truststore.mo"
+        echo "✅ Translations compiled."
+      else
+        echo "⚠️ Warning: .po file not found in $LOCALE_PATH"
       fi
-  
+
   script:
-    - echo "Testing on Python ${PYTHON_VERSION} against TST environment files"
-    - msgfmt locale/nl/LC_MESSAGES/check_truststore.po -o /dev/null
-    - python3 check_truststore vars/tst/stores.yml --format text -d
-    - python3 check_truststore vars/tst/stores.yml --format json > output_${PYTHON_VERSION}.json
-    - python3 -m json.tool output_${PYTHON_VERSION}.json
+    - echo ">>> Running Analyzer on Python ${PYTHON_VERSION}"
+    - chmod +x check_truststore
+    - ./check_truststore vars/tst/stores.yml --format text -d
+    - ./check_truststore vars/tst/stores.yml --format json > output_${PYTHON_VERSION}.json
+    - python3 -m json.tool output_${PYTHON_VERSION}.json > /dev/null
 
   artifacts:
+    when: always
     paths:
       - output_*.json
     expire_in: 1 week

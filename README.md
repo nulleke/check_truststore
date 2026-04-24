@@ -23,6 +23,20 @@ A tool for system administrators and security engineers to audit certificate tru
     * **Ad-hoc Scanning:** Recursively scan directories for common certificate extensions (.crt, .pem, .cer, .der).
     * **Single File Audit:** Directly analyze individual files with automatic system truststore resolution.
 
+## 🛠 Installation & Setup
+The tool now follows a standard Python project structure and can be installed as an editable package.
+
+```bash
+# Clone the repository
+git clone https://gitlab.com/nulleke/check_truststore.git
+cd check_truststore
+
+# Install in editable mode with all dependencies (including Pydantic)
+pip install -e ".[all]"
+
+# The command 'check_truststore' is now available in your PATH (within your venv)
+```
+
 ## 🛠 Configuration
 The analyzer supports both YAML and JSON configuration files to define your environments and certificate locations.
 
@@ -66,6 +80,12 @@ This project is rigorously tested via **GitLab CI** across a full matrix of Pyth
 * **Compatibility Matrix:** Automated tests run on every version from 3.6 to 3.14.
 * **Fallback Validation:** We explicitly test a "No-Pydantic" environment to guarantee that the core logic remains 100% functional even when third-party validation libraries are missing.
 * **Logic Verification:** All date-based logic is validated against current 2026 standards.
+
+### Local Validation
+You can run the full compatibility suite locally using Podman to ensure your changes work across all supported Python versions:
+```bash
+./scripts/run_ci.sh
+```
 
 ## 📦 Requirements
 * **Python 3.6+** (Fully tested from 3.6 up to 3.14)
@@ -142,7 +162,6 @@ Use a YAML file to define specific truststores and environments.
 ```
 
 ## 📊 Output Examples
-
 The tool provides different views of your truststore health depending on your needs.
 
 ### JSON based output (Default)
@@ -215,12 +234,10 @@ The tool provides different views of your truststore health depending on your ne
 ]
 ```
 
-### 🚦 Detailed Status API (v1.1.0)
-
+### 🚦 Detailed Status API (v1.1.1)
 When using `--format status`, the tool generates a deep-inspection JSON object. This is ideal for integration with monitoring dashboards (Zabbix, Grafana) or automated security gateways.
 
 #### JSON Field Definitions
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `metadata.version` | `string` | The version of the TrustStore Analyzer engine. |
@@ -314,7 +331,6 @@ When using the `--format status` output, each certificate is assigned a numeric 
 > **Note on Thresholds:** The transition from `VALID` (0) to `EXPIRING_SOON` (1) is triggered when a certificate is within the `N`-day window defined by the `--threshold` argument.
 
 ## 🔍 Debugging & Scenario Analysis
-
 When running with the `--debug` flag, the tool outputs detailed logs to `stderr`. This is essential for understanding how the certificate tree is being constructed and where potential issues lie.
 
 ### Healthy Execution (Success)
@@ -363,7 +379,6 @@ The tool checks the current system time against the certificate's validity windo
 ```
 
 ## 🌐 Internationalization (i18n)
-
 The tool supports multiple languages via standard `gettext` locales.
 * **Language Selection:** The tool respects the `LANG` environment variable.
 * **Scope:** Only human-readable outputs (Debug logs and Text trees) are translated. Machine-to-machine outputs (JSON and Status formats) remain in technical English for stability.
@@ -373,13 +388,17 @@ The tool supports multiple languages via standard `gettext` locales.
 LANG=nl_NL.UTF-8 ./check_truststore vars/prod/stores.yml -d
 ```
 
+To update or add translations, use the provided utility script:
+```bash
+./scripts/translate.sh nl  # Updates Dutch translations
+```
+
 ## 🤝 Contributing
 Contributions are welcome! Whether it's reporting a bug, suggesting an enhancement, or submitting a pull request, your help is appreciated.
 
 Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for details on our development standards, legacy environment support (RHEL 8), and how to get started.
 
 ## ⚖️ License
-
 **Copyright (C) 2026 Serge van Thillo**
 
 This program is free software: you can redistribute it and/or modify it under the terms of the **GNU General Public License** as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
@@ -387,4 +406,4 @@ This program is free software: you can redistribute it and/or modify it under th
 This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the [GNU General Public License](https://www.gnu.org/licenses/gpl-3.0) for more details.
 
 ---
-**Status:** Stable / Production Ready | **Logic validated for current system date:** April 16, 2026
+**Status:** Version: 1.0.0 | Stable | **Logic validated for current system date:** April 24, 2026

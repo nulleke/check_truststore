@@ -1,0 +1,245 @@
+# Dutch translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Serge van Thillo <nulleke76@gmail.com>, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-04-24 14:19+0200\n"
+"PO-Revision-Date: 2026-04-13 11:08+0200\n"
+"Last-Translator: Serge van Thillo <nulleke76@gmail.com>\n"
+"Language-Team: Dutch <vertaling@vrijschrift.org>\n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/check_truststore/providers/yaml_provider.py:54
+msgid "Package 'pyyaml' is required for YAML support."
+msgstr "Pakket 'pyyaml' is vereist voor YAML-ondersteuning."
+
+#: src/check_truststore/providers/yaml_provider.py:84
+msgid "Unnamed Store"
+msgstr "Naamloze store"
+
+#: src/check_truststore/providers/yaml_provider.py:113
+msgid "File exists but failed to load certificate."
+msgstr "Bestand bestaat, maar laden van certificaat is mislukt."
+
+#: src/check_truststore/providers/yaml_provider.py:114
+msgid "LOAD_ERR"
+msgstr "LEES_FOUT"
+
+#: src/check_truststore/providers/yaml_provider.py:119
+msgid "Certificate file not found in {}"
+msgstr "Certificaatbestand niet gevonden in {}"
+
+#: src/check_truststore/providers/yaml_provider.py:120
+msgid "MISSING"
+msgstr "ONTBREEKT"
+
+#: src/check_truststore/providers/yaml_provider.py:127
+msgid "Group Loaded"
+msgstr "Groep geladen"
+
+#: src/check_truststore/providers/yaml_provider.py:128
+#, python-brace-format
+msgid "Group '{name}' loaded with {count} certificates."
+msgstr "Groep '{name}' geladen met {count} certificaten."
+
+#: src/check_truststore/providers/yaml_provider.py:136
+msgid "Group has NO valid certificates."
+msgstr "Groep heeft GEEN geldige certificaten."
+
+#: src/check_truststore/providers/yaml_provider.py:137
+msgid "EMPTY_GROUP"
+msgstr "LEGE_GROEP"
+
+#: src/check_truststore/renderers/__init__.py:20
+msgid "Unknown format: {}"
+msgstr "Onbekend formaat: {}"
+
+#: src/check_truststore/renderers/text_renderer.py:38
+msgid "Certificate Hierarchy:"
+msgstr "Certificaat Hiërarchie:"
+
+#: src/check_truststore/renderers/text_renderer.py:45
+#: src/check_truststore/renderers/text_renderer.py:48
+msgid "Unnamed Group"
+msgstr "Naamloze groep"
+
+#: src/check_truststore/renderers/text_renderer.py:56
+msgid "(No certificates found)"
+msgstr "(Geen certificaten gevonden)"
+
+#: src/check_truststore/renderers/text_renderer.py:67
+#: src/check_truststore/engine/core.py:616
+#: src/check_truststore/engine/core.py:618
+msgid "Unknown"
+msgstr "Onbekend"
+
+#: src/check_truststore/renderers/text_renderer.py:103
+#: src/check_truststore/engine/core.py:404
+msgid "SIG_ERR"
+msgstr "SIG_FOUT"
+
+#: src/check_truststore/renderers/text_renderer.py:107
+#: src/check_truststore/cli.py:58
+msgid "EXPIRED"
+msgstr "VERLOPEN"
+
+#: src/check_truststore/renderers/text_renderer.py:109
+msgid "EXTERNAL ISSUER / MISSING ROOT"
+msgstr "EXTERNE UITGEVER / ONBEKENDE ROOT"
+
+#: src/check_truststore/renderers/text_renderer.py:120
+msgid "ALT"
+msgstr "ALT"
+
+#: src/check_truststore/engine/core.py:77
+msgid "Skipping duplicate certificate (already loaded)"
+msgstr "Duplicaat certificaat overgeslagen (reeds geladen)"
+
+#: src/check_truststore/engine/core.py:78
+msgid "DUPLICATE"
+msgstr "DUPLICAAT"
+
+#: src/check_truststore/engine/core.py:100
+msgid "Invalid certificate structure"
+msgstr "Ongeldige certificaat structuur"
+
+#: src/check_truststore/engine/core.py:105
+#: src/check_truststore/engine/core.py:115
+msgid "READ_ERROR"
+msgstr "LEES_FOUT"
+
+#: src/check_truststore/engine/core.py:107
+msgid "File not found"
+msgstr "Bestand niet gevonden"
+
+#: src/check_truststore/engine/core.py:109
+msgid "Permission denied"
+msgstr "Toegang geweigerd"
+
+#: src/check_truststore/engine/core.py:407 src/check_truststore/cli.py:57
+msgid "INVALID"
+msgstr "ONGELDIG"
+
+#: src/check_truststore/engine/core.py:442
+#, python-brace-format
+msgid "Missing issuer for: {name}"
+msgstr "Ontbrekende issuer voor: {name}"
+
+#: src/check_truststore/engine/core.py:445
+msgid "UNTRUSTED"
+msgstr "GEEN_TRUST"
+
+#: src/check_truststore/engine/core.py:706
+msgid "Processing Group"
+msgstr "Groep verwerken"
+
+#: src/check_truststore/engine/core.py:747
+msgid "System usage"
+msgstr "Systeemgebruik"
+
+# python-brace-format
+#: src/check_truststore/engine/core.py:748
+#, python-brace-format
+msgid "Used {used} out of {total} system certs"
+msgstr "{used} van de {total} systeem-certificaten gebruikt"
+
+#: src/check_truststore/cli.py:52
+msgid "ERROR"
+msgstr "FOUT"
+
+#: src/check_truststore/cli.py:53
+msgid "WARNING"
+msgstr "WAARSCHUWING"
+
+#: src/check_truststore/cli.py:54
+msgid "OK"
+msgstr "OK"
+
+#: src/check_truststore/cli.py:55
+msgid "INFO"
+msgstr "INFO"
+
+#: src/check_truststore/cli.py:56
+msgid "CHAIN"
+msgstr "KETEN"
+
+#: src/check_truststore/cli.py:59
+msgid "EXPIRING"
+msgstr "BINNENKORT_VERLOPEND"
+
+#: src/check_truststore/cli.py:60
+msgid "SYSTEM"
+msgstr "SYSTEEM"
+
+#: src/check_truststore/cli.py:61
+msgid "PARENT_NOT_A_CA"
+msgstr "OUDER_GEEN_CA"
+
+#: src/check_truststore/cli.py:67
+#, python-brace-format
+msgid "Path '{path}' does not exist."
+msgstr "Pad '{path}' bestaat niet."
+
+#: src/check_truststore/cli.py:73
+msgid "Analyze certificate truststores and visualize the chain hierarchy."
+msgstr "Analyseer certificaat truststores en visualiseer de hiërarchie."
+
+#: src/check_truststore/cli.py:75
+msgid "Compatible with Python 3.6+"
+msgstr "Compatibel met Python 3.6+"
+
+#: src/check_truststore/cli.py:79
+msgid "Path to the input source(s)"
+msgstr "Pad naar de invoerbron(en)"
+
+#: src/check_truststore/cli.py:86
+msgid "Show this help message and exit"
+msgstr "Toon dit helpbericht en sluit af"
+
+#: src/check_truststore/cli.py:93
+msgid "Output format"
+msgstr "Output formaat"
+
+#: src/check_truststore/cli.py:96
+msgid "Show debug info"
+msgstr "Toon debug informatie"
+
+#: src/check_truststore/cli.py:103
+msgid "Incorporate system truststore"
+msgstr "Systeem-truststore betrekken bij analyse"
+
+#: src/check_truststore/cli.py:110
+msgid "Expiration threshold in days (default: 30)"
+msgstr "Vervaldrempel in dagen (standaard: 30)"
+
+#: src/check_truststore/cli.py:116
+msgid "Display Subject Alternative Names (SAN) in the tree view"
+msgstr "Toon alternatieve namen (SAN) in de hiërarchie"
+
+#: src/check_truststore/cli.py:126
+msgid "Starting analysis"
+msgstr "Analyse wordt gestart"
+
+#: src/check_truststore/cli.py:149
+msgid "No certificates found via this provider."
+msgstr "Geen certificaten gevonden via de provider."
+
+#: src/check_truststore/cli.py:156
+msgid "No certificates found to display."
+msgstr "Geen certificaten gevonden om weer te geven."
+
+#: src/check_truststore/cli.py:178
+msgid "Analysis interrupted by user"
+msgstr "Analyse afgebroken door gebruiker"
+
+#: src/check_truststore/cli.py:183
+msgid "An unexpected error occurred"
+msgstr "Er is een onverwachte fout opgetreden"
