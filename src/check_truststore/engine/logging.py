@@ -9,7 +9,6 @@ stderr to keep stdout clean for data redirection (JSON/XML).
 
 import sys
 import gettext
-import os
 from pathlib import Path
 from typing import Optional
 

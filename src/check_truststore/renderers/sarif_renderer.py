@@ -27,7 +27,7 @@ class SarifRenderer(BaseRenderer):
                 from importlib.metadata import version
                 tool_version = version("check_truststore")
             except Exception:
-                tool_version = "1.1.0-stable"
+                tool_version = "1.1.1"
 
             groups = tree_data if isinstance(tree_data, list) else [tree_data]
             results = []

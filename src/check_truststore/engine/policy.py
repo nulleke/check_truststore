@@ -10,6 +10,7 @@ from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import rsa, ec, padding as rsa_padding
 from cryptography.hazmat.primitives import hashes
 from cryptography.x509.oid import ExtensionOID, ExtendedKeyUsageOID
+from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
 
 class PolicyFinding:
     """
@@ -56,6 +57,7 @@ class PolicyEngine:
         """
         self.min_rsa_bits = 2048
         self.min_ecdsa_bits = 256
+        self.debug = kwargs.get('debug', False)
 
     def validate(self, cert: x509.Certificate, issuer: Optional[x509.Certificate] = None) -> List[PolicyFinding]:
         """
@@ -127,12 +129,24 @@ class PolicyEngine:
                     signature, data, rsa_padding.PKCS1v15(), hash_algo
                 )
                 return True
+            
             elif isinstance(issuer_public_key, ec.EllipticCurvePublicKey):
                 issuer_public_key.verify(signature, data, ec.ECDSA(hash_algo))
                 return True
+            
             else:
-                issuer_public_key.verify(signature, data, hash_algo)
+                issuer_public_key.verify(signature, data)
                 return True
+
+        except UnsupportedAlgorithm:
+            if self.debug:
+                 from .logging import WARNING
+                 WARNING.log("SIG_CHECK", f"Unsupported algorithm: {cert_to_check.signature_hash_algorithm.name if hash_algo else 'Unknown'}")
+            return False 
+            
+        except InvalidSignature:
+            return False
+            
         except Exception:
             return False
 

@@ -22,6 +22,8 @@ A tool for system administrators and security engineers to audit certificate tru
     * **Structured Config:** Parse complex environments using YAML or JSON definition files.
     * **Ad-hoc Scanning:** Recursively scan directories for common certificate extensions (.crt, .pem, .cer, .der).
     * **Single File Audit:** Directly analyze individual files with automatic system truststore resolution.
+* **RFC 5280 Compliant Path Building**: Uses AKI/SKI stringing instead of unreliable Subject/Issuer name matching.
+* **Cryptographic Chain Integrity**: Full support for signature verification across RSA and ECDSA algorithms.
 
 ## 🛠 Installation & Setup
 The tool now follows a standard Python project structure and can be installed as an editable package.
@@ -118,6 +120,25 @@ The tool uses the following icons to provide a quick overview of certificate hea
     * **Result:** You get a consistent `(ID: abcdef12)` label across both the table and the hierarchy, allowing you to trace issuer/subject relationships with cryptographic certainty.
 * **Name Collisions [👯]**: Even with ID tracking, name collisions occur (e.g., two different CAs using the same Common Name). The tool detects these based on differing Public Key IDs and flags them. This ensures you can distinguish between them even if they appear identical in the hierarchy.
 * **`EXTERNAL_OR_MISSING_ISSUER` [❓]**: A virtual node for certificates whose issuer (Root or Intermediate) was not found in the provided source directories or the system truststore. The debug log will specify the exact **AKI (Authority Key Identifier)** needed to complete the chain.
+
+### 📜 Technical Foundation (RFC 5280)
+
+The **TrustStore Analyzer** is built upon the standards defined in **RFC 5280** (Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile). It implements the formal path validation logic required to establish trust in a digital identity.
+
+### 🏗️ Path Construction & Validation
+
+Unlike simpler tools that rely on filenames or filesystem paths, this analyzer performs deep inspection of the certificate extensions:
+
+* **Authority Key Identifier (AKI) & Subject Key Identifier (SKI)**: The tool uses these extensions (as defined in RFC 5280, Section 4.2.1.1) to bridge certificates. This is the only reliable way to build a chain when multiple certificates share the same Common Name (Name Collisions).
+* **Basic Constraints**: It validates the `cA` boolean and `pathLenConstraint` to ensure that an intermediate certificate is actually authorized to sign other certificates.
+* **Key Usage**: Checks if the `keyCertSign` bit is set for issuers, preventing security flaws where a non-CA certificate is used to sign a chain.
+
+### 🆔 Identity Strategy
+
+* **Persistent Identity (ID)**: The tool uniquely identifies certificates using their **Subject Key Identifier (SKI)**.
+    * If the official SKI extension is present, it is used as the primary identifier.
+    * If the extension is missing (common in legacy or custom test-certs), the tool generates a **deterministic SHA-256 hash** of the public key, adhering to the spirit of RFC 5280's identification requirements.
+    * Result: You get a consistent `(ID: abcdef12)` label across both the table and the hierarchy, allowing you to trace issuer/subject relationships with cryptographic certainty.
 
 ## 🛡️ System Truststore Integration
 By default, the tool only analyzes the certificates explicitly defined in your YAML configuration. However, to verify if your local chain is ultimately trusted by the operating system, you can enable system integration.
@@ -406,4 +427,4 @@ This program is free software: you can redistribute it and/or modify it under th
 This project is licensed under the **LGPL-3.0-or-later** - see the [LICENSE](LICENSE) file for details.
 
 ---
-**Status:** Version: 1.0.0 | Stable | **Logic validated for current system date:** April 24, 2026
+**Status:** Version: 1.1.1 | Stable | **Logic validated for current system date:** April 29, 2026

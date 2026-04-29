@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-29 10:58+0200\n"
+"POT-Creation-Date: 2026-04-29 17:11+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -42,125 +42,121 @@ msgstr ""
 msgid "Permission denied"
 msgstr ""
 
-#: src/check_truststore/engine/core.py:382
+#: src/check_truststore/engine/core.py:409
 msgid "SIG_ERR"
 msgstr ""
 
-#: src/check_truststore/engine/core.py:385
+#: src/check_truststore/engine/core.py:412
 msgid "REVOKED"
 msgstr ""
 
-#: src/check_truststore/engine/core.py:388 src/check_truststore/cli.py:96
+#: src/check_truststore/engine/core.py:415 src/check_truststore/cli.py:96
 msgid "INVALID"
 msgstr ""
 
-#: src/check_truststore/engine/core.py:431
+#: src/check_truststore/engine/core.py:458
 #, python-brace-format
 msgid "Missing issuer for: {name}"
 msgstr ""
 
-#: src/check_truststore/engine/core.py:434
+#: src/check_truststore/engine/core.py:461
 msgid "UNTRUSTED"
 msgstr ""
 
-#: src/check_truststore/engine/core.py:608
-#: src/check_truststore/engine/core.py:610
-#: src/check_truststore/renderers/text_renderer.py:83
+#: src/check_truststore/engine/core.py:637
+#: src/check_truststore/engine/core.py:639
+#: src/check_truststore/renderers/text_renderer.py:84
 msgid "Unknown"
 msgstr ""
 
-#: src/check_truststore/engine/core.py:691
+#: src/check_truststore/engine/core.py:720
 msgid "Successfully discovered issuer"
 msgstr ""
 
-#: src/check_truststore/engine/core.py:756
+#: src/check_truststore/engine/core.py:785
 msgid "Processing Group"
 msgstr ""
 
-#: src/check_truststore/engine/core.py:802
+#: src/check_truststore/engine/core.py:831
 msgid "System usage"
 msgstr ""
 
-#: src/check_truststore/engine/core.py:803
+#: src/check_truststore/engine/core.py:832
 #, python-brace-format
 msgid "Used {used} out of {total} system certs"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:68
+#: src/check_truststore/engine/discovery.py:74
 msgid "Could not create cache directory"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:85
+#: src/check_truststore/engine/discovery.py:91
 msgid "Loaded from local cache"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:85
-#: src/check_truststore/engine/discovery.py:354
+#: src/check_truststore/engine/discovery.py:91
+#: src/check_truststore/engine/discovery.py:292
 msgid "CACHE"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:109
-msgid "Cache file is older than 10 days, refreshing..."
-msgstr ""
-
-#: src/check_truststore/engine/discovery.py:121
-msgid "Cached certificate expired on"
-msgstr ""
-
-#: src/check_truststore/engine/discovery.py:128
-msgid "Error reading cache"
-msgstr ""
-
-#: src/check_truststore/engine/discovery.py:139
-msgid "Could not save certificate to cache"
-msgstr ""
-
-#: src/check_truststore/engine/discovery.py:156
-msgid "Could not resolve host"
-msgstr ""
-
-#: src/check_truststore/engine/discovery.py:190
+#: src/check_truststore/engine/discovery.py:134
 msgid "Downloading"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:201
+#: src/check_truststore/engine/discovery.py:145
 msgid "Certificate too large"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:214
+#: src/check_truststore/engine/discovery.py:158
 msgid "Could not load cert from"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:214
+#: src/check_truststore/engine/discovery.py:158
 msgid "Tried DER & PEM"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:220
+#: src/check_truststore/engine/discovery.py:164
 msgid "Connection failed"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:306
-msgid "Checking CRL fallback..."
-msgstr ""
-
-#: src/check_truststore/engine/discovery.py:335
+#: src/check_truststore/engine/discovery.py:275
 msgid "No CRL endpoints found in certificate"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:354
+#: src/check_truststore/engine/discovery.py:292
 msgid "Using cached CRL for"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:358
-msgid "Cached CRL expired"
+#: src/check_truststore/engine/discovery.py:295
+msgid "Cached CRL is stale (nextUpdate passed)"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:358
+#: src/check_truststore/engine/discovery.py:295
 msgid "EXPIRE"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:369
+#: src/check_truststore/engine/discovery.py:306
 msgid "Downloading CRL"
+msgstr ""
+
+#: src/check_truststore/engine/discovery.py:346
+msgid "Cache expired based on TTL, refreshing..."
+msgstr ""
+
+#: src/check_truststore/engine/discovery.py:355
+msgid "Cached certificate expired on"
+msgstr ""
+
+#: src/check_truststore/engine/discovery.py:362
+msgid "Error reading cache"
+msgstr ""
+
+#: src/check_truststore/engine/discovery.py:392
+msgid "Could not resolve host"
+msgstr ""
+
+#: src/check_truststore/engine/discovery.py:403
+msgid "Could not save certificate to cache"
 msgstr ""
 
 #: src/check_truststore/providers/json_provider.py:64
@@ -217,28 +213,28 @@ msgstr ""
 msgid "Unknown format: {}"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:40
+#: src/check_truststore/renderers/text_renderer.py:41
 msgid "Certificate Hierarchy:"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:47
-#: src/check_truststore/renderers/text_renderer.py:50
+#: src/check_truststore/renderers/text_renderer.py:48
+#: src/check_truststore/renderers/text_renderer.py:51
 msgid "Unnamed Group"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:58
+#: src/check_truststore/renderers/text_renderer.py:59
 msgid "(No certificates found)"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:125
+#: src/check_truststore/renderers/text_renderer.py:126
 msgid "EXTERNAL ISSUER / MISSING ROOT"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:136
+#: src/check_truststore/renderers/text_renderer.py:137
 msgid "Usage"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:144
+#: src/check_truststore/renderers/text_renderer.py:145
 msgid "ALT"
 msgstr ""
 

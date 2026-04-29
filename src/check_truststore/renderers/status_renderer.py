@@ -41,7 +41,7 @@ class StatusRenderer(BaseRenderer):
                 from importlib.metadata import version
                 tool_engine = version("check_truststore")
             except Exception:
-                tool_engine = "1.1.0-stable"
+                tool_engine = "1.1.1"
 
             report_groups: List[Dict[str, Any]] = []
             system_certs_global: Dict[str, Dict[str, Any]] = {}
