@@ -12,7 +12,24 @@ from .logging import Icons
 
 ORPHAN_NODE_ID = "EXTERNAL_OR_MISSING_ISSUER"
 
+class Finding:
+    """
+    Represents a specific policy violation or observation.
+    Standardized for SARIF, JSON, and UI output.
+    """
+    def __init__(self, code: str, message: str, level: str = "ERROR", code_int: int = 4):
+        self.code = code
+        self.code_int = code_int
+        self.message = message
+        self.level = level
 
+    def model_dump(self) -> Dict[str, Any]:
+        return {
+            "code": self.code,
+            "code_int": self.code_int,
+            "message": self.message,
+            "level": self.level
+        }
 class _BaseUniversal:
     """
     Shared logic for both Pydantic and non-Pydantic implementations.
@@ -41,6 +58,49 @@ class _BaseUniversal:
                 data.update(special)
         return data
 
+    def get_audit_status(self) -> Dict[str, Any]:
+        """
+        Single Source of Truth voor de status van een certificaat.
+        """
+        v_err = getattr(self, "validation_error", "") or ""
+        cn = getattr(self, "common_name", "")
+
+        if cn == ORPHAN_NODE_ID or "CHAIN_INCOMPLETE" in v_err or "MISSING_ISSUER" in v_err:
+            return {"code": 3, "label": "INCOMPLETE", "message": "Trust chain is incomplete.", "level": "error"}
+
+        if "CHAIN_EXPIRED" in v_err:
+            return {"code": 2, "label": "EXPIRED", "message": "Trust chain is broken due to expired parent.", "level": "error"}
+
+        findings = getattr(self, "findings", [])
+        if findings:
+            critical = sorted([f for f in findings if f.level == "ERROR"], key=lambda x: x.code_int, reverse=True)
+            if critical:
+                f = critical[0]
+                return {"code": f.code_int, "label": f.code, "message": f.message, "level": "error"}
+
+        if getattr(self, "signature_valid", None) is False:
+            return {"code": 4, "label": "SIG_ERR", "message": "Signature verification failed.", "level": "error"}
+
+        now = datetime.now(timezone.utc)
+        expiry = getattr(self, "expiry_date", None)
+
+        if isinstance(expiry, datetime) and expiry < now:
+            return {"code": 2, "label": "EXPIRED", "message": "Certificate has expired.", "level": "error"}
+
+        if getattr(self, "ocsp_status", "UNKNOWN") == "REVOKED":
+            return {"code": 5, "label": "REVOKED", "message": "Certificate is revoked.", "level": "error"}
+
+        if getattr(self, "is_expiring_soon", False):
+            return {"code": 1, "label": "EXPIRING", "message": "Certificate is expiring soon.", "level": "warning"}
+
+        if getattr(self, "is_system_cert", False):
+            return {"code": 0, "label": "SYSTEM", "message": "System trust store certificate.", "level": "note"}
+
+        if getattr(self, "is_aia_cert", False):
+            return {"code": 0, "label": "AIA", "message": "Fetched via Authority Information Access.", "level": "note"}
+
+        return {"code": 0, "label": "VALID", "message": "Valid", "level": "note"}
+
     @property
     def signature_icon(self) -> str:
         """Returns a visual icon based on the cryptographic signature status."""
@@ -53,22 +113,7 @@ class _BaseUniversal:
 
     @property
     def status_label(self) -> str:
-        """
-        Determines a short string label representing the certificate's health.
-        Order of priority: Validation Errors > Signature Errors > Expiry > System status.
-        """
-        v_err = getattr(self, "validation_error", None)
-        if v_err:
-            return v_err
-        if getattr(self, "signature_valid", None) is False:
-            return "SIG_ERR"
-        if not getattr(self, "is_valid", False):
-            return "INVALID"
-        if getattr(self, "is_expiring_soon", False):
-            return "EXPIRING"
-        if getattr(self, "is_system_cert", False):
-            return "SYSTEM"
-        return "VALID"
+        return self.get_audit_status()["label"]
 
 
 if PYDANTIC_AVAILABLE:
@@ -201,6 +246,8 @@ if PYDANTIC_AVAILABLE:
         expiry_date: Union[datetime, str] = Field("1970-01-01", alias="expiryDate")
         is_collision: bool = Field(False, alias="isCollision", exclude=True)
         is_system_cert: bool = Field(False, alias="isSystemCert", exclude=True)
+        is_aia_cert: bool = Field(False, alias="isAiaCert", exclude=True)
+        ocsp_status: str = Field("UNKNOWN", alias="ocspStatus", exclude=True)
         is_root: bool = Field(False, alias="isRoot", exclude=True)
         cert_id: str = Field("", alias="certId", exclude=True)
         san_names: List[str] = Field(
@@ -208,6 +255,7 @@ if PYDANTIC_AVAILABLE:
         )
         signature_valid: Optional[bool] = Field(None, exclude=True)
         validation_error: Optional[str] = Field(None, exclude=True)
+        findings: List[Any] = Field(default_factory=list, exclude=False)
         children: Optional[List["Certificate"]] = Field(default_factory=list)
 
         ski: Optional[str] = Field(None, exclude=True)
@@ -224,6 +272,10 @@ if PYDANTIC_AVAILABLE:
         def model_dump(self, **kwargs):
             """Custom dump logic to ensure recursive sorting of children."""
             d = super().model_dump(by_alias=True, **kwargs)
+            d["auditStatus"] = self.get_audit_status()
+            if self.findings:
+                d["findings"] = [f.model_dump() if hasattr(f, "model_dump") else str(f) for f in self.findings]
+
             if self.children:
                 sorted_children = sorted(
                     self.children,
@@ -239,12 +291,16 @@ if PYDANTIC_AVAILABLE:
 
             return d
 
+        def add_finding(self, finding):
+            self.findings.append(finding)
+
 else:
 
     class Certificate(_BaseUniversal):
         """Fallback implementation of Certificate for environments without Pydantic."""
 
         def __init__(self, **kwargs):
+            self.findings = []
             data = self._apply_special_logic(kwargs)
 
             mapping = {
@@ -259,6 +315,8 @@ else:
                 "validationError": "validation_error",
                 "isSystemCert": "is_system_cert",
                 "isRoot": "is_root",
+                "isAiaCert": "is_aia_cert",
+                "ocspStatus": "ocsp_status",
                 "isCollision": "is_collision",
                 "certId": "cert_id",
                 "sanNames": "san_names",
@@ -267,6 +325,8 @@ else:
             self.children = []
             for k, v in data.items():
                 setattr(self, mapping.get(k, k), v)
+
+            self.ocsp_status = data.get("ocsp_status", data.get("ocspStatus", "UNKNOWN"))
 
             # Manual date parsing for older Python versions
             if (
@@ -288,13 +348,15 @@ else:
                 "serialNumber": getattr(self, "serial_number", "UNKNOWN"),
                 "isValid": getattr(self, "is_valid", False),
                 "isExpiringSoon": getattr(self, "is_expiring_soon", False),
-                "expiryDate": self.expiry_date.isoformat().replace("+00:00", "Z")
-                if isinstance(getattr(self, "expiry_date", None), datetime)
-                else "1970-01-01",
+                "expiryDate": self.expiry_date.isoformat().replace("+00:00", "Z") if isinstance(getattr(self, "expiry_date", None), datetime) else "1970-01-01",
                 "signatureValid": getattr(self, "signature_valid", None),
                 "sha256Hash": getattr(self, "sha256_hash", ""),
                 "isSystemCert": getattr(self, "is_system_cert", False),
+                "ocspStatus": getattr(self, "ocsp_status", "UNKNOWN"),
                 "certId": getattr(self, "cert_id", ""),
+                "auditStatus": self.get_audit_status(),
+                "isAiaCert": getattr(self, "is_aia_cert", False),
+                "findings": [f.__dict__ if hasattr(f, "__dict__") else str(f) for f in self.findings],
             }
             if self.children:
                 sorted_children = sorted(
@@ -310,6 +372,8 @@ else:
                 res["children"] = []
             return res
 
+        def add_finding(self, finding):
+            self.findings.append(finding)
 
 # Rebuild models for Pydantic to handle recursive self-references ("Certificate")
 if PYDANTIC_AVAILABLE:

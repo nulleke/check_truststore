@@ -1,0 +1,155 @@
+"""
+TrustStore Analyzer & Visualizer - SARIF RENDERER
+Architect: Serge van Thillo
+"""
+
+import json
+from typing import Any, Dict, List
+
+from .base import BaseRenderer
+
+
+class SarifRenderer(BaseRenderer):
+    """
+    Renders audit results in the industry-standard SARIF format.
+    This allows the TrustStore Analyzer to act as a security linter.
+    """
+
+    SARIF_SCHEMA = "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json"
+    SARIF_VERSION = "2.1.0"
+
+    def render(self, tree_data: Any, **kwargs) -> str:
+        """
+        Converts the certificate tree data into a SARIF log.
+        """
+        try:
+            try:
+                from importlib.metadata import version
+                tool_version = version("check_truststore")
+            except Exception:
+                tool_version = "1.1.1"
+
+            groups = tree_data if isinstance(tree_data, list) else [tree_data]
+            results = []
+
+            for group in groups:
+                all_nodes = getattr(group, "chain", [])
+
+                for cert in all_nodes:
+                    if getattr(cert, "is_system_cert", False):
+                        continue
+
+                    audit = cert.get_audit_status()
+
+                    if audit["code"] == 0:
+                        continue
+
+                    results.append(self._create_result(cert, audit))
+
+            sarif_log = {
+                "$schema": self.SARIF_SCHEMA,
+                "version": self.SARIF_VERSION,
+                "runs": [
+                    {
+                        "tool": {
+                            "driver": {
+                                "name": "TrustStore Analyzer",
+                                "semanticVersion": tool_version,
+                                "informationUri": "https://gitlab.com/nulleke/check_truststore",
+                                "rules": self._get_rule_definitions()
+                            }
+                        },
+                        "results": results
+                    }
+                ]
+            }
+
+            return json.dumps(sarif_log, indent=2)
+
+        except Exception as e:
+            return json.dumps({"error": f"SARIF rendering failed: {str(e)}"}, indent=2)
+
+    def _create_result(self, cert: Any, audit: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Maps a certificate finding to a SARIF result object.
+        """
+        rule_id = f"TSA-{audit['code']:03d}"
+        file_path = getattr(cert, "file_name", "unknown_location")
+        common_name = getattr(cert, "common_name", "Unknown")
+
+        return {
+            "ruleId": rule_id,
+            "level": self._map_level(audit["label"]),
+            "message": {
+                "text": f"Certificate '{common_name}' failed validation: {audit['message']}"
+            },
+            "locations": [
+                {
+                    "physicalLocation": {
+                        "artifactLocation": {
+                            "uri": file_path,
+                            "uriBaseId": "PROJECTROOT"
+                        },
+                        "region": {
+                            "startLine": 1
+                        }
+                    }
+                }
+            ],
+            "properties": {
+                "commonName": common_name,
+                "serialNumber": getattr(cert, "serial_number", ""),
+                "expiryDate": self._format_iso(getattr(cert, "expiry_date", ""))
+            }
+        }
+
+    def _map_level(self, label: str) -> str:
+        """
+        Maps internal labels to SARIF severity levels (error, warning, note).
+        """
+        mapping = {
+            "OK": "note",
+            "WARNING": "warning",
+            "EXPIRED": "error",
+            "INCOMPLETE": "error",
+            "INVALID": "error",
+            "REVOKED": "error"
+        }
+        return mapping.get(label, "warning")
+
+    def _get_rule_definitions(self) -> List[Dict[str, Any]]:
+        """
+        Returns static definitions for the TSA rules.
+        """
+        return [
+            {
+                "id": "TSA-001",
+                "shortDescription": { "text": "Certificate nearing expiration" },
+                "fullDescription": { "text": "The certificate is still valid but will expire soon (warning threshold)." },
+                "defaultConfiguration": { "level": "warning" }
+            },
+            {
+                "id": "TSA-002",
+                "shortDescription": { "text": "Certificate expired" },
+                "fullDescription": { "text": "The certificate (or one of its parents) has expired." },
+                "defaultConfiguration": { "level": "error" }
+            },
+            {
+                "id": "TSA-003",
+                "shortDescription": { "text": "Incomplete trust chain" },
+                "fullDescription": { "text": "The certificate issuer could not be found." },
+                "defaultConfiguration": { "level": "error" }
+            },
+            {
+                "id": "TSA-004",
+                "shortDescription": { "text": "Invalid certificate" },
+                "fullDescription": { "text": "Structural validation or signature check failed." },
+                "defaultConfiguration": { "level": "error" }
+            },
+            {
+                "id": "TSA-005",
+                "shortDescription": { "text": "Revoked certificate" },
+                "fullDescription": { "text": "The certificate has been explicitly revoked." },
+                "defaultConfiguration": { "level": "error" }
+            }
+        ]

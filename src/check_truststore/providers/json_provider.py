@@ -2,99 +2,97 @@
 TrustStore Analyzer & Visualizer - JSON PROVIDER
 Architect: Serge van Thillo
 
-Implementation of a configuration-driven input provider. This provider reads
-a JSON schema to define multiple truststores, their source directories,
-and the specific certificate chains that need to be validated.
+JSON provider for internal truststore configuration schemas.
 """
 
+import json
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union, Dict
 from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
-from check_truststore.engine.core import CertificateRepository
-
+from check_truststore.engine.core import CertificateRepository, _, WARNING
 
 class JsonInputProvider(BaseInputProvider):
     """
-    Parses a JSON configuration file to discover and group certificates.
-    Useful for batch processing and automated audit environments.
+    Parses JSON files to discover and group certificates based on
+    the tool's internal configuration format.
     """
 
     def __init__(
         self,
-        json_path: Path,
+        input_source: Union[Path, str],
         repository: Optional[CertificateRepository] = None,
-        debug: bool = False,
+        is_raw_data: bool = False,
+        **kwargs,
     ):
-        """
-        Initializes the JSON provider.
+        super().__init__(repository=repository, **kwargs)
+        self.input_source = input_source
+        self.is_raw_data = is_raw_data
 
-        Args:
-            json_path: Path to the JSON configuration file.
-            repository: Optional shared repository for certificate loading.
-            debug: If True, enables extended error reporting during parsing.
+    def _get_json_content(self) -> Optional[Dict]:
         """
-        super().__init__(repository=repository)
-        self.json_path = json_path
-        self.debug = debug
+        Safely loads JSON data from a file or raw string.
+        """
+        if self.is_raw_data:
+            try:
+                content = json.loads(self.input_source)
+                return content if isinstance(content, dict) else None
+            except json.JSONDecodeError:
+                return None
 
-    def _get_json_content(self) -> Optional[dict]:
-        """
-        Safely reads and decodes the JSON file content.
-        """
-        import json
-
-        if not self.json_path.exists():
+        path = Path(self.input_source)
+        if not path.is_file():
             return None
+
         try:
-            with open(self.json_path, "r", encoding="utf-8") as f:
+            with open(path, "r", encoding="utf-8") as f:
                 return json.load(f)
         except (json.JSONDecodeError, PermissionError):
             return None
 
     def get_groups(self) -> List[TrustStoreGroup]:
         """
-        Processes the 'truststores' definition in the JSON and returns
-        the mapped TrustStoreGroups.
-
-        Expected JSON structure:
-        {
-            "truststores": [
-                {
-                    "name": "Production API",
-                    "cert_src_dir": "/path/to/certs",
-                    "cert_chain": [{"link": "server.crt"}, {"link": "intermediate.crt"}]
-                }
-            ]
-        }
+        Detects the JSON schema using deep structural validation.
         """
         data = self._get_json_content()
         if not data or not isinstance(data, dict):
             return []
 
+        if "truststores" in data and isinstance(data["truststores"], list):
+            return self._parse_internal_format(data)
+
+        if self.debug:
+            WARNING.log(str(self.input_source), _("Unknown JSON format or malformed structure."))
+
+        return []
+
+    def _parse_internal_format(self, data: Dict) -> List[TrustStoreGroup]:
+        """
+        Parses the tool's native truststore configuration format.
+        """
+        config_path = Path(self.input_source)
+        base_dir = config_path.parent if not self.is_raw_data else Path.cwd()
         groups = []
-        # Iterate through defined truststores in the config
+
         for store in data.get("truststores", []):
-            store_name = store.get("name", "Unnamed Store")
-            # Resolve the source directory relative to the config file or absolute
-            source_dir = Path(store.get("cert_src_dir", "")).resolve()
+            store_name = store.get("name", _("Unnamed Store"))
+            raw_src_dir = store.get("cert_src_dir", ".")
+            raw_src_path = Path(raw_src_dir)
+
+            if raw_src_path.is_absolute():
+                source_dir = raw_src_path
+            else:
+                candidate = (base_dir / raw_src_path).resolve()
+                source_dir = candidate if candidate.exists() else raw_src_path.resolve()
 
             group_certs = []
             for link in store.get("cert_chain", []):
                 filename = link.get("link")
                 if not filename:
                     continue
-
                 p = source_dir / filename
+                if p.is_file():
+                    group_certs.extend(self.repository.load_from_files([p]))
 
-                if p.exists():
-                    cert = self.load_certificate(p)
-                    if cert:
-                        group_certs.append(cert)
-                elif self.debug:
-                    # In a production scenario, we could log the missing file here
-                    pass
-
-            # Only add the group if it actually contains valid certificates
             if group_certs:
                 groups.append(TrustStoreGroup(name=store_name, targets=group_certs))
 

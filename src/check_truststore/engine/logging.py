@@ -36,6 +36,7 @@ class Status:
         self.NAME: str = _(name) if translate else name
         self.ICON: str = icon
         self.COLOR: str = color
+        self.USE_COLOR: bool = sys.stderr.isatty()
 
     def log(
         self,
@@ -57,55 +58,59 @@ class Status:
             extra_icon: Additional icons (e.g., collision or signature status).
         """
         display_label = _(label) if label else self.NAME
-        reset = "\033[0m"
+        reset = "\033[0m" if self.USE_COLOR else ""
+        color = self.COLOR if self.USE_COLOR else ""
         v_line = "\u2502"
         sep = f"{reset}{v_line}"
 
         # Calculate visual width for complex Unicode characters (Emojis)
         # to ensure column alignment remains intact.
-        clean_icons = extra_icon.strip()
+        #visual_width = sum(2 if ord(c) > 0x7F else 1 for c in extra_icon if not (0xFE00 <= ord(c) <= 0xFE0F))
         visual_width = 0
-        for char in clean_icons:
-            visual_width += 2 if ord(char) > 127 else 1
+        for char in extra_icon:
+            cp = ord(char)
+            if 0xFE00 <= cp <= 0xFE0F:
+                continue
+            visual_width += 2 if cp > 127 else 1
 
-        padding = " " * max(0, 8 - visual_width)
-        formatted_icon = f" {clean_icons}{padding}"
+        if not extra_icon.strip():
+            formatted_icon = "          "
+        else:
+            extra_padding = 1 if "\U0001f6e1" in extra_icon else 0
+            padding = " " * (max(0, 10 - visual_width) + extra_padding)
+            formatted_icon = f"{extra_icon}{padding}"
 
-        prefix = "{}{} {:<14} {} {} {} {}{:<60} {}{} ".format(
-            self.COLOR,
-            self.ICON,
-            display_label,
-            sep,
-            formatted_icon,
-            sep,
-            self.COLOR,
-            message[:60],
-            sep,
-            self.COLOR,
+        line = (
+            f"{color}{self.ICON} {display_label:<14} {sep} "
+            f"{formatted_icon} {sep} "
+            f"{color}{message[:60]:<60} {sep} "
+            f"{color}{detail}{reset}\n"
         )
 
-        sys.stderr.write("{}{}{}\n".format(prefix, detail, reset))
-
+        sys.stderr.write(line)
+        sys.stderr.flush()
 
 # ANSI Color Constants
-RED, GREEN, YELLOW, CYAN, MAGENTA, BLUE = (
-    "\033[91m",
-    "\033[92m",
-    "\033[93m",
-    "\033[96m",
-    "\033[95m",
-    "\033[94m",
-)
+C = {
+    "RED": "\033[91m",
+    "GREEN": "\033[92m",
+    "YELLOW": "\033[93m",
+    "CYAN": "\033[96m",
+    "MAGENTA": "\033[95m",
+    "BLUE": "\033[94m",
+    "RESET": "\033[0m"
+}
 
 # Predefined Status Instances
-ERROR = Status("ERROR", "\U0000274c", RED)  # ❌
-OK = Status("OK", "\U00002705", GREEN)  # ✅
-WARNING = Status("WARNING", "\U000023f3", YELLOW)  # ⏳
-MISSING = Status("MISSING", "\U00002753", MAGENTA, translate=False)  # ❓
-COLLISION = Status("COLLISION", "\U0001f46f", CYAN, translate=False)  # 👯
-INFO = Status("INFO", "\U0001f535", BLUE)  # 🔵
-SYSTEM = Status("SYSTEM", "\U0001f4bb", BLUE, translate=False)  # 💻
-
+ERROR = Status("ERROR", "\U0000274c", C["RED"])  # ❌
+OK = Status("OK", "\U00002705", C["GREEN"])  # ✅
+WARNING = Status("WARNING", "\U000023f3", C["YELLOW"])  # ⏳
+MISSING = Status("MISSING", "\U00002753", C["MAGENTA"], translate=False)  # ❓
+COLLISION = Status("COLLISION", "\U0001f46f", C["CYAN"], translate=False)  # 👯
+INFO = Status("INFO", "\U0001f535", C["BLUE"])  # 🔵
+SYSTEM = Status("SYSTEM", "\U0001f4bb", C["BLUE"], translate=False)  # 💻
+AIA = Status("AIA", "\U0001f310", C["CYAN"], translate=False)  # 🌐
+REVOKED = Status("REVOKED", "\U0001f6ab", C["RED"])  # 🚫
 
 class Icons:
     """
@@ -119,3 +124,9 @@ class Icons:
     LOCKED = "\U0001f512"  # 🔒 (Locked)
     BROKEN = "\U0001f4a5"  # 💥 (Broken Chain)
     UNKNOWN = "\U00002753"  # ❓ (Black Question Mark Ornament)
+    AIA = "\U0001f310"  # 🌐 (Globe with Meridians)
+    SYSTEM = "\U0001f4bb"  # 💻 (Laptop)
+    OCSP_OK = "\U0001f6e1\ufe0f"  # 🛡️
+    SIGNED = "\U00002611\ufe0f"  # ☑️
+    UNCERTAIN = "\U00002754"  # ❔
+    REVOKED = "\U0001f6ab"  # 🚫

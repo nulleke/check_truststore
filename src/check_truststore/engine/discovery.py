@@ -1,0 +1,403 @@
+"""
+TrustStore Analyzer - Discovery Module
+Architect: Serge van Thillo
+
+Handles fetching missing certificates via Authority Information Access (AIA)
+and validating revocation status via OCSP (Online Certificate Status Protocol)
+and CRL (Certificate Revocation List).
+"""
+
+import os
+import time
+import socket
+import hashlib
+import requests
+from pathlib import Path
+from datetime import datetime, timezone
+from urllib.parse import urlparse
+from cryptography import x509
+from cryptography.x509 import ocsp
+from cryptography.x509.oid import ExtensionOID, AuthorityInformationAccessOID
+try:
+    from cryptography.x509.ocsp import OCSPNonce
+except ImportError:
+    OCSPNonce = getattr(x509, "OCSPNonce", None)
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from typing import Optional, List, Set
+from .logging import INFO, WARNING, ERROR, _, AIA as AIA_LOG
+
+
+class NetworkResolver:
+    """
+    Handles network-based certificate operations including issuer discovery
+    and revocation checks (OCSP/CRL).
+
+    Attributes:
+        online (bool): Whether outgoing network requests are permitted.
+        timeout (float): Maximum time in seconds for network operations.
+        processed_urls (Set[str]): Cache of visited URLs to prevent circular fetches.
+        cache_dir (Path): Local filesystem base for certificate/CRL persistence.
+        aia_cache_ttl_days (int): Days to keep intermediate certificates in cache.
+        ocsp_cache_ttl_days (int): Hours to keep revocation status in cache.
+    """
+
+    def __init__(self, **kwargs) -> None:
+        """
+        Initializes the resolver with connectivity settings and cache structures.
+
+        Args:
+            online: Enable or disable outgoing network requests.
+            timeout: Seconds to wait for a response.
+            debug: If True, logs detailed diagnostic information.
+        """
+        self.options = kwargs
+        self.online: bool = kwargs.get('online', False)
+        self.timeout: float = kwargs.get('timeout', 2.0)
+        self.verbosity: int = kwargs.get('verbosity', 0)
+        self.debug: bool = kwargs.get('debug', False)
+        self.processed_urls: Set[str] = set()
+
+        # Cache setup
+        self.cache_dir: Path = Path.home() / ".cache" / "truststore_analyzer"
+        self.aia_cache: Path = self.cache_dir / "aia"
+        self.aia_cache_ttl_days: int = kwargs.get('aia_cache_ttl', 30)
+        self.ocsp_cache: Path = self.cache_dir / "ocsp"
+        self.ocsp_cache_ttl_hours: int = kwargs.get('ocsp_cache_ttl_hours', 24)
+
+        for p in [self.aia_cache, self.ocsp_cache]:
+            try:
+                p.mkdir(parents=True, exist_ok=True)
+            except Exception as e:
+                if self.debug:
+                    WARNING.log("Cache", f"{_('Could not create cache directory')}: {e}")
+
+    def resolve_issuer(self, aki: str, child_cert: x509.Certificate) -> Optional[x509.Certificate]:
+        """
+        Attempts to find a parent certificate using AKI or AIA extensions.
+
+        Args:
+            aki: The Authority Key Identifier as a hex string.
+            child_cert: The certificate for which we need to find the issuer.
+
+        Returns:
+            The issuer certificate if found, otherwise None.
+        """
+        # Check local disk cache
+        cert = self._get_from_aia_cache(aki)
+        if cert:
+            if self.debug:
+                AIA_LOG.log(f"AKI: {aki[:8]}", _("Loaded from local cache"), label=_("CACHE"))
+            return cert
+
+        urls = self.find_aia_urls(child_cert)
+        for url in urls:
+            new_cert = self.fetch_issuer(url)
+            if new_cert:
+                self._save_to_aia_cache(aki, new_cert)
+                return new_cert
+
+        return None
+
+    def find_aia_urls(self, cert: x509.Certificate) -> List[str]:
+        """Parses Authority Information Access (AIA) for CA Issuer URIs."""
+        urls = []
+        try:
+            aia = cert.extensions.get_extension_for_oid(ExtensionOID.AUTHORITY_INFORMATION_ACCESS)
+            for access_description in aia.value:
+                if access_description.access_method == AuthorityInformationAccessOID.CA_ISSUERS:
+                    uri = access_description.access_location.value
+                    if isinstance(uri, str) and uri.startswith("http"):
+                        urls.append(uri)
+        except x509.ExtensionNotFound:
+            pass
+        except Exception as e:
+            if self.debug:
+                ERROR.log("AIA_PARSE", f"Error parsing AIA extension: {e}")
+        return urls
+
+    def fetch_issuer(self, url: str) -> Optional[x509.Certificate]:
+        """
+        Download certificate with strict connection and read timeouts.
+        Returns None if download fails or internet is disabled.
+        """
+        if not self.online or url in self.processed_urls:
+            return None
+
+        # Pre-flight DNS check
+        if not self._can_resolve(url):
+            return None
+
+        try:
+            if self.debug:
+                INFO.log("AIA_FETCH", f"{_('Downloading')}: {url}")
+
+            # Split timeout: (connect_timeout, read_timeout)
+            # 1 second to connect is plenty; self.timeout for the actual bytes.
+            response = requests.get(url, timeout=(1.0, self.timeout))
+            response.raise_for_status()
+
+            # Security: Prevent memory exhaustion by capping download at 50KB
+            content = response.content
+            if len(content) > 1024 * 50:
+                if self.debug:
+                    ERROR.log("AIA_SIZE", _("Certificate too large"))
+                return None
+
+            self.processed_urls.add(url)
+
+            # Try DER (binary) first, then PEM (base64)
+            try:
+                return x509.load_der_x509_certificate(content)
+            except Exception:
+                try:
+                    return x509.load_pem_x509_certificate(content)
+                except Exception as pem_err:
+                    if self.debug:
+                        ERROR.log("AIA_PARSE", f"{_('Could not load cert from')} {url} ({_('Tried DER & PEM')}): {pem_err}")
+                    return None
+
+        except requests.exceptions.RequestException as e:
+            if self.debug:
+                # We use WARNING here because it's an expected failure in restricted networks
+                WARNING.log("AIA_FAILED", f"{_('Connection failed')}: {url} ({e})")
+        except Exception as e:
+            if self.debug:
+                ERROR.log("AIA_ERROR", f"Unexpected error: {str(e)}")
+
+        return None
+
+    def find_ocsp_urls(self, cert: x509.Certificate) -> List[str]:
+        """Parses AIA extension for OCSP responder URIs."""
+        urls = []
+        try:
+            aia = cert.extensions.get_extension_for_oid(ExtensionOID.AUTHORITY_INFORMATION_ACCESS)
+            for desc in aia.value:
+                if desc.access_method == AuthorityInformationAccessOID.OCSP:
+                    uri = desc.access_location.value
+                    if isinstance(uri, str) and uri.startswith("http"):
+                        urls.append(uri)
+        except x509.ExtensionNotFound:
+            pass
+        return urls
+
+    def check_ocsp_status(self, cert: x509.Certificate, issuer: x509.Certificate) -> str:
+        """
+        Queries OCSP responders for certificate status.
+
+        Returns:
+            One of ['GOOD', 'REVOKED', 'UNKNOWN', 'ERROR'].
+        """
+        if cert.subject == cert.issuer:
+            return "GOOD"
+
+        if not self.online:
+            return "UNKNOWN"
+
+        urls = self.find_ocsp_urls(cert)
+        if urls:
+            try:
+                # Build OCSP Request
+                builder = ocsp.OCSPRequestBuilder()
+                builder = builder.add_certificate(cert, issuer, hashes.SHA1())
+                if OCSPNonce:
+                    nonce = os.urandom(16)
+                    try:
+                        builder = builder.add_extension(OCSPNonce(nonce), critical=False)
+                    except Exception:
+                        pass
+
+                request_der = builder.build().public_bytes(serialization.Encoding.DER)
+            except Exception as e:
+                if self.debug:
+                    ERROR.log("OCSP_BUILD", str(e))
+                return "ERROR"
+
+            for url in urls:
+                if not self._can_resolve(url):
+                    continue
+
+                try:
+                    if self.debug:
+                        INFO.log("OCSP_CHECK", f"Checking: {url}")
+
+                    response = requests.post(
+                        url,
+                        data=request_der,
+                        headers={'Content-Type': 'application/ocsp-request'},
+                        timeout=(1.0, self.timeout)
+                    )
+                    response.raise_for_status()
+
+                    ocsp_resp = ocsp.load_der_ocsp_response(response.content)
+
+                    if ocsp_resp.response_status != ocsp.OCSPResponseStatus.SUCCESSFUL:
+                        continue
+
+                    cert_status = ocsp_resp.certificate_status
+                    if cert_status == ocsp.OCSPCertStatus.GOOD:
+                        return "GOOD"
+                    elif cert_status == ocsp.OCSPCertStatus.REVOKED:
+                        return "REVOKED"
+
+                except Exception as e:
+                    if self.debug:
+                        WARNING.log("OCSP_FAILED", f"{url}: {e}")
+
+        return self.check_crl_status(cert)
+
+    def find_crl_urls(self, cert: x509.Certificate) -> List[str]:
+        """Parses CRL Distribution Points (CDP) from certificate extensions."""
+        urls = []
+        try:
+            crl_dp = cert.extensions.get_extension_for_oid(x509.ExtensionOID.CRL_DISTRIBUTION_POINTS)
+            for dp in crl_dp.value:
+                for fullName in dp.full_name:
+                    uri = fullName.value
+                    if isinstance(uri, str) and uri.startswith("http"):
+                        urls.append(uri)
+        except x509.ExtensionNotFound:
+            pass
+        return urls
+
+    def check_crl_status(self, cert: x509.Certificate) -> str:
+        """
+        Validates certificate status against CRLs. Uses local caching to speed up
+        validation for certificates sharing the same distribution point.
+        """
+        if cert.subject == cert.issuer:
+            return "GOOD"
+
+        urls = self.find_crl_urls(cert)
+        if not urls:
+            if self.debug:
+                WARNING.log("CRL_CHECK", _("No CRL endpoints found in certificate"))
+            return "UNKNOWN"
+
+        for url in urls:
+            try:
+                url_hash = hashlib.md5(url.encode()).hexdigest()
+                cache_path = self.ocsp_cache / f"crl_{url_hash}.der"
+                crl_data: Optional[x509.CertificateRevocationList] = None
+
+                # Check if cached CRL exists and is within TTL
+                if self._is_cache_fresh(cache_path, self.ocsp_cache_ttl_hours):
+                    with open(cache_path, "rb") as f:
+                        temp_crl = x509.load_der_x509_crl(f.read(), default_backend())
+                        next_upd = self._get_next_update(temp_crl)
+
+                        if next_upd > datetime.now(timezone.utc):
+                            if self.debug:
+                                INFO.log("CRL_CACHE", f"{_('Using cached CRL for')}: {urlparse(url).hostname}", label=_("CACHE"))
+                            crl_data = temp_crl
+                        elif self.debug:
+                            INFO.log("CRL_CACHE", f"{_('Cached CRL is stale (nextUpdate passed)')}", label=_("EXPIRE"))
+
+                # Fetch CRL if not in cache or expired
+                if crl_data is None:
+                    if url in self.processed_urls:
+                        if self.debug:
+                            INFO.log("DEBUG_CRL", f"Skip download (reeds gedaan in deze run): {url}")
+                        return "UNKNOWN"
+                    if not self.online:
+                        continue
+                    if self.debug:
+                        INFO.log("CRL_FETCH", f"{_('Downloading CRL')}: {url}")
+
+                    response = requests.get(url, timeout=(1.5, max(self.timeout, 5.0)))
+                    response.raise_for_status()
+
+                    crl_data = x509.load_der_x509_crl(response.content, default_backend())
+
+                    with open(cache_path, "wb") as f:
+                        f.write(response.content)
+
+                # Check for serial number in CRL
+                revoked = crl_data.get_revoked_certificate_by_serial_number(cert.serial_number)
+                if revoked:
+                    if self.debug:
+                        WARNING.log("CRL_RESULT", f"Serial {cert.serial_number} is REVOKED")
+                    return "REVOKED"
+
+                self.processed_urls.add(url)
+                return "GOOD"
+
+            except Exception as e:
+                if self.debug:
+                    WARNING.log("CRL_FAILED", f"Failed to check CRL {url}: {e}")
+
+        return "UNKNOWN"
+
+    def _is_cache_fresh(self, cache_path: Path, ttl_hours: float) -> bool:
+        """Checks if a cache file is newer than the allowed TTL in hours."""
+        if not cache_path.exists():
+            return False
+
+        file_age_hours = (time.time() - os.path.getmtime(cache_path)) / 3600
+        return file_age_hours <= ttl_hours
+
+    def _get_from_aia_cache(self, aki: str) -> Optional[x509.Certificate]:
+        """Loads a certificate from the AIA cache if fresh (< 10 days)."""
+        cache_path = self.aia_cache / f"{aki}.der"
+
+        if not self._is_cache_fresh(cache_path, self.aia_cache_ttl_days * 24):
+            if cache_path.exists() and self.debug:
+                AIA_LOG.log(f"AKI: {aki[:8]}", _("Cache expired based on TTL, refreshing..."))
+            return None
+
+        try:
+            with open(cache_path, "rb") as f:
+                cert = x509.load_der_x509_certificate(f.read(), default_backend())
+                expiry = self._get_expiry(cert)
+                if expiry < datetime.now(timezone.utc):
+                    if self.debug:
+                        WARNING.log("Cache", f"{_('Cached certificate expired on')}: {expiry}")
+                    return None
+
+                return cert
+
+        except Exception as e:
+            if self.debug:
+                ERROR.log("Cache", f"{_('Error reading cache')}: {e}")
+            return None
+
+    def _get_next_update(self, crl: x509.CertificateRevocationList) -> datetime:
+        """Helper for cross-version cryptography compatibility for CRL next_update."""
+        if hasattr(crl, 'next_update_utc'):
+            return crl.next_update_utc
+        return crl.next_update.replace(tzinfo=timezone.utc)
+
+    def _get_expiry(self, cert: x509.Certificate) -> datetime:
+        """Helper for cross-version cryptography compatibility for cert expiry."""
+        if hasattr(cert, 'not_valid_after_utc'):
+            return cert.not_valid_after_utc
+        return cert.not_valid_after.replace(tzinfo=timezone.utc)
+
+    def _can_resolve(self, url: str) -> bool:
+        """
+        Validates DNS resolution for a URL to avoid OS-level timeout hangs.
+
+        Returns:
+            True if hostname resolves, False otherwise.
+        """
+        try:
+            hostname = urlparse(url).hostname
+            if not hostname:
+                return False
+            socket.gethostbyname(hostname)
+            return True
+        except (socket.gaierror, Exception):
+            if self.debug and self.verbosity >= 3:
+                WARNING.log("DNS", f"{_('Could not resolve host')}: {hostname}")
+            return False
+
+    def _save_to_aia_cache(self, aki: str, cert: x509.Certificate) -> None:
+        """Persists the certificate to the local filesystem."""
+        cache_path = self.aia_cache / f"{aki}.der"
+        try:
+            with open(cache_path, "wb") as f:
+                f.write(cert.public_bytes(serialization.Encoding.DER))
+        except Exception as e:
+            if self.debug:
+                ERROR.log("Cache", f"{_('Could not save certificate to cache')}: {e}")

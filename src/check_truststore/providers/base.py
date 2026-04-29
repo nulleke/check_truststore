@@ -8,7 +8,7 @@ to the TrustChainBuilder.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import List, Optional, Any
 from pathlib import Path
 
 from check_truststore.engine.core import Certificate, CertificateRepository
@@ -31,12 +31,15 @@ class BaseInputProvider(ABC):
     Ensures a consistent interface for feeding the CertificateRepository.
     """
 
-    def __init__(self, repository: Optional[CertificateRepository] = None):
+    def __init__(self, repository: Optional[CertificateRepository] = None, **kwargs: Any):
         """
         Initializes the provider with a dedicated repository for deduplication
         and raw X.509 loading.
         """
         self.repository = repository or CertificateRepository()
+        self.options = kwargs
+        self.debug = kwargs.get('debug', False)
+        self.verbosity = kwargs.get('verbosity', 0)
 
     @abstractmethod
     def get_groups(self) -> List[TrustStoreGroup]:
@@ -52,9 +55,9 @@ class BaseInputProvider(ABC):
         internal logic. Returns the raw metadata dictionary or None if failed.
         """
         try:
-            certs = self.repository._load_single_file(path)
+            certs = self.repository.load_from_files([path])
 
-            if certs and isinstance(certs, list) and len(certs) > 0:
+            if certs and len(certs) > 0:
                 return certs[0]
 
             return None

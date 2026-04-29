@@ -11,7 +11,6 @@ from typing import List, Optional
 from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
 from check_truststore.engine.core import CertificateRepository
 
-
 class DirectoryInputProvider(BaseInputProvider):
     """
     Scans a specific directory for X.509 certificates based on file extensions.
@@ -23,6 +22,7 @@ class DirectoryInputProvider(BaseInputProvider):
         repository: Optional[CertificateRepository] = None,
         extensions: Optional[List[str]] = None,
         recursive: bool = False,
+        **kwargs,
     ):
         """
         Initializes the directory scanner.
@@ -33,9 +33,12 @@ class DirectoryInputProvider(BaseInputProvider):
             extensions: List of file extensions to include (default: .crt, .pem, .cer, .der).
             recursive: If True, performs a deep scan of all subdirectories.
         """
-        super().__init__(repository=repository)
+        super().__init__(repository=repository, **kwargs)
         self.folder_path = folder_path
-        self.extensions = extensions or [".crt", ".pem", ".cer", ".der"]
+        self.extensions = extensions or [
+            ".crt", ".pem", ".cer", ".der",
+            ".CRT", ".PEM", ".CER", ".DER"
+        ]
         self.recursive = recursive
 
     def get_groups(self) -> List[TrustStoreGroup]:
@@ -51,14 +54,19 @@ class DirectoryInputProvider(BaseInputProvider):
         all_paths = []
         for ext in self.extensions:
             # Construct glob pattern based on recursion preference
-            pattern = f"**/*{ext}" if self.recursive else f"*{ext}"
-            all_paths.extend(self.folder_path.glob(pattern))
+            if self.recursive:
+                all_paths.extend(self.folder_path.rglob("*{}".format(ext)))
+            else:
+                all_paths.extend(self.folder_path.glob("*{}".format(ext)))
 
         # Deduplicate paths and ensure they are files, then sort for consistent output
         unique_paths = sorted(list(set(p for p in all_paths if p.is_file())))
-        # Load the raw certificate data (metadata dictionaries)
-        certs = [self.load_certificate(p) for p in unique_paths]
-        # Filter out any None values from failed loads
-        certs = [c for c in certs if c]
 
-        return [TrustStoreGroup(name=self.folder_path.name, targets=certs)]
+        # Use the repository to load all discovered files at once.
+        # This handles PEM bundles within single files and internal deduplication.
+        certs = self.repository.load_from_files(unique_paths)
+
+        if certs:
+            return [TrustStoreGroup(name=self.folder_path.name, targets=certs)]
+
+        return []

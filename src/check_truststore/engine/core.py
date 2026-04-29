@@ -16,16 +16,17 @@ import hashlib  # noqa: E402
 import platform  # noqa: E402
 from cryptography import x509  # noqa: E402
 from cryptography.hazmat.backends import default_backend  # noqa: E402
-from cryptography.x509.oid import ExtensionOID  # noqa: E402
+from cryptography.hazmat.primitives import serialization  # noqa: E402
 from datetime import datetime, timedelta, timezone  # noqa: E402
 from pathlib import Path  # noqa: E402
 from collections import defaultdict  # noqa: E402
 from typing import Any, Optional, List, Dict, Union, Set  # noqa: E402
 from .logging import (  # noqa: E402
-    _, ERROR, OK, WARNING, MISSING, COLLISION, INFO, SYSTEM, 
+    _, ERROR, OK, WARNING, MISSING, COLLISION, INFO, SYSTEM, AIA, REVOKED,
     Icons as Icons
 )
 from .models import ORPHAN_NODE_ID, Certificate, CertificateGroup  # noqa: E402
+from .policy import PolicyEngine, PolicyFinding  # noqa: E402
 
 
 class CertificateRepository:
@@ -34,10 +35,58 @@ class CertificateRepository:
     It manages deduplication using SHA256 hashes.
     """
 
-    def __init__(self, debug: bool = False):
-        self.debug = debug
+    def __init__(self, **kwargs):
+        self.options = kwargs
+        self.debug = kwargs.get('debug', False)
+        self.verbosity = kwargs.get('verbosity', 0)
         self.seen_hashes: Set[str] = set()
         self.total_scanned_count: int = 0
+
+    def add_pem_data(self, content: bytes, source_path: Optional[Path] = None, is_system: bool = False) -> List[Dict[str, Any]]:
+        """
+        Unified entry point: Parses bytes for PEM blocks and adds unique certificates.
+        Supports standard PEM and OpenSSL 'TRUSTED CERTIFICATE' formats.
+        """
+        import re
+        new_certs = []
+
+        # Regex to find certificates, including those marked as "TRUSTED CERTIFICATE"
+        pattern = b"-----BEGIN (?:TRUSTED )?CERTIFICATE-----.*?-----END (?:TRUSTED )?CERTIFICATE-----"
+        cert_blocks = re.findall(pattern, content, re.DOTALL)
+
+        for raw_block in cert_blocks:
+            self.total_scanned_count += 1
+            c_hash = hashlib.sha256(raw_block).hexdigest()
+
+            if c_hash in self.seen_hashes:
+                if self.debug and not is_system and source_path:
+                    WARNING.log(
+                        source_path.name,
+                        _("Skipping duplicate certificate (already loaded)"),
+                        label=_("DUPLICATE"),
+                    )
+                continue
+
+            try:
+                # Strip 'TRUSTED ' prefix to satisfy standard x509 parser
+                pem_block = raw_block.replace(b"TRUSTED ", b"")
+                cert = x509.load_pem_x509_certificate(pem_block, default_backend())
+
+                self.seen_hashes.add(c_hash)
+                cert_entry = {
+                    "cert": cert,
+                    "path": source_path or Path("stdin"),
+                    "hash": c_hash,
+                    "is_system_cert": is_system,
+                }
+                new_certs.append(cert_entry)
+
+            except Exception as e:
+                if self.debug:
+                    name = source_path.name if source_path else "stdin"
+                    ERROR.log(name, f"{_('Invalid certificate structure')}: {str(e)}")
+
+        return new_certs
 
     def load_from_files(
         self, paths: List[Path], is_system: bool = False
@@ -51,70 +100,19 @@ class CertificateRepository:
     def _load_single_file(
         self, path: Path, is_system: bool = False
     ) -> List[Dict[str, Any]]:
-        """
-        Reads a file and extracts certificates using regex.
-        Supports standard PEM and 'TRUSTED CERTIFICATE' formats (common in OpenSSL).
-        """
-        certs_in_file = []
+        """Reads a file and delegates parsing to add_pem_data."""
         try:
             with open(str(path), "rb") as f:
-                content = f.read()
-
-            import re
-
-            # Regex to find certificates, including those marked as "TRUSTED CERTIFICATE"
-            pattern = b"-----BEGIN (?:TRUSTED )?CERTIFICATE-----.*?-----END (?:TRUSTED )?CERTIFICATE-----"
-            cert_blocks = re.findall(pattern, content, re.DOTALL)
-
-            for raw_block in cert_blocks:
-                self.total_scanned_count += 1
-                c_hash = hashlib.sha256(raw_block).hexdigest()
-
-                if c_hash in self.seen_hashes:
-                    if self.debug and not is_system:
-                        WARNING.log(
-                            path.name,
-                            _("Skipping duplicate certificate (already loaded)"),
-                            label=_("DUPLICATE"),
-                        )
-                    continue
-
-                try:
-                    # Strip 'TRUSTED ' prefix if present to satisfy standard x50
-                    pem_block = raw_block.replace(b"TRUSTED ", b"")
-                    cert = x509.load_pem_x509_certificate(pem_block, default_backend())
-
-                    self.seen_hashes.add(c_hash)
-                    certs_in_file.append(
-                        {
-                            "cert": cert,
-                            "path": path,
-                            "hash": c_hash,
-                            "is_system_cert": is_system,
-                        }
-                    )
-
-                except Exception as e:
-                    if self.debug:
-                        ERROR.log(
-                            path.name, f"{_('Invalid certificate structure')}: {str(e)}"
-                        )
-
+                return self.add_pem_data(f.read(), source_path=path, is_system=is_system)
         except (FileNotFoundError, PermissionError) as e:
             if self.debug and not is_system:
                 label = _("READ_ERROR")
-                msg = (
-                    _("File not found")
-                    if isinstance(e, FileNotFoundError)
-                    else _("Permission denied")
-                )
+                msg = _("File not found") if isinstance(e, FileNotFoundError) else _("Permission denied")
                 ERROR.log(path.name, f"{msg}: {path.absolute()}", label=label)
-
         except Exception as e:
             if self.debug and not is_system:
                 ERROR.log(path.name, str(e), label=_("READ_ERROR"))
-
-        return certs_in_file
+        return []
 
     def load_from_system(self) -> List[Dict[str, Any]]:
         """Auto-detects the operating system and loads its default truststore."""
@@ -193,20 +191,26 @@ class TrustChainBuilder:
     It matches Authority Key Identifiers (AKI) to Subject Key Identifiers (SKI).
     """
 
-    def __init__(self, threshold_days: int = 30, debug: bool = False):
-        self.threshold_days = threshold_days
-        self.debug = debug
+    def __init__(self, **kwargs):
+        self.options = kwargs
+        self.threshold = kwargs.get('threshold', 30)
+        self.debug = kwargs.get('debug', False)
+        self.verbosity = kwargs.get('verbosity', 0)
         self.cert_data: Dict[str, Certificate] = {}
         self.raw_certs: Dict[str, x509.Certificate] = {}
         self.parent_map: Dict[str, str] = {}
         self.name_count: Dict[str, int] = defaultdict(int)
+        self.policy_engine = PolicyEngine(**kwargs)
 
-    def build(self, raw_certs_meta: List[Dict[str, Any]]) -> List[Certificate]:
+    def build(self, raw_certs_meta: List[Dict[str, Any]], resolver: Optional[Any] = None, max_depth: int = 4) -> List[Certificate]:
         """Main entry point for tree construction."""
         for item in raw_certs_meta:
             self._process_metadata(item)
 
-        tree_result = self._create_tree()
+        if resolver:
+            self._perform_aia_discovery(resolver, max_depth=max_depth)
+
+        tree_result = self._create_tree(resolver=resolver)
 
         if self.debug:
             self._log_debug_summary()
@@ -219,6 +223,7 @@ class TrustChainBuilder:
         path = item["path"]
         c_hash = item["hash"]
         is_system_cert = item.get("is_system_cert", False)
+        is_aia_cert = item.get("is_aia_cert", False)
 
         ski = self._get_extension(cert, x509.ExtensionOID.SUBJECT_KEY_IDENTIFIER)
         cn = self._get_common_name(cert)
@@ -260,7 +265,7 @@ class TrustChainBuilder:
         )
         display_file_name = "" if is_system_cert else path.name
 
-        self.cert_data[cert_id] = Certificate(
+        cert_obj = Certificate(
             commonName=cn,
             serialNumber=formatted_serial,
             certId=cert_id,
@@ -269,57 +274,56 @@ class TrustChainBuilder:
             sha256Hash=c_hash,
             isValid=(start_date <= now <= expiry),
             isExpiringSoon=(
-                now <= expiry <= (now + timedelta(days=self.threshold_days))
+                now <= expiry <= (now + timedelta(days=self.threshold))
             ),
             expiryDate=expiry,
             isSystemCert=is_system_cert,
+            isAiaCert=is_aia_cert,
             isRoot=(cert.subject == cert.issuer),
             sanNames=sans,
         )
+
+        if cert_obj.is_expiring_soon and cert_obj.is_valid:
+            cert_obj.add_finding(PolicyFinding(
+                level="WARNING",
+                code="EXPIRING_SOON",
+                message=f"Certificate expires within {self.threshold} days.",
+                code_int=1
+            ))
+
+        self.cert_data[cert_id] = cert_obj
 
         if aki and aki != cert_id:
             self.parent_map[cert_id] = aki
         elif cert.subject != cert.issuer:
             self.parent_map[cert_id] = ORPHAN_NODE_ID
 
-    def _verify_signature(
-        self, cert_to_check: x509.Certificate, issuer_cert: x509.Certificate
-    ) -> bool:
-        """Performs cryptographic signature verification using the issuer's public key."""
-        try:
-            from cryptography.hazmat.primitives.asymmetric import (
-                rsa,
-                ec,
-                padding as rsa_padding,
-            )
-            from cryptography.hazmat.primitives import hashes
+    def _sanitize_parent_map(self, relevant_skis: Set[str]):
+        """
+        Detects and breaks circular issuer relationships within the parent map.
 
-            issuer_public_key = issuer_cert.public_key()
-            signature = cert_to_check.signature
-            data = cert_to_check.tbs_certificate_bytes
-            hash_algo = cert_to_check.signature_hash_algorithm
+        This pre-processing step ensures the tree construction algorithm operates on
+        a Directed Acyclic Graph (DAG), preventing infinite recursion during
+        tree building or serialization. Circular nodes are detached and
+        re-routed to the ORPHAN_NODE_ID.
+        """
+        for ski in list(relevant_skis):
+            path = set()
+            curr = ski
+            while curr in self.parent_map:
+                if curr in path:
+                    # Loop detected: log the event and break the cycle by orphaning the node
+                    if self.debug:
+                        WARNING.log("CYCLE_BREAKER", f"Broken circular chain at {curr[:8]}")
+                    self.parent_map[curr] = ORPHAN_NODE_ID
+                    break
 
-            if isinstance(issuer_public_key, rsa.RSAPublicKey):
-                issuer_public_key.verify(
-                    signature, data, rsa_padding.PKCS1v15(), hash_algo
-                )
-                return True
+                path.add(curr)
+                parent = self.parent_map[curr]
 
-            elif isinstance(issuer_public_key, ec.EllipticCurvePublicKey):
-                try:
-                    issuer_public_key.verify(signature, data, ec.ECDSA(hash_algo))
-                except Exception:
-                    algo_name = hash_algo.name.upper()
-                    new_algo = getattr(hashes, algo_name)()
-                    issuer_public_key.verify(signature, data, ec.ECDSA(new_algo))
-                return True
-
-            else:
-                issuer_public_key.verify(signature, data, hash_algo)
-                return True
-
-        except Exception:
-            return False
+                if parent == ORPHAN_NODE_ID or parent not in self.cert_data:
+                    break
+                curr = parent
 
     def get_analysis_summary(self) -> Dict[str, Any]:
         """Calculates statistics only for the chains relevant to user-loaded certificates."""
@@ -398,10 +402,14 @@ class TrustChainBuilder:
 
             current_label = None
             is_untrusted = self.parent_map.get(ski) == ORPHAN_NODE_ID
+            ocsp_status = getattr(cert_obj, "ocsp_status", None)
 
             if cert_obj.signature_valid is False and not is_untrusted:
                 st = ERROR
                 current_label = _("SIG_ERR")
+            elif ocsp_status == "REVOKED":
+                st = REVOKED
+                current_label = _("REVOKED")
             elif not cert_obj.is_valid:
                 st = ERROR
                 current_label = _("INVALID")
@@ -409,12 +417,20 @@ class TrustChainBuilder:
                 st = WARNING
             elif cert_obj.is_system_cert:
                 st = SYSTEM
+            elif cert_obj.is_aia_cert:
+                st = AIA
             else:
                 st = OK
 
             sig_icon = cert_obj.signature_icon
             coll_icon = COLLISION.ICON if cert_obj.is_collision else ""
-            combined_extra = f"{sig_icon}{coll_icon}"
+            ocsp_icon = ""
+            if ocsp_status == "GOOD":
+                ocsp_icon = Icons.OCSP_OK
+            elif ocsp_status == "REVOKED":
+                ocsp_icon = Icons.REVOKED
+
+            combined_extra = f"{sig_icon}{ocsp_icon}{coll_icon}"
 
             log_name = (
                 f"{cert_obj.common_name} (ID: {cert_obj.cert_id[:8]})"
@@ -444,24 +460,6 @@ class TrustChainBuilder:
                 ),
                 label=_("UNTRUSTED"),
             )
-
-    def _can_act_as_ca(self, cert: x509.Certificate) -> bool:
-        """Checks BasicConstraints and KeyUsage to verify if a cert is allowed to sign others."""
-        try:
-            bc = cert.extensions.get_extension_for_oid(ExtensionOID.BASIC_CONSTRAINTS)
-            if not bc.value.ca:
-                return False
-
-            try:
-                ku = cert.extensions.get_extension_for_oid(ExtensionOID.KEY_USAGE)
-                if not ku.value.key_cert_sign:
-                    return False
-            except x509.ExtensionNotFound:
-                pass
-
-            return True
-        except x509.ExtensionNotFound:
-            return False
 
     def get_flat_chain(self) -> List[Certificate]:
         """Returns a flat list of unique certificates involved in all active chains."""
@@ -494,12 +492,12 @@ class TrustChainBuilder:
 
         return sorted(flat_list, key=lambda x: x.common_name.lower())
 
-    def _create_tree(self) -> List[Certificate]:
+    def _create_tree(self, resolver: Optional[Any] = None) -> List[Certificate]:
         """
         The core recursive algorithm.
         It filters certificates to only show chains that lead to a user-provided cert.
         """
-        # Step 1: Identify all SKIs that are part of a target chain
+        # Identify all SKIs that are part of a target chain
         target_skis = {
             ski for ski, cert in self.cert_data.items() if not cert.is_system_cert
         }
@@ -520,18 +518,32 @@ class TrustChainBuilder:
                     break
                 current = parent_ski
 
-        # Step 2: Build a lookup for children to allow recursive traversal
+        self._sanitize_parent_map(relevant_skis)
+
+        # Build a lookup for children to allow recursive traversal
         children_by_parent = defaultdict(list)
         for ski in relevant_skis:
             p_ski = self.parent_map.get(ski)
             if p_ski and p_ski in relevant_skis and p_ski != ski:
                 children_by_parent[p_ski].append(ski)
 
-        # Step 3: Recursive function to build Node objects
-        def to_node(ski: str, parent_status: str = "VALID") -> Certificate:
+        # Recursive function to build Node objects
+        def to_node(ski: str, parent_status: str = "VALID", depth: int = 0) -> Certificate:
+            if depth > 15:
+                return self._create_virtual_node("LOOP_LIMIT_REACHED")
+
             cert_info = self.cert_data[ski]
+            cert_info.is_collision = self.name_count.get(cert_info.common_name, 0) > 1
             raw_cert = self.raw_certs.get(ski)
             p_ski = self.parent_map.get(ski)
+
+            if p_ski == ORPHAN_NODE_ID:
+                cert_info.add_finding(PolicyFinding(
+                    level="ERROR",
+                    code="UNTRUSTED_CHAIN",
+                    message="The certificate chain leads to an untrusted or missing root.",
+                    code_int=3
+                ))
 
             if raw_cert:
                 is_root = (
@@ -540,27 +552,36 @@ class TrustChainBuilder:
                     or p_ski is None
                 )
                 issuer_raw = raw_cert if is_root else self.raw_certs.get(p_ski)
+                findings = self.policy_engine.validate(raw_cert, issuer=issuer_raw)
 
-                if issuer_raw:
-                    # Validate crypto-signature
-                    cert_info.signature_valid = self._verify_signature(
-                        raw_cert, issuer_raw
-                    )
-                    # Policy check: Is the parent actually a CA?
-                    if (
-                        not is_root
-                        and cert_info.signature_valid
-                        and not self._can_act_as_ca(issuer_raw)
-                    ):
+                for finding in findings:
+                    if finding.level == "ERROR":
                         cert_info.is_valid = False
-                        cert_info.validation_error = "PARENT_NOT_A_CA"
-                else:
-                    cert_info.signature_valid = None
+                        cert_info.validation_error = finding.code
+
+                    cert_info.add_finding(finding)
+
+                cert_info.signature_valid = not any(f.code == "SIG_INVALID" for f in findings)
+
+                if resolver and not is_root and cert_info.signature_valid:
+                    status = resolver.check_ocsp_status(raw_cert, issuer_raw)
+                    cert_info.ocsp_status = status
 
             # Inherit 'invalidity' from parents (Chain of trust)
-            if parent_status not in ["VALID", "SYSTEM", "OK"] and cert_info.is_valid:
+            if parent_status not in ["VALID", "SYSTEM", "AIA", "OK"] and cert_info.is_valid:
                 cert_info.is_valid = False
                 cert_info.validation_error = f"CHAIN_{parent_status}"
+
+            if parent_status == "INCOMPLETE" or p_ski == ORPHAN_NODE_ID:
+                cert_info.add_finding(PolicyFinding(
+                    level="ERROR",
+                    code="CHAIN_INCOMPLETE",
+                    message="The certificate chain is incomplete due to a missing upstream issuer.",
+                    code_int=3
+                ))
+
+            if parent_status == "REVOKED":
+                 cert_info.ocsp_status = "REVOKED"
 
             # Recurse for children
             child_skis = children_by_parent.get(ski, [])
@@ -575,13 +596,13 @@ class TrustChainBuilder:
 
             processed_children = []
             for c_ski in sorted_child_skis:
-                child_node = to_node(c_ski, cert_info.status_label)
+                child_node = to_node(c_ski, cert_info.status_label, depth + 1)
                 processed_children.append(child_node)
 
             cert_info.children = processed_children
             return cert_info
 
-        # Step 4: Find Roots and Orphans to start the tree
+        # Find Roots and Orphans to start the tree
         trusted_tree = []
         orphan_skis = []
 
@@ -659,10 +680,53 @@ class TrustChainBuilder:
 
         return None
 
+    def _perform_aia_discovery(self, resolver: Any, max_depth: int = 4):
+        """
+        Iteratively identifies missing issuers and attempts to fetch them via AIA.
+        """
+        depth = 0
+        while depth < max_depth:
+            current_skis = set(self.cert_data.keys())
+            missing_akis = {
+                self.parent_map[ski]
+                for ski in self.cert_data
+                if self.parent_map.get(ski) and self.parent_map[ski] not in current_skis
+                and self.parent_map[ski] != ORPHAN_NODE_ID
+            }
+
+            if not missing_akis:
+                break
+
+            found_new_in_this_round = False
+            for aki in missing_akis:
+                child_ids = [cid for cid, p_id in self.parent_map.items() if p_id == aki]
+                if not child_ids:
+                    continue
+
+                child_cert = self.raw_certs[child_ids[0]]
+                new_x509 = resolver.resolve_issuer(aki, child_cert)
+
+                if new_x509:
+                    meta = {
+                        "cert": new_x509,
+                        "path": Path(f"AIA-Discovery-{aki[:8]}"),
+                        "hash": hashlib.sha256(new_x509.public_bytes(serialization.Encoding.DER)).hexdigest(),
+                        "is_system_cert": False,
+                        "is_aia_cert": True,
+                    }
+                    self._process_metadata(meta)
+                    found_new_in_this_round = True
+                    if self.debug:
+                        AIA.log(f"AIA: {self._get_common_name(new_x509)}", _("Successfully discovered issuer"))
+
+            if not found_new_in_this_round:
+                break
+            depth += 1
+
     def _create_virtual_node(self, name: str) -> Certificate:
         """Creates a dummy node for grouping orphans (missing/external roots)."""
         epoch_date = datetime(1970, 1, 1, tzinfo=timezone.utc)
-        return Certificate(
+        node =Certificate(
             commonName=name,
             serialNumber="N/A",
             certId=f"VIRTUAL_{name}",
@@ -674,6 +738,18 @@ class TrustChainBuilder:
             children=[],
         )
 
+        if name == ORPHAN_NODE_ID:
+            node.add_finding(PolicyFinding(
+                level="ERROR",
+                code="CHAIN_INCOMPLETE",
+                message="The chain is broken; an issuer (Root or Intermediate) was not found.",
+                code_int=3
+            ))
+
+        return node
+
+
+
 
 class TrustStoreAnalyzer:
     """
@@ -682,11 +758,14 @@ class TrustStoreAnalyzer:
     """
 
     def __init__(self, groups: List[Any], **kwargs):
+        self.options = kwargs
         self.debug = kwargs.get("debug", False)
+        self.verbosity = kwargs.get("verbosity", 0)
         self.include_system = kwargs.get("system", False)
+        self.online = kwargs.get("online", False)
+        self.max_depth = kwargs.get("max_depth", 4)
         self.groups = groups
-
-        self.repo = CertificateRepository(debug=self.debug)
+        self.repo = CertificateRepository(**kwargs)
         self.threshold = kwargs.get("threshold", 30)
 
     def analyze(self) -> List[CertificateGroup]:
@@ -705,7 +784,7 @@ class TrustStoreAnalyzer:
             if self.debug:
                 INFO.log(_("Processing Group"), group_config.name)
 
-            builder = TrustChainBuilder(threshold_days=self.threshold, debug=self.debug)
+            builder = TrustChainBuilder(**self.options)
 
             current_pool = []
             for target in group_config.targets:
@@ -717,7 +796,12 @@ class TrustStoreAnalyzer:
             if self.include_system:
                 current_pool.extend(system_certs_data)
 
-            tree_data = builder.build(current_pool)
+            resolver = None
+            if self.online:
+                from .discovery import NetworkResolver
+                resolver = NetworkResolver(**self.options)
+
+            tree_data = builder.build(current_pool, resolver=resolver, max_depth=self.max_depth)
 
             group_obj = CertificateGroup(
                 groupName=group_config.name,

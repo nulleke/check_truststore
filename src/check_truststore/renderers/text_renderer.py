@@ -13,6 +13,7 @@ from check_truststore.engine.core import (
     _,
     Icons,
     SYSTEM,
+    AIA,
     COLLISION,
     ORPHAN_NODE_ID,
 )
@@ -33,11 +34,13 @@ class TextRenderer(BaseRenderer):
             groups_results: List of CertificateGroup objects or dictionaries.
             **kwargs:
                 system (bool): Whether to emphasize system certificates.
-                show_san (bool): Whether to display Subject Alternative Names.
+                verbosity (int): Level of detail to include in the output.
         """
+        self.now = datetime.now(timezone.utc)
+
         output = ["", _("Certificate Hierarchy:")]
         self.include_system = kwargs.get("system", False)
-        self.show_san = kwargs.get("show_san", False)
+        self.verbosity = kwargs.get("verbosity", 0)
 
         for group in groups_results:
             # Handle both raw objects and dictionary inputs
@@ -57,6 +60,19 @@ class TextRenderer(BaseRenderer):
 
         return "\n".join(output)
 
+    def _render_icon_block(self, icon: str) -> str:
+        if not icon:
+            return ""
+
+        DOUBLE_WIDTH_ICONS=[
+            Icons.OCSP_OK
+        ]
+
+        if icon in DOUBLE_WIDTH_ICONS:
+            return f"[{icon} ]"
+        else:
+            return f"[{icon}]"
+
     def _recursive_render(self, nodes: List[Any], indent: str = "") -> str:
         """
         Recursively builds the tree string using ASCII connectors.
@@ -64,56 +80,65 @@ class TextRenderer(BaseRenderer):
         lines = []
         for i, n in enumerate(nodes):
             # Extract attributes safely
+            audit = n.get_audit_status()
             raw_name = getattr(n, "common_name", _("Unknown"))
             is_system_cert = getattr(n, "is_system_cert", False)
+            is_aia_cert = getattr(n, "is_aia_cert", False)
             is_collision = getattr(n, "is_collision", False)
             is_orphan = getattr(n, "is_orphan", False) or raw_name == ORPHAN_NODE_ID
 
-            is_valid = getattr(n, "is_valid", False)
-            sig_valid = getattr(n, "signature_valid", True)
-            v_error = getattr(n, "validation_error", "") or ""
             expiry = getattr(n, "expiry_date", None)
-            is_soon = getattr(n, "is_expiring_soon", False)
+            ocsp_status = getattr(n, "ocsp_status", "UNKNOWN")
 
             # Build status icons
             icons = []
             if is_orphan:
                 icons.append(Icons.UNKNOWN)
             else:
-                if sig_valid is False:
-                    icons.append(Icons.BROKEN)
-                elif not is_valid:
-                    icons.append(Icons.EXPIRED)
-                elif is_soon:
+                if audit["code"] == 0:
+                    icons.append(Icons.VALID)
+                elif audit["code"] == 1:
                     icons.append(Icons.WARNING)
                 else:
-                    icons.append(Icons.VALID)
+                    icons.append(Icons.EXPIRED)
+
+                if ocsp_status == "REVOKED":
+                    icons.append(Icons.REVOKED)
+                elif ocsp_status == "GOOD":
+                    icons.append(Icons.OCSP_OK)
+
+                icons.append(n.signature_icon)
 
                 if is_system_cert:
                     icons.append(SYSTEM.ICON)
+                if is_aia_cert:
+                    icons.append(AIA.ICON)
                 if is_collision:
                     icons.append(COLLISION.ICON)
 
-            icon_str = "".join([f"[{ico}]" for ico in icons])
+            icon_str = "".join([self._render_icon_block(ico) for ico in icons])
 
             # Process errors and naming
             error_label = ""
-            if not is_orphan:
-                if sig_valid is False:
-                    error_label = f"<{_('SIG_ERR')}>"
-                elif v_error:
-                    error_label = f"<{_(v_error)}>"
-                elif not is_valid and expiry and expiry < datetime.now(timezone.utc):
-                    error_label = f"<{_('EXPIRED')}>"
+            if not is_orphan and audit["code"] > 0:
+                error_label = f"<{_(audit['label'])}>"
 
             name = raw_name if not is_orphan else _("EXTERNAL ISSUER / MISSING ROOT")
             if is_collision:
                 cid = getattr(n, "cert_id", "???")
                 name = f"{name} (ID: {cid[:8]})"
 
+            eku_display = ""
+            if self.verbosity >= 2:
+                findings = getattr(n, "findings", [])
+                eku_finding = next((f for f in findings if getattr(f, "code", "") == "EKU_PURPOSE"), None)
+                if eku_finding:
+                    eku_text = eku_finding.message.replace("Certificate purpose: ", "")
+                    eku_display = f"[{_('Usage')}: {eku_text}]"
+
             # Optional SAN display
             san_display = ""
-            if self.show_san:
+            if self.verbosity >= 1:
                 san_names = getattr(n, "san_names", [])
                 extra_sans = [s for s in san_names if s != raw_name]
                 if extra_sans:
@@ -131,17 +156,21 @@ class TextRenderer(BaseRenderer):
 
             # Build the line with tree connectors
             connector = "└── " if i == len(nodes) - 1 else "├── "
-            parts = [f"{indent}{connector}{name}"]
-            if icon_str:
-                parts.append(icon_str)
-            if error_label:
-                parts.append(error_label)
-            if san_display:
-                parts.append(san_display)
-            if date_str:
-                parts.append(date_str)
+            parts = [f"{indent}{connector}{name}", icon_str, error_label, san_display, eku_display, date_str]
 
             lines.append(" ".join(p for p in parts if p))
+
+            findings = getattr(n, "findings", [])
+            if findings and self.verbosity >= 3:
+                children = getattr(n, "children", [])
+                base_indent = indent + ("    " if i == len(nodes) - 1 else "│   ")
+                filtered_findings = [f for f in findings if not (self.verbosity >= 3 and getattr(f, "code", "") == "EKU_PURPOSE")]
+
+                for f_idx, f in enumerate(filtered_findings):
+                    is_last_finding = (f_idx == len(filtered_findings) - 1) and not children
+                    f_connector = "└── " if is_last_finding else "├── "
+                    f_icon = "[!]" if f.level == "ERROR" else "[i]"
+                    lines.append(f"{base_indent}{f_connector}{f_icon} {f.message} ({f.code})")
 
             # Recurse for child certificates (Intermediate/Root)
             children = getattr(n, "children", [])
