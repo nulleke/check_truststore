@@ -25,8 +25,6 @@ find src/check_truststore/locale -name "*.po" -exec msgfmt {} -o {}s/po/mo/ \; 2
 for PY_VER in "${PYTHON_VERSIONS[@]}"; do
     echo -e "\n\033[1;34m>>> Testing Python ${PY_VER} [Full Test]\033[0m"
 
-    # Gebruik PIP_ROOT_USER_ACTION environment variabele voor maximale stilte
-    # En --no-input om interactie te voorkomen
     podman run --rm \
         -v ".:/app:Z" \
         -w /app \

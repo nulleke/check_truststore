@@ -1,5 +1,5 @@
 # TrustStore Analyzer
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![License: LGPL v3](https://img.shields.io/badge/License-LGPLv3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![Python: 3.6+](https://img.shields.io/badge/python-3.6+-green.svg)](https://www.python.org/)
 
 A tool for system administrators and security engineers to audit certificate truststores. This utility transforms flat certificate directories into logical hierarchies, making it easy to spot broken chains or expiring certificates.
@@ -399,11 +399,11 @@ Contributions are welcome! Whether it's reporting a bug, suggesting an enhanceme
 Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for details on our development standards, legacy environment support (RHEL 8), and how to get started.
 
 ## ⚖️ License
-**Copyright (C) 2026 Serge van Thillo**
+**Copyright (C) 2024-2026 Serge van Thillo**
 
-This program is free software: you can redistribute it and/or modify it under the terms of the **GNU General Public License** as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+This program is free software: you can redistribute it and/or modify it under the terms of the **GNU Lesser General Public License** as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
-This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the [GNU General Public License](https://www.gnu.org/licenses/gpl-3.0) for more details.
+This project is licensed under the **LGPL-3.0-or-later** - see the [LICENSE](LICENSE) file for details.
 
 ---
 **Status:** Version: 1.0.0 | Stable | **Logic validated for current system date:** April 24, 2026

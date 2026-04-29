@@ -1,5 +1,6 @@
 stages:
   - test
+  - deploy
 
 variables:
   PYTHONUNBUFFERED: "1"
@@ -53,3 +54,12 @@ test_full_compatibility:
     paths:
       - output_*.json
     expire_in: 1 week
+
+deploy:
+  stage: deploy
+  script:
+    - pip install twine build
+    - python -m build
+    - twine upload dist/*
+  only:
+    - tags

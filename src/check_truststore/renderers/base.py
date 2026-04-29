@@ -8,9 +8,9 @@ Includes a specialized JSON encoder for X.509 date handling.
 
 import json
 from abc import ABC, abstractmethod
-from typing import List, Any, Union
-from datetime import datetime, date
-from check_truststore.engine.core import Certificate
+from typing import List, Any, Union, Optional
+from datetime import datetime, date, timezone
+from pathlib import Path
 
 
 class DateTimeEncoder(json.JSONEncoder):
@@ -22,19 +22,50 @@ class DateTimeEncoder(json.JSONEncoder):
 
     def default(self, obj):
         if isinstance(obj, (datetime, date)):
-            # Replace +00:00 with Z for cleaner, standard-compliant UTC strings
-            return obj.isoformat().replace("+00:00", "Z")
+            return BaseRenderer.format_iso(obj)
         return super().default(obj)
 
 
 class BaseRenderer(ABC):
     """
     Abstract Base Class for all renderers.
-    Enforces a consistent interface for generating output from the analysis tree.
+    Enforces a consistent interface for generating output.
     """
 
+    def __init__(self, output_path: Optional[Path] = None):
+        """
+        Initialize the base renderer.
+
+        Args:
+            output_path: Optional path where the rendered output should be saved.
+        """
+        self.output_path = output_path
+        self.verbosity = 0
+        self.now = datetime.now(timezone.utc).replace(microsecond=0)
+
+    @staticmethod
+    def format_iso(dt: Union[datetime, date, str, None]) -> str:
+        """
+        Centralized method for consistent date formatting to Zulu (UTC).
+        Standardizes output to ISO 8601 without microseconds.
+        """
+        if dt is None or dt == "1970-01-01":
+            return "1970-01-01T00:00:00Z"
+
+        if isinstance(dt, (datetime, date)):
+            if isinstance(dt, datetime) and dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+
+            return dt.isoformat().replace("+00:00", "Z").split('.')[0].replace("Z", "") + "Z"
+
+        if isinstance(dt, str):
+            clean_dt = dt.split('.')[0].rstrip('Z')
+            return f"{clean_dt}Z"
+
+        return str(dt)
+
     @abstractmethod
-    def render(self, tree_data: List[Union[Certificate, Any]], **kwargs) -> str:
+    def render(self, tree_data: List[Union[Any]], **kwargs) -> str:
         """
         Main rendering method to be implemented by subclasses.
 
@@ -46,11 +77,3 @@ class BaseRenderer(ABC):
             A string representation of the data in the target format.
         """
         pass
-
-
-#    def render(self, tree_data: List[Union[Certificate, Any]], format_type: str, **kwargs) -> str:
-#        renderer = self._renderers.get(format_type)
-#        if not renderer:
-#            raise ValueError(_("Unknown format: {}").format(format_type))
-#
-#        return renderer.render(tree_data, **kwargs)

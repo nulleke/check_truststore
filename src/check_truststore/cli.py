@@ -11,25 +11,27 @@
 # designed by the Lead Developer. AI was used to assist with syntax
 # optimization and cross-version Python support.
 #
-# Copyright (C) 2026 Serge van Thillo <nulleke76@gmail.com>
+# Copyright (C) 2024-2026 Serge van Thillo <nulleke76@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
+# it under the terms of the GNU Lesser General Public License as published
+# by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# GNU Lesser General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
+# You should have received a copy of the GNU Lesser General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# -----------------------------------------------------------------------------
 
 import sys
 import argparse
 import json
 from pathlib import Path
+from typing import Optional
 
 from check_truststore.engine.core import (
     _,
@@ -42,11 +44,48 @@ from check_truststore.engine.core import (
 from check_truststore.providers import (
     YamlInputProvider,
     JsonInputProvider,
+    XmlInputProvider,
     SingleFileInputProvider,
     DirectoryInputProvider,
 )
 from check_truststore.renderers import TrustStoreRenderer
+from check_truststore.providers.base import BaseInputProvider
 
+def get_provider(input_str: str, stdin_content: Optional[str], repo: CertificateRepository, **kwargs) -> Optional[BaseInputProvider]:
+    """
+    Factory logic to determine the correct provider based on input type or content.
+    """
+    if input_str == "-":
+        if not stdin_content:
+            return None
+
+        content = stdin_content.lstrip()
+        if content.startswith(("{", "[")):
+            return JsonInputProvider(stdin_content, repository=repo, is_raw_data=True, **kwargs)
+        if content.startswith("<?xml") or "<nmaprun" in content:
+            return XmlInputProvider(stdin_content, repository=repo, is_raw_data=True, **kwargs)
+        if "BEGIN CERTIFICATE" in content:
+            return SingleFileInputProvider(stdin_content, repository=repo, is_raw_data=True, **kwargs)
+        if ":" in content:
+            return YamlInputProvider(stdin_content, repository=repo, is_raw_data=True, **kwargs)
+        return None
+
+    path = Path(input_str)
+    if not path.exists():
+        return None
+
+    if path.is_dir():
+        return DirectoryInputProvider(path, repository=repo, recursive=True, **kwargs)
+
+    suffix = path.suffix.lower()
+    if suffix in [".yml", ".yaml"]:
+        return YamlInputProvider(path, repository=repo, **kwargs)
+    if suffix == ".json":
+        return JsonInputProvider(path, repository=repo, **kwargs)
+    if suffix == ".xml":
+        return XmlInputProvider(path, repository=repo, **kwargs)
+
+    return SingleFileInputProvider(path, repository=repo, **kwargs)
 
 def main() -> None:
     _("ERROR")
@@ -61,6 +100,9 @@ def main() -> None:
     _("PARENT_NOT_A_CA")
 
     def valid_path(path_str: str) -> Path:
+        if path_str == "-":
+            return None
+
         path = Path(path_str)
         if not path.exists():
             raise argparse.ArgumentTypeError(
@@ -76,7 +118,18 @@ def main() -> None:
         add_help=False,
     )
     parser.add_argument(
-        "inputs", type=valid_path, nargs="+", help=_("Path to the input source(s)")
+        "inputs", type=str, nargs="*", help=_("Path to the input source(s)")
+    )
+    parser.add_argument(
+        "--mock",
+        action="store_true",
+        default=False,
+        help=argparse.SUPPRESS,
+    )
+    parser.add_argument(
+        "-o",
+        action="store_true",
+        help=argparse.SUPPRESS,
     )
     parser.add_argument(
         "-h",
@@ -88,9 +141,16 @@ def main() -> None:
     parser.add_argument(
         "-f",
         "--format",
-        choices=["json", "text", "status"],
+        choices=["json", "text", "status", "sarif"],
         default="json",
         help=_("Output format"),
+    )
+    parser.add_argument(
+        "-v", "--verbose",
+        action="count",
+        default=0,
+        dest="verbosity",
+        help="Increase output verbosity (e.g., -v for SANs, -vv for policy findings)"
     )
     parser.add_argument(
         "-d", "--debug", action="store_true", default=False, help=_("Show debug info")
@@ -110,83 +170,92 @@ def main() -> None:
         help=_("Expiration threshold in days (default: 30)"),
     )
     parser.add_argument(
-        "-a",
-        "--show-san",
+        "-O",
+        "--online",
         action="store_true",
-        help=_("Display Subject Alternative Names (SAN) in the tree view"),
+        default=False,
+        help=_("Allow internet access for AIA discovery and revocation checks"),
+    )
+    parser.add_argument(
+        "--max-depth",
+        type=int,
+        default=4,
+        help=_("Maximum recursion depth for chain discovery (default: 4)"),
     )
 
     args = parser.parse_args()
 
-    analysis_groups = []
-    repo = CertificateRepository(debug=args.debug)
-
-    if args.debug:
-        INFO.log(
-            _("Starting analysis"),
-            f"Inputs: {[p.name for p in args.inputs]}, System: {args.system}",
+    if "-o" in sys.argv:
+        ERROR.log(
+            _("Parameter '-o' is unknown"),
+            _("Did you mean '-O' (uppercase) for online discovery?"),
         )
+        sys.exit(1)
+
+    stdin_content = None
+    if "-" in args.inputs or (not args.mock and not args.inputs):
+        if not sys.stdin.isatty():
+            stdin_content = sys.stdin.read().strip()
+        elif "-" in args.inputs:
+            parser.error(_("Stdin requested via '-' but no data piped."))
+
+    repo = CertificateRepository(**vars(args))
+    analysis_groups = []
+
+    if args.mock:
+        from check_truststore.providers.mock_provider import MockProvider
+        analysis_groups.extend(MockProvider(repository=repo).get_groups())
+
+    # Main provider loop
+    effective_inputs = args.inputs if args.inputs else ["-"]
+    for input_str in effective_inputs:
+        provider = get_provider(input_str, stdin_content, repo, **vars(args))
+
+        if provider:
+            groups = provider.get_groups()
+            if groups:
+                analysis_groups.extend(groups)
+            elif args.debug:
+                WARNING.log(input_str, _("No certificates found via this provider."))
+        elif input_str != "-" or stdin_content:
+             WARNING.log(input_str, _("Could not determine provider for this input."))
+
+    # Post-processing logic
+    #if len(analysis_groups) == 1 and not args.system:
+    #    args.system = True
+
+    if not analysis_groups:
+        WARNING.log(_("No certificates found to display."))
+        sys.exit(0)
 
     try:
-        for path in args.inputs:
-            provider = None
-
-            if path.is_dir():
-                provider = DirectoryInputProvider(path, repository=repo, recursive=True)
-            elif path.suffix in [".yml", ".yaml"]:
-                provider = YamlInputProvider(path, repository=repo, debug=args.debug)
-            elif path.suffix == ".json":
-                provider = JsonInputProvider(path, repository=repo, debug=args.debug)
-            elif path.is_file():
-                provider = SingleFileInputProvider(path, repository=repo)
-
-            if provider:
-                groups = provider.get_groups()
-                if groups:
-                    analysis_groups.extend(groups)
-                elif args.debug:
-                    WARNING.log(
-                        path.name, _("No certificates found via this provider.")
-                    )
-
-        if len(analysis_groups) == 1 and not args.system:
-            args.system = True
-
-        if not analysis_groups:
-            WARNING.log(_("No certificates found to display."))
-            sys.exit(0)
-
         analyzer = TrustStoreAnalyzer(groups=analysis_groups, **vars(args))
         results = analyzer.analyze()
 
         renderer = TrustStoreRenderer()
-        output = renderer.render(
-            results, args.format, system=args.system, show_san=args.show_san
-        )
-
+        output = renderer.render(results, args.format, **vars(args))
         print(output)
 
         if args.format == "status":
             try:
                 report = json.loads(output)
                 sys.exit(report.get("metadata", {}).get("exitCode", 0))
-            except (json.JSONDecodeError, KeyError, TypeError):
+            except Exception:
                 sys.exit(7)
+
+        if args.format == "sarif" and '"level": "error"' in output:
+            sys.exit(1)
 
     except KeyboardInterrupt:
         sys.stderr.write("\n")
         INFO.log(_("Analysis interrupted by user"))
         sys.exit(130)
-
     except Exception as e:
-        error_msg = f"{type(e).__name__}: {str(e)}"
-        ERROR.log(_("An unexpected error occurred"), error_msg)
+        ERROR.log(_("An unexpected error occurred"), str(e))
         if args.debug:
             import traceback
-
             traceback.print_exc()
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()

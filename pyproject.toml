@@ -4,15 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "check_truststore"
-version = "1.0.0"
+version = "1.1.0b1"
 description = "Lightweight certificate trust chain analyzer"
 readme = "README.md"
 requires-python = ">=3.6"
-license = {text = "GPL-3.0+"}
-authors = [{name = "Serge van Thillo"}]
+license = {text = "LGPL-3.0-or-later"}
+authors = [{name = "Serge van Thillo", email = "nulleke76@gmail.com"}]
+keywords = ["ssl", "x509", "pki", "certificate", "truststore", "audit"]
 
 dependencies = [
     "cryptography",
+    "requests",
 ]
 
 [project.optional-dependencies]

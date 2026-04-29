@@ -8,43 +8,58 @@ or a dedicated configuration.
 """
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
 from check_truststore.engine.core import CertificateRepository
 
-
 class SingleFileInputProvider(BaseInputProvider):
     """
-    Handles the loading and grouping of a single, specific certificate file.
+    Handles the loading and grouping of a single certificate (file or raw string).
     """
 
     def __init__(
-        self, file_path: Path, repository: Optional[CertificateRepository] = None
+        self,
+        input_source: Union[Path, str],
+        repository: Optional[CertificateRepository] = None,
+        is_raw_data: bool = False,
+        **kwargs,
     ):
         """
         Initializes the file provider.
 
         Args:
-            file_path: Path to the target certificate file.
+            input_source: Path to the target certificate file or raw PEM string.
             repository: Optional shared repository for certificate loading.
+            is_raw_data: Boolean flag indicating if input_source is a raw string.
         """
-        super().__init__(repository=repository)
-        self.file_path = file_path
+        super().__init__(repository=repository, **kwargs)
+        self.input_source = input_source
+        self.is_raw_data = is_raw_data
 
     def get_groups(self) -> List[TrustStoreGroup]:
         """
-        Loads the specific file and packs it into a TrustStoreGroup.
+        Loads the specific input and packs it into a TrustStoreGroup.
 
         Returns:
-            A list containing a single TrustStoreGroup named after the file,
-            or an empty list if the file is invalid or missing.
+            A list containing a single TrustStoreGroup named after the source,
+            or an empty list if the loading fails.
         """
-        if not self.file_path.is_file():
-            return []
+        certs = []
+        group_name = "Stdin Input"
 
-        # Load the certificate metadata dictionary
-        cert = self.load_certificate(self.file_path)
-        # If the file contains no valid certificates, return an empty group list
-        certs = [cert] if cert else []
+        if self.is_raw_data:
+            # Handle raw string input (e.g., piped data)
+            content = self.input_source.encode() if isinstance(self.input_source, str) else self.input_source
+            certs = self.repository.add_pem_data(content, source_path=None)
+        else:
+            # Handle file path input
+            path = Path(self.input_source)
+            if path.is_file():
+                certs = self.repository.load_from_files([path])
+                group_name = path.name
 
-        return [TrustStoreGroup(name=self.file_path.name, targets=certs)]
+        if certs:
+            # In the builder/analyzer, 'targets' expects the list of metadata dictionaries
+            return [TrustStoreGroup(name=group_name, targets=certs)]
+
+        return []
