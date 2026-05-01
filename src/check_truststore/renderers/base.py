@@ -1,6 +1,7 @@
 """
 TrustStore Analyzer & Visualizer - RENDERER BASE
 Architect: Serge van Thillo
+SPDX-License-Identifier: LGPL-3.0-or-later
 
 Defines the abstract foundation for all output formats (JSON, Text, Graphviz).
 Includes a specialized JSON encoder for X.509 date handling.

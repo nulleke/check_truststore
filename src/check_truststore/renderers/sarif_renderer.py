@@ -1,12 +1,14 @@
 """
 TrustStore Analyzer & Visualizer - SARIF RENDERER
 Architect: Serge van Thillo
+SPDX-License-Identifier: LGPL-3.0-or-later
 """
 
 import json
 from typing import Any, Dict, List
 
 from .base import BaseRenderer
+from check_truststore import __version__ as tool_version
 
 
 class SarifRenderer(BaseRenderer):
@@ -23,12 +25,6 @@ class SarifRenderer(BaseRenderer):
         Converts the certificate tree data into a SARIF log.
         """
         try:
-            try:
-                from importlib.metadata import version
-                tool_version = version("check_truststore")
-            except Exception:
-                tool_version = "1.1.1"
-
             groups = tree_data if isinstance(tree_data, list) else [tree_data]
             results = []
 
@@ -99,7 +95,7 @@ class SarifRenderer(BaseRenderer):
             "properties": {
                 "commonName": common_name,
                 "serialNumber": getattr(cert, "serial_number", ""),
-                "expiryDate": self._format_iso(getattr(cert, "expiry_date", ""))
+                "expiryDate": self.format_iso(getattr(cert, "expiry_date", ""))
             }
         }
 
@@ -110,10 +106,14 @@ class SarifRenderer(BaseRenderer):
         mapping = {
             "OK": "note",
             "WARNING": "warning",
+            "EXPIRING": "warning",
             "EXPIRED": "error",
             "INCOMPLETE": "error",
             "INVALID": "error",
-            "REVOKED": "error"
+            "REVOKED": "error",
+            "SIG_INVALID": "error",
+            "PARENT_NOT_A_CA": "error",
+            "NO_TRUST": "error",
         }
         return mapping.get(label, "warning")
 

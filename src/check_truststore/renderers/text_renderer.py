@@ -1,6 +1,7 @@
 """
 TrustStore Analyzer & Visualizer - TEXT RENDERER
 Architect: Serge van Thillo
+SPDX-License-Identifier: LGPL-3.0-or-later
 
 Renders the certificate trust tree as an ASCII-style hierarchy in the terminal.
 Includes support for internationalization, status icons, and SAN (Subject Alternative Name)
@@ -16,6 +17,7 @@ from check_truststore.engine.core import (
     AIA,
     COLLISION,
     ORPHAN_NODE_ID,
+    CYCLE_NODE_ID,
 )
 from .base import BaseRenderer
 
@@ -36,6 +38,9 @@ class TextRenderer(BaseRenderer):
                 system (bool): Whether to emphasize system certificates.
                 verbosity (int): Level of detail to include in the output.
         """
+        _("SIG_INVALID")
+        _("NO_TRUST")
+        _("UNTRUSTED_CHAIN")
         self.now = datetime.now(timezone.utc)
 
         output = ["", _("Certificate Hierarchy:")]
@@ -86,13 +91,16 @@ class TextRenderer(BaseRenderer):
             is_aia_cert = getattr(n, "is_aia_cert", False)
             is_collision = getattr(n, "is_collision", False)
             is_orphan = getattr(n, "is_orphan", False) or raw_name == ORPHAN_NODE_ID
+            is_cycle = getattr(n, 'is_in_circular_group', False) or raw_name == CYCLE_NODE_ID
 
             expiry = getattr(n, "expiry_date", None)
             ocsp_status = getattr(n, "ocsp_status", "UNKNOWN")
 
+            is_special_placeholder = raw_name in [ORPHAN_NODE_ID, CYCLE_NODE_ID]
+
             # Build status icons
             icons = []
-            if is_orphan:
+            if is_orphan or is_cycle:
                 icons.append(Icons.UNKNOWN)
             else:
                 if audit["code"] == 0:
@@ -120,10 +128,16 @@ class TextRenderer(BaseRenderer):
 
             # Process errors and naming
             error_label = ""
-            if not is_orphan and audit["code"] > 0:
+            if not is_special_placeholder and audit["code"] > 0:
                 error_label = f"<{_(audit['label'])}>"
 
-            name = raw_name if not is_orphan else _("EXTERNAL ISSUER / MISSING ROOT")
+            if is_special_placeholder and is_orphan:
+                name = _("EXTERNAL ISSUER / MISSING ROOT")
+            elif is_special_placeholder and is_cycle:
+                name = _("CIRCULAR REFERENCE")
+            else:
+                name = raw_name
+
             if is_collision:
                 cid = getattr(n, "cert_id", "???")
                 name = f"{name} (ID: {cid[:8]})"
@@ -142,11 +156,17 @@ class TextRenderer(BaseRenderer):
                 san_names = getattr(n, "san_names", [])
                 extra_sans = [s for s in san_names if s != raw_name]
                 if extra_sans:
-                    san_display = f"({_('ALT')}: {', '.join(extra_sans)})"
+                    max_display = 5
+                    if len(extra_sans) > max_display:
+                        san_str = ", ".join(extra_sans[:max_display])
+                        san_display = f"({_('ALT')}: {san_str} ... +{len(extra_sans) - max_display})"
+                    else:
+                        san_display = f"({_('ALT')}: {', '.join(extra_sans)})"
 
             # Date formatting
+
             date_str = ""
-            if expiry and not is_orphan:
+            if expiry and not is_special_placeholder:
                 ds = (
                     expiry.strftime("%Y-%m-%d")
                     if isinstance(expiry, datetime)

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-04-29 17:11+0200\n"
+"POT-Creation-Date: 2026-05-01 10:59+0200\n"
 "PO-Revision-Date: 2026-04-13 11:08+0200\n"
 "Last-Translator: Serge van Thillo <nulleke76@gmail.com>\n"
 "Language-Team: Dutch <vertaling@vrijschrift.org>\n"
@@ -42,200 +42,281 @@ msgstr "Bestand niet gevonden"
 msgid "Permission denied"
 msgstr "Toegang geweigerd"
 
-#: src/check_truststore/engine/core.py:409
+#: src/check_truststore/engine/core.py:328
+#, python-brace-format
+msgid "Broken circular chain at {ski_id}"
+msgstr "Circulaire keten verbroken bij {ski_id}"
+
+#: src/check_truststore/engine/core.py:329
+msgid "CYCLE_BREAKER"
+msgstr "CYCLUS_BREKER"
+
+#: src/check_truststore/engine/core.py:432
 msgid "SIG_ERR"
 msgstr "SIG_FOUT"
 
-#: src/check_truststore/engine/core.py:412
+#: src/check_truststore/engine/core.py:435
 msgid "REVOKED"
 msgstr "INGETROKKEN"
 
-#: src/check_truststore/engine/core.py:415 src/check_truststore/cli.py:96
+#: src/check_truststore/engine/core.py:438 src/check_truststore/cli.py:96
 msgid "INVALID"
 msgstr "ONGELDIG"
 
-#: src/check_truststore/engine/core.py:458
+#: src/check_truststore/engine/core.py:481
 #, python-brace-format
 msgid "Missing issuer for: {name}"
 msgstr "Ontbrekende issuer voor: {name}"
 
-#: src/check_truststore/engine/core.py:461
+#: src/check_truststore/engine/core.py:484
 msgid "UNTRUSTED"
 msgstr "GEEN_TRUST"
 
-#: src/check_truststore/engine/core.py:637
-#: src/check_truststore/engine/core.py:639
-#: src/check_truststore/renderers/text_renderer.py:84
+#: src/check_truststore/engine/core.py:695
+#: src/check_truststore/engine/core.py:697
+#: src/check_truststore/renderers/text_renderer.py:89
 msgid "Unknown"
 msgstr "Onbekend"
 
-#: src/check_truststore/engine/core.py:720
-msgid "Successfully discovered issuer"
-msgstr "Uitgever succesvol gevonden"
+#: src/check_truststore/engine/core.py:799
+msgid "Successfully discovered issuer via AIA"
+msgstr "Uitgever succesvol gevonden via AIA"
 
-#: src/check_truststore/engine/core.py:785
+#: src/check_truststore/engine/core.py:870
 msgid "Processing Group"
 msgstr "Groep verwerken"
 
-#: src/check_truststore/engine/core.py:831
+#: src/check_truststore/engine/core.py:916
 msgid "System usage"
 msgstr "Systeemgebruik"
 
 # python-brace-format
-#: src/check_truststore/engine/core.py:832
+#: src/check_truststore/engine/core.py:917
 #, python-brace-format
 msgid "Used {used} out of {total} system certs"
 msgstr "{used} van de {total} systeem-certificaten gebruikt"
 
-#: src/check_truststore/engine/discovery.py:74
+#: src/check_truststore/engine/discovery.py:75
 msgid "Could not create cache directory"
 msgstr "Kon cache-directory niet aanmaken"
 
-#: src/check_truststore/engine/discovery.py:91
-msgid "Loaded from local cache"
-msgstr "Geladen uit lokale cache"
-
-#: src/check_truststore/engine/discovery.py:91
-#: src/check_truststore/engine/discovery.py:292
-msgid "CACHE"
-msgstr "CACHE"
-
-#: src/check_truststore/engine/discovery.py:134
+#: src/check_truststore/engine/discovery.py:155
 msgid "Downloading"
 msgstr "Downloaden"
 
-#: src/check_truststore/engine/discovery.py:145
+#: src/check_truststore/engine/discovery.py:163
 msgid "Certificate too large"
 msgstr "Certificaat is te groot"
 
-#: src/check_truststore/engine/discovery.py:158
+#: src/check_truststore/engine/discovery.py:176
 msgid "Could not load cert from"
 msgstr "Kon certificaat niet ophalen vanuit de cache"
 
-#: src/check_truststore/engine/discovery.py:158
+#: src/check_truststore/engine/discovery.py:176
 msgid "Tried DER & PEM"
 msgstr "DER & PEM geprobeerd"
 
-#: src/check_truststore/engine/discovery.py:164
+#: src/check_truststore/engine/discovery.py:182
 msgid "Connection failed"
 msgstr "Verbinding mislukt"
 
-#: src/check_truststore/engine/discovery.py:275
+#: src/check_truststore/engine/discovery.py:232
+msgid "OCSP_BUILD"
+msgstr "OCSP_OPBOUW"
+
+#: src/check_truststore/engine/discovery.py:241
+#, python-brace-format
+msgid "Checking: {url}"
+msgstr "Controleren: {url}"
+
+#: src/check_truststore/engine/discovery.py:242
+msgid "OCSP_CHECK"
+msgstr "OCSP_CONTROLE"
+
+#: src/check_truststore/engine/discovery.py:299
+msgid "CRL_CHECK"
+msgstr "CRL_CONTROLE"
+
+#: src/check_truststore/engine/discovery.py:299
 msgid "No CRL endpoints found in certificate"
 msgstr "Geen CRL-eindpunten gevonden in certificaat"
 
-#: src/check_truststore/engine/discovery.py:292
+#: src/check_truststore/engine/discovery.py:316
+#: src/check_truststore/engine/discovery.py:319
+msgid "CRL_CACHE"
+msgstr "CRL_CACHE"
+
+#: src/check_truststore/engine/discovery.py:316
 msgid "Using cached CRL for"
 msgstr "Gecachte CRL wordt gebruikt voor"
 
-#: src/check_truststore/engine/discovery.py:295
+#: src/check_truststore/engine/discovery.py:316
+msgid "CACHE"
+msgstr "CACHE"
+
+#: src/check_truststore/engine/discovery.py:319
 msgid "Cached CRL is stale (nextUpdate passed)"
 msgstr "Gecachte CRL is verouderd (nextUpdate is verstreken)"
 
-#: src/check_truststore/engine/discovery.py:295
+#: src/check_truststore/engine/discovery.py:319
 msgid "EXPIRE"
 msgstr "VERLOPEN"
 
-#: src/check_truststore/engine/discovery.py:306
-msgid "Downloading CRL"
-msgstr "Downloaden"
+#: src/check_truststore/engine/discovery.py:325
+msgid "DEBUG_CRL"
+msgstr "DEBUG_CRL"
 
-#: src/check_truststore/engine/discovery.py:346
+#: src/check_truststore/engine/discovery.py:325
+msgid "Skip download (already done in this run)"
+msgstr "Download overslaan (reeds uitgevoerd in deze sessie)"
+
+#: src/check_truststore/engine/discovery.py:330
+msgid "CRL_FETCH"
+msgstr "CRL_OPHALEN"
+
+#: src/check_truststore/engine/discovery.py:330
+msgid "Downloading CRL"
+msgstr "CRL Downloaden"
+
+#: src/check_truststore/engine/discovery.py:344
+#, python-brace-format
+msgid "Serial {serial_number} is REVOKED"
+msgstr "Serienummer {serial_number} is ingetrokken (REVOKED)"
+
+#: src/check_truststore/engine/discovery.py:345
+msgid "CRL_RESULT"
+msgstr "CRL_RESULTAAT"
+
+#: src/check_truststore/engine/discovery.py:353
+msgid "CRL_FAILED"
+msgstr "CRL_MISLUKT"
+
+#: src/check_truststore/engine/discovery.py:353
+msgid "Failed to check CRL"
+msgstr "CRL-controle mislukt"
+
+#: src/check_truststore/engine/discovery.py:371
 msgid "Cache expired based on TTL, refreshing..."
 msgstr "Cache-bestand is verlopen gebaseerd op de TTL, verversen..."
 
-#: src/check_truststore/engine/discovery.py:355
+#: src/check_truststore/engine/discovery.py:380
+#: src/check_truststore/engine/discovery.py:387
+msgid "Cache"
+msgstr "Buffer (Cache)"
+
+#: src/check_truststore/engine/discovery.py:380
 msgid "Cached certificate expired on"
 msgstr "Gecacht certificaat verlopen op"
 
-#: src/check_truststore/engine/discovery.py:362
+#: src/check_truststore/engine/discovery.py:387
 msgid "Error reading cache"
 msgstr "Fout bij lezen van cache"
 
-#: src/check_truststore/engine/discovery.py:392
+#: src/check_truststore/engine/discovery.py:417
+msgid "DNS"
+msgstr "DNS"
+
+#: src/check_truststore/engine/discovery.py:417
 msgid "Could not resolve host"
 msgstr "Hostnaam kon niet worden omgezet (DNS)"
 
-#: src/check_truststore/engine/discovery.py:403
+#: src/check_truststore/engine/discovery.py:431
 msgid "Could not save certificate to cache"
 msgstr "Kon certificaat niet opslaan in cache"
 
-#: src/check_truststore/providers/json_provider.py:64
+#: src/check_truststore/providers/json_provider.py:65
 msgid "Unknown JSON format or malformed structure."
 msgstr "Onbekend JSON-formaat of ongeldige structuur."
 
-#: src/check_truststore/providers/json_provider.py:77
-#: src/check_truststore/providers/yaml_provider.py:68
+#: src/check_truststore/providers/json_provider.py:78
+#: src/check_truststore/providers/yaml_provider.py:69
 msgid "Unnamed Store"
 msgstr "Naamloze store"
 
-#: src/check_truststore/providers/yaml_provider.py:16
+#: src/check_truststore/providers/yaml_provider.py:17
 msgid "Package 'pyyaml' is required for YAML support."
 msgstr "Pakket 'pyyaml' is vereist voor YAML-ondersteuning."
 
-#: src/check_truststore/providers/yaml_provider.py:52
+#: src/check_truststore/providers/yaml_provider.py:53
 msgid "YAML Load Error"
 msgstr "YAML Laadfout"
 
-#: src/check_truststore/providers/yaml_provider.py:99
+#: src/check_truststore/providers/yaml_provider.py:100
 msgid "File exists but failed to load certificate."
 msgstr "Bestand bestaat, maar laden van certificaat is mislukt."
 
-#: src/check_truststore/providers/yaml_provider.py:99
+#: src/check_truststore/providers/yaml_provider.py:100
 msgid "LOAD_ERR"
 msgstr "LAAD_FOUT"
 
-#: src/check_truststore/providers/yaml_provider.py:101
+#: src/check_truststore/providers/yaml_provider.py:102
 msgid "Certificate file not found in {}"
 msgstr "Certificaatbestand niet gevonden in {}"
 
-#: src/check_truststore/providers/yaml_provider.py:101
+#: src/check_truststore/providers/yaml_provider.py:102
 msgid "MISSING"
 msgstr "ONTBREEKT"
 
-#: src/check_truststore/providers/yaml_provider.py:105
+#: src/check_truststore/providers/yaml_provider.py:106
 msgid "Group Loaded"
 msgstr "Groep geladen"
 
-#: src/check_truststore/providers/yaml_provider.py:105
+#: src/check_truststore/providers/yaml_provider.py:106
 #, python-brace-format
 msgid "Group '{name}' loaded with {count} certificates."
 msgstr "Groep '{name}' geladen met {count} certificaten."
 
-#: src/check_truststore/providers/yaml_provider.py:109
+#: src/check_truststore/providers/yaml_provider.py:110
 msgid "Group has NO valid certificates."
 msgstr "Groep heeft GEEN geldige certificaten."
 
-#: src/check_truststore/providers/yaml_provider.py:109
+#: src/check_truststore/providers/yaml_provider.py:110
 msgid "EMPTY_GROUP"
 msgstr "LEGE_GROEP"
 
-#: src/check_truststore/renderers/__init__.py:22
+#: src/check_truststore/renderers/__init__.py:25
 msgid "Unknown format: {}"
 msgstr "Onbekend formaat: {}"
 
 #: src/check_truststore/renderers/text_renderer.py:41
+msgid "SIG_INVALID"
+msgstr "SIG_ONGELDIG"
+
+#: src/check_truststore/renderers/text_renderer.py:42
+msgid "NO_TRUST"
+msgstr "NIET_VERTROUWD"
+
+#: src/check_truststore/renderers/text_renderer.py:43
+msgid "UNTRUSTED_CHAIN"
+msgstr "ONGELDIGE_KETEN"
+
+#: src/check_truststore/renderers/text_renderer.py:46
 msgid "Certificate Hierarchy:"
 msgstr "Certificaat Hiërarchie:"
 
-#: src/check_truststore/renderers/text_renderer.py:48
-#: src/check_truststore/renderers/text_renderer.py:51
+#: src/check_truststore/renderers/text_renderer.py:53
+#: src/check_truststore/renderers/text_renderer.py:56
 msgid "Unnamed Group"
 msgstr "Naamloze groep"
 
-#: src/check_truststore/renderers/text_renderer.py:59
+#: src/check_truststore/renderers/text_renderer.py:64
 msgid "(No certificates found)"
 msgstr "(Geen certificaten gevonden)"
 
-#: src/check_truststore/renderers/text_renderer.py:126
+#: src/check_truststore/renderers/text_renderer.py:135
 msgid "EXTERNAL ISSUER / MISSING ROOT"
 msgstr "EXTERNE UITGEVER / ONBEKENDE ROOT"
 
 #: src/check_truststore/renderers/text_renderer.py:137
+msgid "CIRCULAR REFERENCE"
+msgstr "CIRCULAIRE VERWIJZING"
+
+#: src/check_truststore/renderers/text_renderer.py:151
 msgid "Usage"
 msgstr "Gebruik"
 
-#: src/check_truststore/renderers/text_renderer.py:145
+#: src/check_truststore/renderers/text_renderer.py:162
+#: src/check_truststore/renderers/text_renderer.py:164
 msgid "ALT"
 msgstr "ALT"
 
@@ -340,14 +421,14 @@ msgstr "Geen certificaten gevonden via deze provider."
 msgid "Could not determine provider for this input."
 msgstr "Kon geen geschikte provider vinden voor deze invoer."
 
-#: src/check_truststore/cli.py:228
+#: src/check_truststore/cli.py:224
 msgid "No certificates found to display."
 msgstr "Geen certificaten gevonden om weer te geven."
 
-#: src/check_truststore/cli.py:251
+#: src/check_truststore/cli.py:247
 msgid "Analysis interrupted by user"
 msgstr "Analyse afgebroken door gebruiker"
 
-#: src/check_truststore/cli.py:254
+#: src/check_truststore/cli.py:250
 msgid "An unexpected error occurred"
 msgstr "Er is een onverwachte fout opgetreden"

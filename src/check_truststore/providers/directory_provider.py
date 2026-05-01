@@ -1,6 +1,7 @@
 """
 TrustStore Analyzer & Visualizer - DIRECTORY PROVIDER
 Architect: Serge van Thillo
+SPDX-License-Identifier: LGPL-3.0-or-later
 
 Implementation of the input provider that scans filesystem directories
 for certificate files. Supports filtering by extensions and recursive scanning.

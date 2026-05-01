@@ -1,6 +1,7 @@
 """
 TrustStore Analyzer & Visualizer - XML PROVIDER
 Architect: Serge van Thillo
+SPDX-License-Identifier: LGPL-3.0-or-later
 
 Implementation of an XML input provider. Primarily supports Nmap XML output
 to extract certificates directly from scan results without external conversion.
@@ -114,8 +115,6 @@ class XmlInputProvider(BaseInputProvider):
                         if pem_raw:
                             pem_clean = self._fix_pem(pem_raw)
                             if "-----BEGIN CERTIFICATE-----" in pem_clean:
-                                # We pass a descriptive string. The analyzer must handle
-                                # non-Path objects for virtual sources.
                                 source_info = PurePosixPath(f"nmap/{address}/{port_id}")
                                 certs = self.repository.add_pem_data(
                                     pem_clean.encode(),
@@ -136,6 +135,6 @@ class XmlInputProvider(BaseInputProvider):
         clean = raw.replace("-&#45;", "--").replace("&#45;", "-")
         clean = clean.replace("&#xa;", "\n").replace("\xa0", " ")
         # Ensure standard BEGIN/END markers
-        clean = re.sub(r'-+\s*BEGIN CERTIFICATE\s*-+', "-----BEGIN CERTIFICATE-----", clean)
-        clean = re.sub(r'-+\s*END CERTIFICATE\s*-+', "-----END CERTIFICATE-----", clean)
+        clean = re.sub(r'-{3,}\s*BEGIN (?:TRUSTED )?CERTIFICATE\s*-{3,}', "-----BEGIN CERTIFICATE-----", clean)
+        clean = re.sub(r'-{3,}\s*END (?:TRUSTED )?CERTIFICATE\s*-{3,}', "-----END CERTIFICATE-----", clean)
         return clean

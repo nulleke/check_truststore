@@ -1,6 +1,7 @@
 """
 TrustStore Analyzer & Visualizer - JSON PROVIDER
 Architect: Serge van Thillo
+SPDX-License-Identifier: LGPL-3.0-or-later
 
 JSON provider for internal truststore configuration schemas.
 """

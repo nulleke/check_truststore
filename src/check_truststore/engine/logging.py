@@ -1,6 +1,7 @@
 """
 TrustStore Analyzer & Visualizer - LOGGING MODULE
 Architect: Serge van Thillo
+SPDX-License-Identifier: LGPL-3.0-or-later
 
 This module provides high-level terminal logging with support for internationalization (i18n),
 ANSI color-coded output, and Unicode iconography. It is designed to output primarily to
@@ -65,7 +66,6 @@ class Status:
 
         # Calculate visual width for complex Unicode characters (Emojis)
         # to ensure column alignment remains intact.
-        #visual_width = sum(2 if ord(c) > 0x7F else 1 for c in extra_icon if not (0xFE00 <= ord(c) <= 0xFE0F))
         visual_width = 0
         for char in extra_icon:
             cp = ord(char)

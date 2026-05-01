@@ -2,6 +2,7 @@
 TrustStore Analyzer - Mock Provider
 Generates in-memory certificates for testing all edge cases without physical files.
 Architect: Serge van Thillo
+SPDX-License-Identifier: LGPL-3.0-or-later
 """
 
 from pathlib import Path

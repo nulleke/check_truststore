@@ -1,6 +1,7 @@
 """
 TrustStore Analyzer & Visualizer - JSON RENDERER
 Architect: Serge van Thillo
+SPDX-License-Identifier: LGPL-3.0-or-later
 
 Transforms the internal certificate tree structure into a standardized
 JSON format. This renderer is optimized for automation, monitoring integrations,

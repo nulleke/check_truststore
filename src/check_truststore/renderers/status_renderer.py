@@ -1,6 +1,7 @@
 """
 TrustStore Analyzer & Visualizer - STATUS RENDERER
 Architect: Serge van Thillo
+SPDX-License-Identifier: LGPL-3.0-or-later
 """
 
 import json
@@ -9,6 +10,7 @@ from typing import Any, Dict, List, Union
 
 from check_truststore.engine.core import ORPHAN_NODE_ID
 from .base import BaseRenderer, DateTimeEncoder
+from check_truststore import __version__ as tool_version
 
 
 class StatusRenderer(BaseRenderer):
@@ -37,12 +39,6 @@ class StatusRenderer(BaseRenderer):
         self.verbosity = kwargs.get("verbosity", 0)
 
         try:
-            try:
-                from importlib.metadata import version
-                tool_engine = version("check_truststore")
-            except Exception:
-                tool_engine = "1.1.1"
-
             report_groups: List[Dict[str, Any]] = []
             system_certs_global: Dict[str, Dict[str, Any]] = {}
             global_max_code: int = 0
@@ -124,7 +120,7 @@ class StatusRenderer(BaseRenderer):
                 {
                     "metadata": {
                         "version": self.API_VERSION,
-                        "engine": tool_engine,
+                        "engine": tool_version,
                         "scanDate": self.format_iso(scan_now),
                         "exitCode": global_max_code,
                     },

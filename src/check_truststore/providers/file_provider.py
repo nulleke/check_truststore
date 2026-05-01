@@ -1,6 +1,7 @@
 """
 TrustStore Analyzer & Visualizer - FILE PROVIDER
 Architect: Serge van Thillo
+SPDX-License-Identifier: LGPL-3.0-or-later
 
 Implementation of the input provider for single file analysis. This provider
 is used when a specific certificate file is targeted directly via the CLI
