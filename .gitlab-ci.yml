@@ -11,7 +11,7 @@ test_full_compatibility:
   image: python:${PYTHON_VERSION}-slim
   parallel:
     matrix:
-      - PYTHON_VERSION: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14", "3.15-rc"]
+      - PYTHON_VERSION: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH != "main"'
       when: manual
@@ -34,19 +34,17 @@ test_full_compatibility:
       fi    
     - |
       echo ">>> Compiling Translations inside src structure"
-      LOCALE_PATH="src/check_truststore/locale/nl/LC_MESSAGES"
-      if [ -f "$LOCALE_PATH/check_truststore.po" ]; then
-        msgfmt "$LOCALE_PATH/check_truststore.po" -o "$LOCALE_PATH/check_truststore.mo"
-        echo "✅ Translations compiled."
-      else
-        echo "⚠️ Warning: .po file not found in $LOCALE_PATH"
-      fi
+      find src/check_truststore/locale -name "*.po" | while read po_file; do
+          mo_file="${po_file%.po}.mo"
+          echo "Compiling $po_file -> $mo_file"
+          msgfmt "$po_file" -o "$mo_file"
+        done
 
   script:
     - echo ">>> Running Analyzer on Python ${PYTHON_VERSION}"
     - chmod +x check_truststore
-    - ./check_truststore vars/tst/stores.yml --format text -d
-    - ./check_truststore vars/tst/stores.yml --format json > output_${PYTHON_VERSION}.json
+    - ./check_truststore --mock --format text -d
+    - ./check_truststore --mock --format json > output_${PYTHON_VERSION}.json
     - python3 -m json.tool output_${PYTHON_VERSION}.json > /dev/null
 
   artifacts:
@@ -57,9 +55,20 @@ test_full_compatibility:
 
 deploy:
   stage: deploy
+  image: python:3.11-slim
+  before_script:
+    - apt-get update && apt-get install -y gettext
+    - |
+      find src/check_truststore/locale -name "*.po" | while read po_file; do
+          mo_file="${po_file%.po}.mo"
+          echo "Compiling $po_file -> $mo_file"
+          msgfmt "$po_file" -o "$mo_file"
+        done
   script:
+    - pip install --upgrade pip
     - pip install twine build
-    - python -m build
+    - python3 -m build
     - twine upload dist/*
-  only:
-    - tags
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: on_success

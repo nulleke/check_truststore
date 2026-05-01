@@ -26,12 +26,11 @@ logs/
 **/*.cnf
 **/*.conf
 
+files/certificates/tst/
 files/certificates/acc/
 files/certificates/prd/
+vars/tst/
 vars/acc/
 vars/prd/
 
-files/certificates/tst/*
-!files/certificates/tst/trust/
-!files/certificates/tst/trust/*.crt
 check_truststore.py

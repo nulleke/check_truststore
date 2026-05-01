@@ -1,6 +1,7 @@
 """
 TrustStore Analyzer - Discovery Module
 Architect: Serge van Thillo
+SPDX-License-Identifier: LGPL-3.0-or-later
 
 Handles fetching missing certificates via Authority Information Access (AIA)
 and validating revocation status via OCSP (Online Certificate Status Protocol)
@@ -73,31 +74,52 @@ class NetworkResolver:
                 if self.debug:
                     WARNING.log("Cache", f"{_('Could not create cache directory')}: {e}")
 
-    def resolve_issuer(self, aki: str, child_cert: x509.Certificate) -> Optional[x509.Certificate]:
+    def resolve_all_issuers(self, child_cert: x509.Certificate) -> List[x509.Certificate]:
         """
-        Attempts to find a parent certificate using AKI or AIA extensions.
-
-        Args:
-            aki: The Authority Key Identifier as a hex string.
-            child_cert: The certificate for which we need to find the issuer.
-
-        Returns:
-            The issuer certificate if found, otherwise None.
+        Finds ALL potential issuers via local cache and AIA.
+        Crucial for cross-signed certificate graphs.
         """
-        # Check local disk cache
-        cert = self._get_from_aia_cache(aki)
-        if cert:
-            if self.debug:
-                AIA_LOG.log(f"AKI: {aki[:8]}", _("Loaded from local cache"), label=_("CACHE"))
-            return cert
+        issuers = []
+        seen_fingerprints = set()
 
-        urls = self.find_aia_urls(child_cert)
-        for url in urls:
-            new_cert = self.fetch_issuer(url)
-            if new_cert:
-                self._save_to_aia_cache(aki, new_cert)
-                return new_cert
+        aki = self._get_aki_hex(child_cert)
+        if not aki:
+            return []
 
+        aki_dir = self.aia_cache / aki
+        if aki_dir.exists():
+            for cert_file in aki_dir.glob("*.der"):
+                if self._is_cache_fresh(cert_file, self.aia_cache_ttl_days * 24):
+                    cert = self._load_cert_file(cert_file)
+                    if cert and self._get_fp(cert) not in seen_fingerprints:
+                        issuers.append(cert)
+                        seen_fingerprints.add(self._get_fp(cert))
+
+        if self.online:
+            urls = self.find_aia_urls(child_cert)
+            for url in urls:
+                new_cert = self.fetch_issuer(url)
+                if new_cert:
+                    fp = self._get_fp(new_cert)
+                    if fp not in seen_fingerprints:
+                        issuers.append(new_cert)
+                        seen_fingerprints.add(fp)
+                        self._save_to_aia_cache(aki, new_cert)
+
+        return issuers
+
+    def _get_fp(self, cert: x509.Certificate) -> str:
+        """Helper to get SHA256 fingerprint."""
+        return hashlib.sha256(cert.public_bytes(serialization.Encoding.DER)).hexdigest()
+
+    def _get_aki_hex(self, cert: x509.Certificate) -> Optional[str]:
+        """Extracts Authority Key Identifier as hex string."""
+        try:
+            aki_ext = cert.extensions.get_extension_for_oid(ExtensionOID.AUTHORITY_KEY_IDENTIFIER)
+            if aki_ext.value.key_identifier:
+                return aki_ext.value.key_identifier.hex()
+        except x509.ExtensionNotFound:
+            pass
         return None
 
     def find_aia_urls(self, cert: x509.Certificate) -> List[str]:
@@ -125,7 +147,6 @@ class NetworkResolver:
         if not self.online or url in self.processed_urls:
             return None
 
-        # Pre-flight DNS check
         if not self._can_resolve(url):
             return None
 
@@ -133,12 +154,9 @@ class NetworkResolver:
             if self.debug:
                 INFO.log("AIA_FETCH", f"{_('Downloading')}: {url}")
 
-            # Split timeout: (connect_timeout, read_timeout)
-            # 1 second to connect is plenty; self.timeout for the actual bytes.
             response = requests.get(url, timeout=(1.0, self.timeout))
             response.raise_for_status()
 
-            # Security: Prevent memory exhaustion by capping download at 50KB
             content = response.content
             if len(content) > 1024 * 50:
                 if self.debug:
@@ -211,7 +229,7 @@ class NetworkResolver:
                 request_der = builder.build().public_bytes(serialization.Encoding.DER)
             except Exception as e:
                 if self.debug:
-                    ERROR.log("OCSP_BUILD", str(e))
+                    ERROR.log(_("OCSP_BUILD"), str(e))
                 return "ERROR"
 
             for url in urls:
@@ -220,7 +238,8 @@ class NetworkResolver:
 
                 try:
                     if self.debug:
-                        INFO.log("OCSP_CHECK", f"Checking: {url}")
+                        msg = _("Checking: {url}").format(url=url)
+                        INFO.log(_("OCSP_CHECK"), msg)
 
                     response = requests.post(
                         url,
@@ -265,14 +284,19 @@ class NetworkResolver:
         """
         Validates certificate status against CRLs. Uses local caching to speed up
         validation for certificates sharing the same distribution point.
+
+        Note: Warnings for missing CRL endpoints are suppressed for Root certificates.
         """
-        if cert.subject == cert.issuer:
+        # A Root certificate is self-signed; revocation is handled by trust store management, not CRLs.
+        is_root = (cert.subject == cert.issuer)
+
+        if is_root:
             return "GOOD"
 
         urls = self.find_crl_urls(cert)
         if not urls:
             if self.debug:
-                WARNING.log("CRL_CHECK", _("No CRL endpoints found in certificate"))
+                WARNING.log(_("CRL_CHECK"), _("No CRL endpoints found in certificate"))
             return "UNKNOWN"
 
         for url in urls:
@@ -289,21 +313,21 @@ class NetworkResolver:
 
                         if next_upd > datetime.now(timezone.utc):
                             if self.debug:
-                                INFO.log("CRL_CACHE", f"{_('Using cached CRL for')}: {urlparse(url).hostname}", label=_("CACHE"))
+                                INFO.log(_("CRL_CACHE"), f"{_('Using cached CRL for')}: {urlparse(url).hostname}", label=_("CACHE"))
                             crl_data = temp_crl
                         elif self.debug:
-                            INFO.log("CRL_CACHE", f"{_('Cached CRL is stale (nextUpdate passed)')}", label=_("EXPIRE"))
+                            INFO.log(_("CRL_CACHE"), f"{_('Cached CRL is stale (nextUpdate passed)')}", label=_("EXPIRE"))
 
                 # Fetch CRL if not in cache or expired
                 if crl_data is None:
                     if url in self.processed_urls:
                         if self.debug:
-                            INFO.log("DEBUG_CRL", f"Skip download (reeds gedaan in deze run): {url}")
+                            INFO.log(_("DEBUG_CRL"), f"{_('Skip download (already done in this run)')}: {url}")
                         return "UNKNOWN"
                     if not self.online:
                         continue
                     if self.debug:
-                        INFO.log("CRL_FETCH", f"{_('Downloading CRL')}: {url}")
+                        INFO.log(_("CRL_FETCH"), f"{_('Downloading CRL')}: {url}")
 
                     response = requests.get(url, timeout=(1.5, max(self.timeout, 5.0)))
                     response.raise_for_status()
@@ -317,7 +341,8 @@ class NetworkResolver:
                 revoked = crl_data.get_revoked_certificate_by_serial_number(cert.serial_number)
                 if revoked:
                     if self.debug:
-                        WARNING.log("CRL_RESULT", f"Serial {cert.serial_number} is REVOKED")
+                        msg = _("Serial {serial_number} is REVOKED").format(serial_number=cert.serial_number)
+                        WARNING.log(_("CRL_RESULT"), msg)
                     return "REVOKED"
 
                 self.processed_urls.add(url)
@@ -325,7 +350,7 @@ class NetworkResolver:
 
             except Exception as e:
                 if self.debug:
-                    WARNING.log("CRL_FAILED", f"Failed to check CRL {url}: {e}")
+                    WARNING.log(_("CRL_FAILED"), f"{_('Failed to check CRL')} {url}: {e}")
 
         return "UNKNOWN"
 
@@ -352,14 +377,14 @@ class NetworkResolver:
                 expiry = self._get_expiry(cert)
                 if expiry < datetime.now(timezone.utc):
                     if self.debug:
-                        WARNING.log("Cache", f"{_('Cached certificate expired on')}: {expiry}")
+                        WARNING.log(_("Cache"), f"{_('Cached certificate expired on')}: {expiry}")
                     return None
 
                 return cert
 
         except Exception as e:
             if self.debug:
-                ERROR.log("Cache", f"{_('Error reading cache')}: {e}")
+                ERROR.log(_("Cache"), f"{_('Error reading cache')}: {e}")
             return None
 
     def _get_next_update(self, crl: x509.CertificateRevocationList) -> datetime:
@@ -389,12 +414,15 @@ class NetworkResolver:
             return True
         except (socket.gaierror, Exception):
             if self.debug and self.verbosity >= 3:
-                WARNING.log("DNS", f"{_('Could not resolve host')}: {hostname}")
+                WARNING.log(_("DNS"), f"{_('Could not resolve host')}: {hostname}")
             return False
 
     def _save_to_aia_cache(self, aki: str, cert: x509.Certificate) -> None:
         """Persists the certificate to the local filesystem."""
-        cache_path = self.aia_cache / f"{aki}.der"
+        fp = hashlib.sha256(cert.public_bytes(serialization.Encoding.DER)).hexdigest()[:16]
+        aki_dir = self.aia_cache / aki
+        aki_dir.mkdir(parents=True, exist_ok=True)
+        cache_path = self.aia_cache / f"{fp}.der"
         try:
             with open(cache_path, "wb") as f:
                 f.write(cert.public_bytes(serialization.Encoding.DER))

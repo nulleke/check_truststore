@@ -11,6 +11,7 @@ except ImportError:
 from .logging import Icons
 
 ORPHAN_NODE_ID = "EXTERNAL_OR_MISSING_ISSUER"
+CYCLE_NODE_ID = "CIRCULAR_REFERENCE"
 
 class Finding:
     """
@@ -43,7 +44,7 @@ class _BaseUniversal:
         an orphan, it sets default 'invalid' states and a Unix epoch expiry date.
         """
         cn = data.get("common_name") or data.get("commonName")
-        if cn == ORPHAN_NODE_ID:
+        if cn in [ORPHAN_NODE_ID, CYCLE_NODE_ID]:
             special = {
                 "is_valid": False,
                 "isValid": False,
@@ -65,7 +66,7 @@ class _BaseUniversal:
         v_err = getattr(self, "validation_error", "") or ""
         cn = getattr(self, "common_name", "")
 
-        if cn == ORPHAN_NODE_ID or "CHAIN_INCOMPLETE" in v_err or "MISSING_ISSUER" in v_err:
+        if cn in [ORPHAN_NODE_ID, CYCLE_NODE_ID] or "CHAIN_INCOMPLETE" in v_err or "MISSING_ISSUER" in v_err:
             return {"code": 3, "label": "INCOMPLETE", "message": "Trust chain is incomplete.", "level": "error"}
 
         if "CHAIN_EXPIRED" in v_err:
@@ -141,37 +142,30 @@ if PYDANTIC_AVAILABLE:
             Identifies 'top-level' nodes by checking which certificates are
             not children of others. Ensures the orphan node is sorted to the bottom.
             """
-            all_children_hashes = set()
-
-            def collect_children(nodes):
-                for node in nodes:
-                    objs = getattr(node, "children", []) or []
-                    for child in objs:
-                        h = getattr(child, "sha256_hash", None)
-                        if h:
-                            all_children_hashes.add(h.lower())
-                        collect_children([child])
-
-            collect_children(self.tree)
-
-            unsorted_tree = [
-                c
-                for c in list(self.tree)
-                if getattr(c, "sha256_hash", "").lower() not in all_children_hashes
-                or getattr(c, "common_name", "") == ORPHAN_NODE_ID
+            top_level_nodes = [
+                c for c in self.tree
+                if not getattr(c, "parents", [])
+                or getattr(c, "is_root", False)
+                or getattr(c, "common_name", "") in [ORPHAN_NODE_ID, CYCLE_NODE_ID]
             ]
 
             # Sorting: Real roots first (alphabetical), Orphans last.
+            def sort_weight(node):
+                name = getattr(node, "common_name", "")
+                if name == CYCLE_NODE_ID:
+                    return 2
+                if name == ORPHAN_NODE_ID:
+                    return 1
+                return 0
+
             self.tree = sorted(
-                unsorted_tree,
+                top_level_nodes,
                 key=lambda x: (
-                    1 if getattr(x, "common_name", "") == ORPHAN_NODE_ID else 0,
+                    sort_weight(x),
                     getattr(x, "common_name", "").lower(),
-                    getattr(x, "serial_number", "").lower(),
-                    getattr(x, "sha256_hash", "").lower(),
+                    getattr(x, "serial_number", "").lower()
                 ),
             )
-            all_children_hashes = set()
 
         def model_dump(self, **kwargs):
             """Ensures JSON output uses camelCase aliases."""
@@ -193,26 +187,23 @@ else:
             self.chain = kwargs.get("chain", [])
 
         def finalize(self):
-            all_children_hashes = set()
-
-            def collect_children(nodes):
-                for node in nodes:
-                    for child in getattr(node, "children", []):
-                        h = getattr(child, "sha256_hash", None)
-                        if h:
-                            all_children_hashes.add(h.lower())
-                        collect_children(getattr(child, "children", []))
-
-            collect_children(self.tree)
-            unsorted_tree = [
-                c
-                for c in self.tree
-                if getattr(c, "sha256_hash", "").lower() not in all_children_hashes
+            top_level_nodes = [
+                c for c in self.tree
+                if not getattr(c, "parents", [])
+                or getattr(c, "is_root", False)
+                or getattr(c, "common_name", "") in [ORPHAN_NODE_ID, CYCLE_NODE_ID]
             ]
+            def sort_weight(node):
+                name = getattr(node, "common_name", "")
+                if name == CYCLE_NODE_ID:
+                    return 2
+                if name == ORPHAN_NODE_ID:
+                    return 1
+                return 0
             self.tree = sorted(
-                unsorted_tree,
+                top_level_nodes,
                 key=lambda x: (
-                    1 if getattr(x, "common_name", "") == ORPHAN_NODE_ID else 0,
+                    sort_weight(x),
                     getattr(x, "common_name", "").lower(),
                     getattr(x, "serial_number", "").lower(),
                     getattr(x, "sha256_hash", "").lower(),
@@ -257,6 +248,8 @@ if PYDANTIC_AVAILABLE:
         validation_error: Optional[str] = Field(None, exclude=True)
         findings: List[Any] = Field(default_factory=list, exclude=False)
         children: Optional[List["Certificate"]] = Field(default_factory=list)
+        parents: List["Certificate"] = Field(default_factory=list, exclude=True)
+        is_in_circular_group: bool = Field(False, exclude=True)
 
         ski: Optional[str] = Field(None, exclude=True)
         aki: Optional[str] = Field(None, exclude=True)
@@ -269,12 +262,27 @@ if PYDANTIC_AVAILABLE:
             """Triggers special data handling (like orphans) before Pydantic validation."""
             return cls._apply_special_logic(data) if isinstance(data, dict) else data
 
+        def add_parent(self, parent: "Certificate"):
+            parent_hashes = {p.sha256_hash for p in self.parents}
+            if parent.sha256_hash not in parent_hashes:
+                self.parents.append(parent)
+                parent.add_child(self)
+
+        def add_child(self, child: "Certificate"):
+            child_hashes = {c.sha256_hash for c in self.children}
+            if child.sha256_hash not in child_hashes:
+                self.children.append(child)
+
         def model_dump(self, **kwargs):
             """Custom dump logic to ensure recursive sorting of children."""
             d = super().model_dump(by_alias=True, **kwargs)
             d["auditStatus"] = self.get_audit_status()
             if self.findings:
                 d["findings"] = [f.model_dump() if hasattr(f, "model_dump") else str(f) for f in self.findings]
+
+            if getattr(self, "is_in_circular_group", False):
+                d["children"] = []
+                return d
 
             if self.children:
                 sorted_children = sorted(
@@ -301,6 +309,7 @@ else:
 
         def __init__(self, **kwargs):
             self.findings = []
+            self.is_in_circular_group = False
             data = self._apply_special_logic(kwargs)
 
             mapping = {
@@ -323,6 +332,8 @@ else:
             }
 
             self.children = []
+            self.parents = []
+
             for k, v in data.items():
                 setattr(self, mapping.get(k, k), v)
 
@@ -341,6 +352,17 @@ else:
                 except Exception:
                     pass
 
+        def add_parent(self, parent: "Certificate"):
+            parent_hashes = {getattr(p, "sha256_hash", "") for p in self.parents}
+            if getattr(parent, "sha256_hash", "") not in parent_hashes:
+                self.parents.append(parent)
+                parent.add_child(self)
+
+        def add_child(self, child: "Certificate"):
+            child_hashes = {getattr(c, "sha256_hash", "") for c in self.children}
+            if getattr(child, "sha256_hash", "") not in child_hashes:
+                self.children.append(child)
+
         def model_dump(self, **kwargs):
             """Manual serialization to Dict for JSON output."""
             res = {
@@ -356,8 +378,13 @@ else:
                 "certId": getattr(self, "cert_id", ""),
                 "auditStatus": self.get_audit_status(),
                 "isAiaCert": getattr(self, "is_aia_cert", False),
-                "findings": [f.__dict__ if hasattr(f, "__dict__") else str(f) for f in self.findings],
+                "findings": [f.model_dump() if hasattr(f, "model_dump") else str(f) for f in self.findings],
             }
+
+            if getattr(self, "is_in_circular_group", False):
+                res["children"] = []
+                return res
+
             if self.children:
                 sorted_children = sorted(
                     self.children,

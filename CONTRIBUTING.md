@@ -20,7 +20,8 @@ As this project is licensed under **GPL v3.0**, all contributions you make will 
 2. **Maintain Compatibility**: We support a wide range of Python versions. Avoid using syntax that breaks Python 3.6 (e.g., be careful with very recent Type Hinting features).
 3. **Respect the Fallback**: If you add features that use third-party libraries (like Pydantic V2), ensure the tool still works in **Zero-Dependency Mode** (standard Python + Cryptography/PyYAML).
 4. **Update Translations**: If you change UI strings, please update the `.pot` and `.po` files if possible, or mention it in the PR so we can assist.
-5. **Run Tests**: Ensure your changes pass the existing GitLab CI pipeline logic.
+5. **RFC 5280 Compliance**: Logic must follow official X.509 standards. Use AKI/SKI for chain building.
+6. **Run Tests**: Ensure your changes pass the existing GitLab CI pipeline logic.
 
 ## 🛠 Local Development Setup
 

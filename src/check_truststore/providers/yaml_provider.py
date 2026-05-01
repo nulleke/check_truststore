@@ -1,6 +1,7 @@
 """
 TrustStore Analyzer & Visualizer - YAML PROVIDER
 Architect: Serge van Thillo
+SPDX-License-Identifier: LGPL-3.0-or-later
 
 Advanced configuration-driven provider that supports YAML syntax,
 environment-based variables, and automated file extension resolution.

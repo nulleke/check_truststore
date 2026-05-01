@@ -2,6 +2,7 @@
 TrustStore Analyzer - Policy Engine
 Handles X.509 constraint validation, cryptographic verification, and security compliance.
 Architect: Serge van Thillo
+SPDX-License-Identifier: LGPL-3.0-or-later
 """
 
 from typing import List, Optional, Any, Dict
@@ -59,7 +60,7 @@ class PolicyEngine:
         self.min_ecdsa_bits = 256
         self.debug = kwargs.get('debug', False)
 
-    def validate(self, cert: x509.Certificate, issuer: Optional[x509.Certificate] = None) -> List[PolicyFinding]:
+    def validate(self, cert: x509.Certificate, issuer: Optional[x509.Certificate] = None, path_depth: Optional[int] = None) -> List[PolicyFinding]:
         """
         Performs a comprehensive suite of security checks on a certificate.
 
@@ -102,8 +103,22 @@ class PolicyEngine:
                     code_int=4
                 ))
 
+            if path_depth is not None:
+                findings.extend(self._check_path_limit(cert, issuer, path_depth))
+
+        elif not cert.subject == cert.issuer:
+            findings.append(PolicyFinding(
+                level="ERROR",
+                code="NO_TRUST",
+                message="The certificate issuer could not be found in the truststore, making this chain untrusted.",
+                code_int=3
+            ))
+
         # Usage & Extension checks
         findings.extend(self._check_eku_compliance(cert))
+
+        # Check presence of crl for non root certificates
+        findings.extend(self._check_crl_presence(cert))
 
         return findings
 
@@ -129,11 +144,11 @@ class PolicyEngine:
                     signature, data, rsa_padding.PKCS1v15(), hash_algo
                 )
                 return True
-            
+
             elif isinstance(issuer_public_key, ec.EllipticCurvePublicKey):
                 issuer_public_key.verify(signature, data, ec.ECDSA(hash_algo))
                 return True
-            
+
             else:
                 issuer_public_key.verify(signature, data)
                 return True
@@ -142,11 +157,11 @@ class PolicyEngine:
             if self.debug:
                  from .logging import WARNING
                  WARNING.log("SIG_CHECK", f"Unsupported algorithm: {cert_to_check.signature_hash_algorithm.name if hash_algo else 'Unknown'}")
-            return False 
-            
+            return False
+
         except InvalidSignature:
             return False
-            
+
         except Exception:
             return False
 
@@ -369,5 +384,50 @@ class PolicyEngine:
                 "Certificate lacks a SAN extension. Relying solely on CN is deprecated.",
                 code_int=2
             ))
+
+        return findings
+
+    def _check_crl_presence(self, cert: x509.Certificate) -> List[PolicyFinding]:
+        """
+        Checks for CRL Distribution Points (CDP).
+        Warnings are suppressed for Root certificates (self-signed).
+        """
+        findings = []
+        is_root = cert.subject == cert.issuer
+
+        if not self.is_ca(cert):
+            present_oids = [ext.oid for ext in cert.extensions]
+            if ExtensionOID.CRL_DISTRIBUTION_POINTS not in present_oids:
+                if not is_root:
+                    findings.append(PolicyFinding(
+                    "WARNING", "CRL_MISSING",
+                    "Certificate lacks CRL Distribution Points (CDP). Revocation checking may be limited.",
+                    code_int=2
+                ))
+        return findings
+
+    def _check_path_limit(self, cert: x509.Certificate, issuer: x509.Certificate, depth: int) -> List[PolicyFinding]:
+        """
+        Validates the Basic Constraints pathLenConstraint according to RFC 5280.
+        The pathLenConstraint specifies the maximum number of non-self-issued
+        intermediate certificates that may follow this certificate in a valid chain.
+        """
+        findings = []
+
+        if not self.is_ca(cert):
+            return findings
+
+        present_oids = [ext.oid for ext in issuer.extensions]
+
+        if ExtensionOID.BASIC_CONSTRAINTS in present_oids:
+            bc = issuer.extensions.get_extension_for_oid(ExtensionOID.BASIC_CONSTRAINTS)
+            path_len = bc.value.path_length
+            if path_len is not None and (depth - 1) > path_len:
+                findings.append(PolicyFinding(
+                    "ERROR", "PATH_LEN_EXCEEDED",
+                    f"Path length constraint exceeded. Issuer allows max {path_len} intermediate(s), but found at depth {depth-1}.",
+                    params={"limit": path_len, "actual_depth": depth - 1},
+                    code_int=4
+                ))
 
         return findings

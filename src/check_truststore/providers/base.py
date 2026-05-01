@@ -1,6 +1,7 @@
 """
 TrustStore Analyzer & Visualizer - PROVIDER BASE
 Architect: Serge van Thillo
+SPDX-License-Identifier: LGPL-3.0-or-later
 
 Defines the abstract interface for input providers. Providers are responsible
 for discovering, grouping, and loading certificates before they are passed

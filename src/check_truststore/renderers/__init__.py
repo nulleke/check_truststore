@@ -3,6 +3,7 @@ from .text_renderer import TextRenderer
 from .json_renderer import JsonRenderer
 from .status_renderer import StatusRenderer
 from .sarif_renderer import SarifRenderer
+from .graphviz_renderer import GraphvizRenderer
 
 
 class TrustStoreRenderer:
@@ -11,7 +12,9 @@ class TrustStoreRenderer:
             "text": TextRenderer(),
             "json": JsonRenderer(),
             "status": StatusRenderer(),
-            "sarif": SarifRenderer()
+            "sarif": SarifRenderer(),
+            "graphviz": GraphvizRenderer(),
+            "dot": GraphvizRenderer(),
         }
 
     def render(self, tree_data, format_type, **kwargs):

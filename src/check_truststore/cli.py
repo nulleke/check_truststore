@@ -141,7 +141,7 @@ def main() -> None:
     parser.add_argument(
         "-f",
         "--format",
-        choices=["json", "text", "status", "sarif"],
+        choices=["json", "text", "status", "sarif", "dot"],
         default="json",
         help=_("Output format"),
     )
@@ -220,16 +220,12 @@ def main() -> None:
         elif input_str != "-" or stdin_content:
              WARNING.log(input_str, _("Could not determine provider for this input."))
 
-    # Post-processing logic
-    #if len(analysis_groups) == 1 and not args.system:
-    #    args.system = True
-
     if not analysis_groups:
         WARNING.log(_("No certificates found to display."))
         sys.exit(0)
 
     try:
-        analyzer = TrustStoreAnalyzer(groups=analysis_groups, **vars(args))
+        analyzer = TrustStoreAnalyzer(groups=analysis_groups, repository=repo, **vars(args))
         results = analyzer.analyze()
 
         renderer = TrustStoreRenderer()
