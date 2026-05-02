@@ -126,19 +126,24 @@ class MockProvider(BaseInputProvider):
 
     def get_groups(self) -> List[TrustStoreGroup]:
         """
-        Generates the mock test suite and returns it as a compatible group list.
+        Generates the mock test suite and registers it with the repository.
+
+        Returns:
+            A list containing a 'Mock Test Suite' group with all generated certificates.
         """
         certs = self._generate_test_suite()
         pool = []
 
         for cert in certs:
-            # Extract common name for the mock path
+            # Extract common name for the virtual mock path
             cn_attributes = cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
             cn = cn_attributes[0].value if cn_attributes else "Unknown"
 
+            # By using add_pem_data, we trigger the new v1.1.3 deduplication logic
+            # which uses the DER-based SHA256 hash.
             metadata = self.repository.add_pem_data(
                 cert.public_bytes(serialization.Encoding.PEM),
-                source_path=Path("MockData") / cn,
+                source_path=Path("MockData") / f"{cn}.pem",
             )
             if metadata:
                 pool.extend(metadata)

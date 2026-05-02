@@ -61,7 +61,7 @@ class _BaseUniversal:
 
     def get_audit_status(self) -> Dict[str, Any]:
         """
-        Single Source of Truth voor de status van een certificaat.
+        Single Source of Truth to determine the status of a certificate.
         """
         v_err = getattr(self, "validation_error", "") or ""
         cn = getattr(self, "common_name", "")

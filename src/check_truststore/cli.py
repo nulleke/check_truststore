@@ -118,8 +118,79 @@ def main() -> None:
         add_help=False,
     )
     parser.add_argument(
+        "-h",
+        "--help",
+        action="help",
+        default=argparse.SUPPRESS,
+        help=_("Show this help message and exit"),
+    )
+    parser.add_argument(
         "inputs", type=str, nargs="*", help=_("Path to the input source(s)")
     )
+
+    input_group = parser.add_argument_group(_("Input & Network Configuration"))
+    input_group.add_argument(
+        "-s",
+        "--system",
+        action="store_true",
+        default=False,
+        help=_("Incorporate system truststore"),
+    )
+    input_group.add_argument(
+        "-O",
+        "--online",
+        action="store_true",
+        default=False,
+        help=_("Allow internet access for AIA discovery and revocation checks"),
+    )
+    input_group.add_argument(
+        "--no-cache",
+        action="store_true",
+        help=_("Bypass local cache and force download of AIA/CRL/OCSP data")
+    )
+    input_group.add_argument(
+        "-F", "--force",
+        action="store_true",
+        help=_("Override safety limits (max file size and certificate count)")
+    )
+
+    analysis_group = parser.add_argument_group(_("Analysis Settings"))
+    analysis_group.add_argument(
+        "-t",
+        "--threshold",
+        type=int,
+        default=30,
+        help=_("Expiration threshold in days (default: 30)"),
+    )
+    analysis_group.add_argument(
+        "--max-depth",
+        type=int,
+        default=4,
+        help=_("Maximum recursion depth for chain discovery (default: 4)"),
+    )
+
+    output_group = parser.add_argument_group(_("Output & Debugging"))
+    output_group.add_argument(
+        "-f",
+        "--format",
+        choices=["json", "text", "status", "sarif", "dot"],
+        default="json",
+        help=_("Output format"),
+    )
+    output_group.add_argument(
+        "-v", "--verbose",
+        action="count",
+        default=0,
+        dest="verbosity",
+        help=_("Increase output verbosity (e.g., -v for SANs, -vv for policy findings)")
+    )
+    output_group.add_argument(
+        "-d", "--debug",
+        action="store_true",
+        default=False,
+        help=_("Show debug info")
+    )
+
     parser.add_argument(
         "--mock",
         action="store_true",
@@ -130,57 +201,6 @@ def main() -> None:
         "-o",
         action="store_true",
         help=argparse.SUPPRESS,
-    )
-    parser.add_argument(
-        "-h",
-        "--help",
-        action="help",
-        default=argparse.SUPPRESS,
-        help=_("Show this help message and exit"),
-    )
-    parser.add_argument(
-        "-f",
-        "--format",
-        choices=["json", "text", "status", "sarif", "dot"],
-        default="json",
-        help=_("Output format"),
-    )
-    parser.add_argument(
-        "-v", "--verbose",
-        action="count",
-        default=0,
-        dest="verbosity",
-        help="Increase output verbosity (e.g., -v for SANs, -vv for policy findings)"
-    )
-    parser.add_argument(
-        "-d", "--debug", action="store_true", default=False, help=_("Show debug info")
-    )
-    parser.add_argument(
-        "-s",
-        "--system",
-        action="store_true",
-        default=False,
-        help=_("Incorporate system truststore"),
-    )
-    parser.add_argument(
-        "-t",
-        "--threshold",
-        type=int,
-        default=30,
-        help=_("Expiration threshold in days (default: 30)"),
-    )
-    parser.add_argument(
-        "-O",
-        "--online",
-        action="store_true",
-        default=False,
-        help=_("Allow internet access for AIA discovery and revocation checks"),
-    )
-    parser.add_argument(
-        "--max-depth",
-        type=int,
-        default=4,
-        help=_("Maximum recursion depth for chain discovery (default: 4)"),
     )
 
     args = parser.parse_args()

@@ -7,9 +7,16 @@ A tool for system administrators and security engineers to audit certificate tru
 ## ✨ Features
 
 * **Chain Visualization:** Automatically builds a tree structure of your certificate hierarchy.
-* **Format Support:** Specifically designed for **X.509 certificates** in **PEM encoding**.
-* **Multi-Format Output:** Supports human-readable Text trees, structured JSON, and a specialized **Monitoring Status API**.
+* **Format Support:** 
+    * **X.509 Certificates:** Full support for individual certificates in **PEM encoding**.
+    * **PKCS#7 Bundels:** Support for `.p7b` and `.p7c` containers. The tool automatically extracts all certificates from the bundle for analysis.
+* **Multi-Format Output:** 
+    * **Human-Centric:** Text trees with status icons.
+    * **Machine-Readable:** Structured JSON and SARIF for security pipelines.
+    * **Monitoring:** Specialized **Status API** for integration with dashboards like Zabbix or Grafana.
+    * **Visual Graph:** Generates **GraphViz-compatible DOT files** to visualize complex PKI topologies.
 * **Dynamic Health Monitoring:** Visual status indicators (✅ Valid, ⏳ Expiring Soon, ❌ Invalid). The "Expiring Soon" alert is fully configurable via a custom threshold (default is 30 days).
+* **AIA Discovery & Chain Repair:** Automatically identifies and fetches missing intermediate or root issuers via the network to complete broken chains.
 * **Collision Intelligence:** Detects "Name Collisions" (👯) where different certificates share the same Common Name but have different cryptographic identities.
 * **Dual-Core Architecture:** Specifically optimized for **Pydantic v2** with a built-in **Zero-Dependency Fallback** for standard Python. This ensures full functionality on everything from legacy RHEL/CentOS systems to the latest Python 3.14 environments.
 * **Expiration Alerts:** Highlights certificates expiring within a 30-day threshold.
@@ -18,10 +25,12 @@ A tool for system administrators and security engineers to audit certificate tru
     * 🔒 **Locked:** Signature is valid and verified.
     * 💥 **Broken:** Signature verification failed.
     * ❓ **Unknown:** Issuer certificate missing, cannot verify.
-* **Multi-Source Input Engine:** Flexible data ingestion supporting various workflows:
-    * **Structured Config:** Parse complex environments using YAML or JSON definition files.
-    * **Ad-hoc Scanning:** Recursively scan directories for common certificate extensions (.crt, .pem, .cer, .der).
-    * **Single File Audit:** Directly analyze individual files with automatic system truststore resolution.
+* **Multi-Source Input Engine:** Flexible data ingestion supporting various automated workflows:
+    * **Structured Environments:** Parse complex truststore definitions using **YAML** or **JSON** configuration files.
+    * **Network Scan Integration:** Directly ingest **Nmap XML** output to audit certificates discovered during network discovery.
+    * **Ad-hoc Scanning:** Recursively scan directories for certificates. Supports **X.509 (PEM)** and **PKCS#7 (.p7b, .p7c)** containers.
+    * **Stream Processing:** Supports piped input (stdin) for JSON, XML, or raw PEM data, allowing seamless integration into shell pipelines.
+    * **Single File Audit:** Analyze individual certificate files with automatic system truststore resolution for quick validation.
 * **RFC 5280 Compliant Path Building**: Uses AKI/SKI stringing instead of unreliable Subject/Issuer name matching.
 * **Cryptographic Chain Integrity**: Full support for signature verification across RSA and ECDSA algorithms.
 
@@ -39,8 +48,8 @@ pip install -e ".[all]"
 # The command 'check_truststore' is now available in your PATH (within your venv)
 ```
 
-## 🛠 Configuration
-The analyzer supports both YAML and JSON configuration files to define your environments and certificate locations.
+## 📂 Input Strategies
+The analyzer supports multiple input methods to accommodate different auditing workflows.
 
 ### YAML Structure (`config.yml`)
 The script expects a YAML file that defines your environments and certificate locations. Example structure:
@@ -72,6 +81,33 @@ truststores:
     }
   ]
 }
+```
+
+### File-Based Input
+deal for a surgical status check of specific certificate files. This mode provides a flat report focused on the validity of individual assets mentioned in your input list.
+
+* **Use case**: Monitoring specific application-level certificates.
+* **Behavior**: Each file is validated independently or as part of its own small chain.
+
+### Directory-Based Input
+Designed for comprehensive truststore audits. The tool recursively scans directories to build a global map of all available issuers.
+
+* **Use case**: Auditing system-wide stores like `/etc/pki/ca-trust`
+* **Behavior**: It automatically links intermediates to roots found within the same or other provided directories to reconstruct the full PKI topology using RFC 5280 logic.
+
+### 🛰️ Network Discovery Integration (Nmap)
+The **XML Provider** allows for seamless integration with network scanning workflows. It is specifically optimized to parse Nmap XML output (`-oX`), automatically extracting certificates discovered by the `ssl-cert` script.
+
+#### Features
+* **Automatic Extraction**: Scans Nmap XML for PEM-encoded certificates in host script results.
+* **Virtual Path Mapping**: Findings are automatically grouped using a virtual directory structure: `nmap/<ip>/<port>`.
+* **PEM Sanitization**: Automatically fixes XML-escaped characters and standardizes delimiters (e.g., handling `TRUSTED CERTIFICATE` headers).
+
+#### Usage: Piping Nmap to the Analyzer
+You can pipe Nmap's XML output directly into the analyzer using the `--format xml` input flag and the special `-` (stdin) source.
+
+```bash
+nmap -p 443 --script ssl-cert www.example.com -oX - | check_truststore - --format text
 ```
 
 ## Overview
@@ -150,7 +186,7 @@ By default, the tool only analyzes the certificates explicitly defined in your Y
 The analyzer supports two types of input sources. It automatically detects the source type based on the path provided.
 
 ### Directory Scan (Ad-hoc)
-Point the tool to a directory to scan for all common certificate files (`.crt`, `.pem`, `.cer`, `.der`).
+Point the tool to a directory to scan for all common certificate files (`.crt`, `.pem`, `.cer`, `.der`, `p7b`, `p7c`).
 
 ```bash
 ./check_truststore files/certificates/prod/trust/
@@ -186,86 +222,86 @@ Use a YAML file to define specific truststores and environments.
 The tool provides different views of your truststore health depending on your needs.
 
 ### JSON based output (Default)
+The default JSON output provides a clean hierarchy grouped by source.
+
 ```json
 [
   {
-    "commonName": "Root CA",
-    "isValid": true,
-    "isExpiringSoon": false,
-    "expiryDate": "2036-04-13T06:37:12Z",
-    "children": [
+    "groupName": "Production Store",
+    "groupStatus": "OK",
+    "tree": [
       {
-        "commonName": "Intermediate CA",
+        "commonName": "Certificate Authority",
         "isValid": true,
         "isExpiringSoon": false,
-        "expiryDate": "2027-04-16T06:37:42Z",
+        "expiryDate": "2043-10-10T09:43:11Z",
         "children": [
           {
-            "commonName": "Server Cert A",
+            "commonName": "www.example.com",
             "isValid": true,
             "isExpiringSoon": false,
-            "expiryDate": "2027-04-16T06:39:33Z",
+            "expiryDate": "2027-05-06T10:55:09Z"
           }
         ]
-      },
-      {
-        "commonName": "Intermediate CA",
-        "isValid": true,
-        "isExpiringSoon": true,
-        "expiryDate": "2026-04-26T06:38:21Z",
-        "children": [
-          {
-            "commonName": "Server Cert B",
-            "isValid": true,
-            "isExpiringSoon": true,
-            "expiryDate": "2026-04-21T07:33:10Z",
-          }
-        ]
-      },
-      {
-        "commonName": "Intermediate CA",
-        "isValid": false,
-        "isExpiringSoon": false,
-        "expiryDate": "2026-04-16T07:29:59Z",
-        "children": [
-          {
-            "commonName": "Expired Server Cert",
-            "isValid": false,
-            "isExpiringSoon": false,
-            "expiryDate": "2026-04-16T07:39:29Z",
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "commonName": "EXTERNAL_OR_MISSING_ISSUER",
-    "isValid": false,
-    "isExpiringSoon": false,
-    "expiryDate": "1970-01-01T00:00:00Z",
-    "children": [
-      {
-        "commonName": "Orphan Certificate",
-        "isValid": true,
-        "isExpiringSoon": false,
-        "expiryDate": "2027-04-16T07:42:39Z",
       }
     ]
   }
 ]
 ```
 
-### 🚦 Detailed Status API (v1.1.1)
+### Verbose JSON Output (-v)
+Using the verbose flag includes the auditStatus object for every certificate, providing detailed machine-readable diagnostic codes and messages.
+
+```json
+[
+  {
+    "groupName": "Production Store",
+    "groupStatus": "OK",
+    "tree": [
+      {
+        "commonName": "Certificate Authority",
+        "isValid": true,
+        "isExpiringSoon": false,
+        "expiryDate": "2043-10-10T09:43:11Z",
+        "auditStatus": {
+          "code": 0,
+          "label": "SYSTEM",
+          "message": "System trust store certificate.",
+          "level": "note"
+        },
+        "children": [
+          {
+            "commonName": "www.example.com",
+            "isValid": true,
+            "isExpiringSoon": false,
+            "expiryDate": "2027-05-06T10:55:09Z",
+            "auditStatus": {
+              "code": 0,
+              "label": "VALID",
+              "message": "Valid",
+              "level": "note"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]
+```
+
+### 🚦 Detailed Status API (v1.1.2)
 When using `--format status`, the tool generates a deep-inspection JSON object. This is ideal for integration with monitoring dashboards (Zabbix, Grafana) or automated security gateways.
 
 #### JSON Field Definitions
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `metadata.version` | `string` | The version of the TrustStore Analyzer engine. |
+| `metadata.engine` | ` string` | The engine API version ` |
 | `metadata.scanDate` | `string` | Timestamp of the scan in ISO-8601 (Zulu) format. |
 | `metadata.exitCode` | `int` | Global result code (0-7). The highest severity found in the scan. |
 | `groups[].groupName` | `string` | The name of the truststore environment defined in your configuration. |
 | `groups[].groupStatus`| `string` | Summary status label for this specific group. |
+| `groups[].summary` | `object` | Aggregate health metrics for certificates within this specific group. |
 | `summary.totalCertificates` | `int` | Total count of certificates processed in this group. |
 | `summary.isChainComplete` | `bool` | `true` if all certificates have a path to a root or known issuer. |
 | `summary.isTrusted` | `bool` | `true` only if the chain is complete AND cryptographically valid. |
@@ -275,13 +311,16 @@ When using `--format status`, the tool generates a deep-inspection JSON object. 
 | `certificates[].expiryDate` | `string` | Expiration date in ISO-8601 format. |
 | `certificates[].trustStatus` | `string` | Detailed health label (e.g., `OK`, `SIG_ERR`, `EXPIRED`, `CHAIN_INVALID`). |
 | `certificates[].statusCode` | `int` | Numeric status for the individual certificate (0-6). |
+| `certificates[].fileName` | `string` | The source filename (if applicable) for the certificate. |
+| `systemCertificates[]` | `list` | Lists certificates loaded from the OS truststore used to complete chains. |
 
 #### JSON Example Snippet
 ```json
 {
   "metadata": {
-    "version": "1.1.0",
-    "scanDate": "2026-04-23T09:24:00Z",
+    "version": "1.1.3",
+    "engine": "1.1.2",
+    "scanDate": "2026-05-02T11:51:52Z",
     "exitCode": 0
   },
   "groups": [
@@ -289,26 +328,143 @@ When using `--format status`, the tool generates a deep-inspection JSON object. 
       "groupName": "Production Store",
       "groupStatus": "OK",
       "summary": {
-        "totalCertificates": 2,
+        "totalCertificates": 1,
         "isChainComplete": true,
         "isTrusted": true
       },
       "certificates": [
         {
-          "commonName": "Root CA",
-          "serialNumber": "1A:2B:3C",
+          "commonName": "www.example.com",
+          "serialNumber": "16",
           "signatureValid": true,
-          "expiryDate": "2027-01-01T12:00:00Z",
-          "trustStatus": "OK",
-          "statusCode": 0
+          "expiryDate": "2027-05-06T10:55:09Z",
+          "trustStatus": "VALID",
+          "statusCode": 0,
+          "fileName": "server.crt"
+        }
+      ]
+    }
+  ],
+  "systemCertificates": [
+    {
+      "commonName": "Corporate Root CA",
+      "serialNumber": "01",
+      "signatureValid": true,
+      "expiryDate": "2043-10-10T09:43:11Z",
+      "trustStatus": "SYSTEM",
+      "statusCode": 0
+    }
+  ]
+}
+```
+
+#### 🚦 Status Code Definitions
+When using the `--format status` output, each certificate is assigned a numeric `statusCode`. This allows for easy integration with alerting triggers and automated monitoring systems.
+
+| Code | Label | Description |
+| :--- | :--- | :--- |
+| **0** | `OK` | All certificates are cryptographically valid, trusted, and pass all policy checks. |
+| **1** | `WARNING` | Certificate is valid but expires within the defined threshold or violates minor policies. |
+| **2** | `EXPIRED` | At least one certificate in the chain has passed its `notAfter` date. |
+| **3** | `INCOMPLETE` | The chain is broken; an issuer was not found locally, in system store, or via AIA. |
+| **4** | `INVALID` | **Critical:** Signature verification failure (`SIG_ERR`) or CA-constraint violation. |
+| **5** | `REVOKED` | **Critical:** Certificate has been explicitly revoked via OCSP or CRL check. |
+| **6** | `INPUT_ERR` | File access issues, I/O errors, or unparseable certificate structures. |
+| **7** | `FATAL` | An unexpected application error, network timeout, or crash occurred. |
+
+> **Note on Thresholds:** The transition from `OK` (0) to `WARNING` (1) is triggered when a certificate is within the `N`-day window defined by the `--threshold` argument.
+
+### Text-Based Hierarchy (Human Readable)
+The tree view combines multiple layers of intelligence: identity validation, date checking, and cryptographic verification.
+
+```text
+Certificate Hierarchy:
+
+### Production Environment ###
+└── Root CA [✅][🔒][💻] (2043-10-10)
+    └── Intermediate CA (ID: e5477085) [✅][🛡️][🔒] (2027-04-16)
+        └── www.example.com [✅][🛡️][🔒] (ALT: api.example.com) [Usage: Server Auth] (2027-05-06)
+            └── [i] Certificate validity period (731 days) exceeds the 398-day limit. (LONG_VALIDITY)
+
+### Legacy Store ###
+├── Trusted Root CA [⏳][🔒] (2026-05-18)
+│   └── Broken Signature Leaf [❌][💥] (2026-07-17)
+└── EXTERNAL ISSUER / MISSING ROOT [❓] 
+    └── Orphan Certificate [✅][❓] (2027-04-16)
+```
+
+#### Legend of Indicators
+| Icon | Description |
+| :--- | :--- |
+| **[✅]** | **Valid**: Certificate is within its validity period and structurally sound. |
+| **[🔒]** | **Verified**: Cryptographic signature successfully matches the issuer's public key. |
+| **[💻]** | **System**: Certificate was automatically sourced from the OS/System truststore to complete the chain. |
+| **[🛡️]** | **Revocation Checked**: Status was explicitly verified via OCSP or CRL. |
+| **[🌐]** | **AIA**: Certificate was dynamically discovered and downloaded via the network. |
+| **[👯]** | **Collision**: Multiple certificates share the same Common Name but have different cryptographic IDs. |
+| **[💥]** | **Broken**: Signature verification failed (Critical Security Alert). |
+| **[❓]** | **Unknown**: Issuer certificate is missing; signature could not be verified. |
+| **[i]** | **Policy Note**: Informational finding regarding industry best practices (e.g., 398-day limit). |
+| **[!]** | **Critical Note**: Severe issue affecting the trust or validity of the chain. |
+
+### 🛡️ SARIF (Static Analysis Results Interchange Format)
+For integration with security vulnerability dashboards, the tool exports results in **SARIF v2.1.0**. This allows automated tracking of certificate issues as "vulnerabilities".
+ 
+| Rule ID | Name | Severity | Description |
+| :--- | :--- | :--- | :--- |
+| **TSA-001** | Nearing Expiration | Warning | Certificate is within the warning threshold. |
+| **TSA-002** | Expired | Error | Certificate or parent has passed its validity end date. |
+| **TSA-003** | Incomplete Chain | Error | Issuer could not be found locally, via System, or AIA. |
+| **TSA-004** | Invalid Certificate | Error | Structural failure or signature verification failed. |
+| **TSA-005** | Revoked | Error | Certificate explicitly revoked via OCSP/CRL. |
+
+#### SARIF Example Snippet
+```json
+{
+  "$schema": "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "TrustStore Analyzer",
+          "semanticVersion": "1.1.3",
+          "rules": [
+            { "id": "TSA-002", "shortDescription": { "text": "Certificate expired" } },
+            { "id": "TSA-003", "shortDescription": { "text": "Incomplete trust chain" } },
+            { "id": "TSA-004", "shortDescription": { "text": "Invalid certificate" } }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "TSA-004",
+          "level": "error",
+          "message": {
+            "text": "Certificate 'Intermediate Broken Signature' failed validation: The cryptographic signature is invalid or could not be verified."
+          },
+          "locations": [{
+            "physicalLocation": {
+              "artifactLocation": { "uri": "Intermediate Broken Signature.pem" }
+            }
+          }]
         },
         {
-          "commonName": "Server Cert",
-          "serialNumber": "4D:5E:6F",
-          "signatureValid": true,
-          "expiryDate": "2026-09-01T12:00:00Z",
-          "trustStatus": "OK",
-          "statusCode": 0
+          "ruleId": "TSA-003",
+          "level": "error",
+          "message": {
+            "text": "Certificate 'Loop CA B' failed validation: The certificate issuer could not be found due to a circular reference (Loop), making this chain untrusted."
+          },
+          "properties": {
+            "commonName": "Loop CA B",
+            "issueType": "CIRCULAR_REFERENCE"
+          }
+        },
+        {
+          "ruleId": "TSA-002",
+          "level": "error",
+          "message": { "text": "Certificate 'Expired CA' has passed its validity end date." },
+          "properties": { "expiryDate": "2026-01-22T12:20:29Z" }
         }
       ]
     }
@@ -316,56 +472,60 @@ When using `--format status`, the tool generates a deep-inspection JSON object. 
 }
 ```
 
-### Text-Based Hierarchy (Human Readable)
-The tree view combines multiple layers of intelligence: identity validation, date checking, and cryptographic verification.
+### 🎨 Visual PKI Topology (Graphviz)
 
-```text
-Certificate Hierarchy:
-├── Root CA [✅][🔒]  (2036-04-13)
-│   ├── Intermediate CA (ID: e5477085) [✅][🔒][👯]  (2027-04-16)
-│   │   └── Server Cert A [✅][🔒]  (2027-04-16)
-│   └── Intermediate CA (ID: f847a79d) [❌][🔒][👯]  (2026-04-16)
-│       └── Expired Server Cert [❌][🔒]  (2026-04-16)
-├── Trusted Root CA [⏳][🔒]  (2026-05-18)
-│   └── Broken Signature Leaf [❌][💥]  (2026-07-17)
-└── EXTERNAL ISSUER / MISSING ROOT [❓] 
-    └── Orphan Certificate [✅][❓]  (2027-04-16)
+The specialized **Graphviz Renderer** transforms the certificate hierarchy into a DOT representation, optimized for visualizing **Directed Acyclic Graphs (DAG)**. It is essential for auditing complex cross-signing scenarios and identifying structural anomalies.
+
+### Key Features
+*   **Cross-Signing Support**: Transparently visualizes instances where an intermediate certificate is signed by multiple roots (multiple edges pointing to a single node).
+*   **Cluster Grouping**: Uses subgraphs to visually isolate different truststores or environments with dashed boundaries.
+*   **Status-Based Color Coding**:
+    *   **Green**: Valid and trusted certificates.
+    *   **Yellow**: Warnings (e.g., nearing expiration).
+    *   **Red**: Critical errors (e.g., expired, broken signatures, or missing issuers).
+*   **HTML-Rich Labels**: Displays Common Names, Expiry Dates, and Criticality alerts in a clean, tabular format within each node.
+
+### Topology Map Example
+The following map demonstrates how the analyzer handles cross-signed intermediates and flags various failure states like broken signatures or missing roots:
+
+![TrustStore Topology Map](docs/images/topology.png)
+
+#### Usage
+To generate a DOT file and convert it to an image (requires Graphviz installation):
+```bash
+# 1. Generate the DOT output
+./check_truststore vars/prod/stores.yml --format dot > topology.dot
+
+# 2. Convert to PNG using the 'dot' command
+dot -Tpng topology.dot -o topology.png
 ```
-
-### File status based JSON
-Ideal for a status check for all the mentioned files and status in the input list
-
-#### 🚦 Status Code Definitions
-When using the `--format status` output, each certificate is assigned a numeric `statusCode`. This allows for easy integration with alerting triggers and automated monitoring.
-
-| Code | Label | Description |
-| :--- | :--- | :--- |
-| **0** | `OK` | All certificates are cryptographically valid and trusted. |
-| **1** | `WARNING` | Certificate is valid but expires within the defined threshold. |
-| **2** | `EXPIRED` | At least one certificate in the chain has passed its `notAfter` date. |
-| **3** | `INCOMPLETE` | The chain is broken; an issuer (Root or Intermediate) was not found. |
-| **4** | `INVALID` | **Critical:** Signature verification failure (`SIG_ERR`) or CA-constraint violation. |
-| **5** | `REVOKED` | *(Reserved for future CRL/OCSP implementation)*. |
-| **6** | `INPUT_ERR` | File access issues, I/O errors, or unparseable certificate structures. |
-| **7** | `FATAL` | An unexpected application error or crash occurred. |
-
-> **Note on Thresholds:** The transition from `VALID` (0) to `EXPIRING_SOON` (1) is triggered when a certificate is within the `N`-day window defined by the `--threshold` argument.
 
 ## 🔍 Debugging & Scenario Analysis
-When running with the `--debug` flag, the tool outputs detailed logs to `stderr`. This is essential for understanding how the certificate tree is being constructed and where potential issues lie.
+When running with the `--debug` flag, the tool outputs detailed logs to `stderr`. This is essential for understanding the certificate tree construction, network activities, and internal decision-making.
 
-### Healthy Execution (Success)
-The tool displays the signature status (🔒) for verified chains.
+### Healthy Execution & AIA Discovery
+The tool displays signature status (🔒) and network discovery (🌐) for repaired chains.
 ```text
 🔵 INFO         │      │ Configuration loaded           │ Processing 11 certificate paths
-✅ OK           │ 🔒   │ Root CA                        │ 2036-04-13 06:37
-✅ OK           │ 🔒👯 │ Intermediate CA (ID: e5477085) │ 2027-04-16 06:37
+🔵 INFO         │ 🌐   │ AIA Discovery                  │ Fetching: http://ca.example.com/cert.crt
+✅ OK           │ 🔒   │ Root CA                        │ 2043-10-10 09:43
+✅ OK           │ 🔒🛡️ │ www.example.com]               |  2043-10-10 09:43
 ```
 
-### Signature Verification Failure (Security Alert)
+#### 🔄 Cycle Detection (Circular References)
+When certificates point to each other in a loop (A signs B, B signs A), the `CYCLE_BREAKER` prevents infinite recursion.
+
+```text
+⏳ WARNING      │      │ CYCLE_BREAKER                │ Broken circular chain at 5ede7e4e
+❌ INVALID      │ 🔒   │ Loop CA A                    │ 2027-05-02 12:09
+❓ UNTRUSTED    │      │ AKI: CIRCULAR                │ Missing issuer for: Loop CA B
+```
+
+### Signature & Security Alerts
 If a signature does not match the issuer's public key, it is flagged with the `SIG_ERR` label and a 💥 icon.
 ```text
 ❌ SIG_ERR      │ 💥   │ Broken Signature Leaf          │ 2026-07-17 09:05
+❌ REVOKED      │ 🛡️   │ Compromised Certificate        │ 2026-12-01 11:20
 ```
 
 ### Missing Files (I/O Errors)
@@ -377,7 +537,7 @@ Occurs when a filename defined in the YAML does not exist in the source director
 ### Missing Root or Intermediate (Untrusted Chain)
 Occurs when a certificate's issuer is not present in the current truststore batch. These are grouped under the `EXTERNAL_OR_MISSING_ISSUER` node in the output.
 ```text
-❓ UNTRUSTED    │      │ AKI: 6d8e4e51                  │ Missing issuer for: Orphan Certificate
+❌ INVALID      │ 🔒   │ Orphan Server                  │ 2027-05-02 12:09
 ```
 
 ### Redundant Certificates (Duplicate Content)
@@ -395,7 +555,7 @@ If a file is present but cannot be parsed as a valid X509 certificate.
 ### Expired or Expiring Soon
 The tool checks the current system time against the certificate's validity window.
 ```text
-⏳ WARNING      │  👯  │ Intermediate CA (ID: 43aff331) │ 2026-04-26 06:38
+✅ OK           │ 🔒👯 │ Duplicate Intermediate (ID: e589795a) │ 2027-05-02
 ❌ ERROR        │      │ Expired Server Cert            │ 2026-04-16 07:39
 ```
 
@@ -427,4 +587,4 @@ This program is free software: you can redistribute it and/or modify it under th
 This project is licensed under the **LGPL-3.0-or-later** - see the [LICENSE](LICENSE) file for details.
 
 ---
-**Status:** Version: 1.1.1 | Stable | **Logic validated for current system date:** April 29, 2026
+**Status:** Version: 1.1.3 | Stable | **Logic validated for current system date:** May 2, 2026
