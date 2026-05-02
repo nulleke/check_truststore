@@ -25,6 +25,14 @@ class JsonInputProvider(BaseInputProvider):
         is_raw_data: bool = False,
         **kwargs,
     ):
+        """
+        Initializes the JSON provider.
+
+        Args:
+            input_source: Path to the JSON file or a raw JSON string.
+            repository: Shared CertificateRepository instance.
+            is_raw_data: Set to True if input_source is a JSON string.
+        """
         super().__init__(repository=repository, **kwargs)
         self.input_source = input_source
         self.is_raw_data = is_raw_data
@@ -52,7 +60,7 @@ class JsonInputProvider(BaseInputProvider):
 
     def get_groups(self) -> List[TrustStoreGroup]:
         """
-        Detects the JSON schema using deep structural validation.
+        Identifies the JSON schema and dispatches to the appropriate parser.
         """
         data = self._get_json_content()
         if not data or not isinstance(data, dict):
@@ -69,6 +77,7 @@ class JsonInputProvider(BaseInputProvider):
     def _parse_internal_format(self, data: Dict) -> List[TrustStoreGroup]:
         """
         Parses the tool's native truststore configuration format.
+        Relatively linked files are resolved against the JSON file's directory.
         """
         config_path = Path(self.input_source)
         base_dir = config_path.parent if not self.is_raw_data else Path.cwd()
@@ -79,6 +88,7 @@ class JsonInputProvider(BaseInputProvider):
             raw_src_dir = store.get("cert_src_dir", ".")
             raw_src_path = Path(raw_src_dir)
 
+            # Resolve the source directory
             if raw_src_path.is_absolute():
                 source_dir = raw_src_path
             else:
@@ -90,9 +100,9 @@ class JsonInputProvider(BaseInputProvider):
                 filename = link.get("link")
                 if not filename:
                     continue
-                p = source_dir / filename
-                if p.is_file():
-                    group_certs.extend(self.repository.load_from_files([p]))
+                cert_path = source_dir / filename
+                if cert_path.is_file():
+                    group_certs.extend(self.repository.load_from_files([cert_path]))
 
             if group_certs:
                 groups.append(TrustStoreGroup(name=store_name, targets=group_certs))

@@ -4,7 +4,7 @@ First off, thank you for considering contributing to TrustStore Analyzer! It is 
 
 ## ⚖️ Our Standards
 
-As this project is licensed under **GPL v3.0**, all contributions you make will also be under this license. We aim for high reliability and broad compatibility (Python 3.6 to 3.14+).
+As this project is licensed under **LGPL-3.0-or-later,**, all contributions you make will also be under this license. We aim for high reliability and broad compatibility (Python 3.6 to 3.14+).
 
 ## 🚀 How Can I Contribute?
 

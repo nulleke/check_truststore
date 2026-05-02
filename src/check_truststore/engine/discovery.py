@@ -9,6 +9,7 @@ and CRL (Certificate Revocation List).
 """
 
 import os
+import tempfile
 import time
 import socket
 import hashlib
@@ -59,6 +60,15 @@ class NetworkResolver:
         self.verbosity: int = kwargs.get('verbosity', 0)
         self.debug: bool = kwargs.get('debug', False)
         self.processed_urls: Set[str] = set()
+        self.no_cache: bool = kwargs.get('no_cache', False)
+
+        self.headers = {
+            'User-Agent': (
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+                'AppleWebKit/537.36 (KHTML, like Gecko) '
+                'Chrome/124.0.0.0 Safari/537.36'
+            )
+        }
 
         # Cache setup
         self.cache_dir: Path = Path.home() / ".cache" / "truststore_analyzer"
@@ -72,7 +82,7 @@ class NetworkResolver:
                 p.mkdir(parents=True, exist_ok=True)
             except Exception as e:
                 if self.debug:
-                    WARNING.log("Cache", f"{_('Could not create cache directory')}: {e}")
+                    WARNING.log(_("Cache"), f"{_('Could not create cache directory')}: {e}")
 
     def resolve_all_issuers(self, child_cert: x509.Certificate) -> List[x509.Certificate]:
         """
@@ -86,16 +96,25 @@ class NetworkResolver:
         if not aki:
             return []
 
-        aki_dir = self.aia_cache / aki
-        if aki_dir.exists():
-            for cert_file in aki_dir.glob("*.der"):
-                if self._is_cache_fresh(cert_file, self.aia_cache_ttl_days * 24):
-                    cert = self._load_cert_file(cert_file)
-                    if cert and self._get_fp(cert) not in seen_fingerprints:
-                        issuers.append(cert)
-                        seen_fingerprints.add(self._get_fp(cert))
+        if not self.no_cache:
+            aki_dir = self.aia_cache / aki
+            if aki_dir.exists():
+                for cert_file in aki_dir.glob("*.der"):
+                    if self._is_cache_fresh(cert_file, self.aia_cache_ttl_days * 24):
+                        cert = self._load_cert_file(cert_file)
+                        if cert and self._get_fp(cert) not in seen_fingerprints:
+                            issuers.append(cert)
+                            seen_fingerprints.add(self._get_fp(cert))
 
         if self.online:
+            if issuers and not self.no_cache:
+                if self.debug:
+                    INFO.log(_("AIA_CACHE"), _("Skipping network discovery: valid issuers found in cache"), label=_("CACHE"))
+                return issuers
+
+            if self.no_cache and self.debug:
+                INFO.log(_("AIA_FETCH"), _("Bypassing cache due to --no-cache flag"), label=_("AUDIT"))
+
             urls = self.find_aia_urls(child_cert)
             for url in urls:
                 new_cert = self.fetch_issuer(url)
@@ -107,6 +126,16 @@ class NetworkResolver:
                         self._save_to_aia_cache(aki, new_cert)
 
         return issuers
+
+    def _load_cert_file(self, path: Path) -> Optional[x509.Certificate]:
+        """Helper to load a DER certificate from disk."""
+        try:
+            with open(path, "rb") as f:
+                return x509.load_der_x509_certificate(f.read(), default_backend())
+        except Exception as e:
+            if self.debug:
+                ERROR.log(_("CACHE_LOAD"), f"{_('Failed to load cached cert')} {path.name}: {e}")
+            return None
 
     def _get_fp(self, cert: x509.Certificate) -> str:
         """Helper to get SHA256 fingerprint."""
@@ -136,7 +165,7 @@ class NetworkResolver:
             pass
         except Exception as e:
             if self.debug:
-                ERROR.log("AIA_PARSE", f"Error parsing AIA extension: {e}")
+                ERROR.log(_("AIA_PARSE"), f"{_('Error parsing AIA extension')} :{e}")
         return urls
 
     def fetch_issuer(self, url: str) -> Optional[x509.Certificate]:
@@ -152,15 +181,19 @@ class NetworkResolver:
 
         try:
             if self.debug:
-                INFO.log("AIA_FETCH", f"{_('Downloading')}: {url}")
+                INFO.log(_("AIA_FETCH"), f"{_('Downloading')}: {url}")
 
-            response = requests.get(url, timeout=(1.0, self.timeout))
+            response = requests.get(
+                url,
+                headers=self.headers,
+                timeout=(1.0, self.timeout)
+            )
             response.raise_for_status()
 
             content = response.content
             if len(content) > 1024 * 50:
                 if self.debug:
-                    ERROR.log("AIA_SIZE", _("Certificate too large"))
+                    ERROR.log(_("AIA_SIZE"), _("Certificate too large"))
                 return None
 
             self.processed_urls.add(url)
@@ -173,16 +206,17 @@ class NetworkResolver:
                     return x509.load_pem_x509_certificate(content)
                 except Exception as pem_err:
                     if self.debug:
-                        ERROR.log("AIA_PARSE", f"{_('Could not load cert from')} {url} ({_('Tried DER & PEM')}): {pem_err}")
+                        msg = _("Could not load cert from {url} (Tried DER & PEM)").format(url=url)
+                        ERROR.log(_("AIA_PARSE"), f"{msg}: {pem_err}")
                     return None
 
         except requests.exceptions.RequestException as e:
             if self.debug:
                 # We use WARNING here because it's an expected failure in restricted networks
-                WARNING.log("AIA_FAILED", f"{_('Connection failed')}: {url} ({e})")
+                WARNING.log(_("AIA_FAILED"), f"{_('Connection failed')}: {url} ({e})")
         except Exception as e:
             if self.debug:
-                ERROR.log("AIA_ERROR", f"Unexpected error: {str(e)}")
+                ERROR.log(_("AIA_ERROR"), f"{_('Unexpected error')}: {str(e)}")
 
         return None
 
@@ -232,6 +266,9 @@ class NetworkResolver:
                     ERROR.log(_("OCSP_BUILD"), str(e))
                 return "ERROR"
 
+            ocsp_headers = self.headers.copy()
+            ocsp_headers['Content-Type'] = 'application/ocsp-request'
+
             for url in urls:
                 if not self._can_resolve(url):
                     continue
@@ -244,7 +281,7 @@ class NetworkResolver:
                     response = requests.post(
                         url,
                         data=request_der,
-                        headers={'Content-Type': 'application/ocsp-request'},
+                        headers=ocsp_headers,
                         timeout=(1.0, self.timeout)
                     )
                     response.raise_for_status()
@@ -262,7 +299,7 @@ class NetworkResolver:
 
                 except Exception as e:
                     if self.debug:
-                        WARNING.log("OCSP_FAILED", f"{url}: {e}")
+                        WARNING.log(_("OCSP_FAILED"), f"{_('OCSP request failed')} {url}: {e}")
 
         return self.check_crl_status(cert)
 
@@ -306,17 +343,22 @@ class NetworkResolver:
                 crl_data: Optional[x509.CertificateRevocationList] = None
 
                 # Check if cached CRL exists and is within TTL
-                if self._is_cache_fresh(cache_path, self.ocsp_cache_ttl_hours):
-                    with open(cache_path, "rb") as f:
-                        temp_crl = x509.load_der_x509_crl(f.read(), default_backend())
-                        next_upd = self._get_next_update(temp_crl)
+                if not self.no_cache:
+                    if self._is_cache_fresh(cache_path, self.ocsp_cache_ttl_hours):
+                        with open(cache_path, "rb") as f:
+                            temp_crl = x509.load_der_x509_crl(f.read(), default_backend())
+                            next_upd = self._get_next_update(temp_crl)
 
-                        if next_upd > datetime.now(timezone.utc):
-                            if self.debug:
-                                INFO.log(_("CRL_CACHE"), f"{_('Using cached CRL for')}: {urlparse(url).hostname}", label=_("CACHE"))
-                            crl_data = temp_crl
-                        elif self.debug:
-                            INFO.log(_("CRL_CACHE"), f"{_('Cached CRL is stale (nextUpdate passed)')}", label=_("EXPIRE"))
+                            if next_upd > datetime.now(timezone.utc):
+                                if self.debug:
+                                    msg = _("Using cached CRL for")
+                                    INFO.log(_("CRL_CACHE"), f"{msg}: {urlparse(url).hostname}", label=_("CACHE"))
+                                crl_data = temp_crl
+                            elif self.debug:
+                                INFO.log(_("CRL_CACHE"), _("Cached CRL is stale (nextUpdate passed)"), label=_("EXPIRE"))
+                elif self.debug:
+                    # Log dat we de cache bewust negeren voor de audit
+                    INFO.log(_("CRL_CACHE"), _("Bypassing cached CRL due to --no-cache flag"), label=_("AUDIT"))
 
                 # Fetch CRL if not in cache or expired
                 if crl_data is None:
@@ -329,13 +371,27 @@ class NetworkResolver:
                     if self.debug:
                         INFO.log(_("CRL_FETCH"), f"{_('Downloading CRL')}: {url}")
 
-                    response = requests.get(url, timeout=(1.5, max(self.timeout, 5.0)))
+                    response = requests.get(
+                        url,
+                        headers=self.headers,
+                        timeout=(1.5, max(self.timeout, 5.0))
+                    )
                     response.raise_for_status()
 
                     crl_data = x509.load_der_x509_crl(response.content, default_backend())
 
-                    with open(cache_path, "wb") as f:
-                        f.write(response.content)
+                    try:
+                        self.ocsp_cache.mkdir(parents=True, exist_ok=True)
+                        with tempfile.NamedTemporaryFile(dir=self.ocsp_cache, delete=False, suffix=".tmp") as tmp_file:
+                            tmp_file.write(response.content)
+                            temp_path = tmp_file.name
+
+                        os.replace(temp_path, cache_path)
+                    except Exception as e:
+                        if 'temp_path' in locals() and os.path.exists(temp_path):
+                            os.unlink(temp_path)
+                        if self.debug:
+                            WARNING.log(_("CRL_CACHE"), f"Could not save CRL to cache: {e}")
 
                 # Check for serial number in CRL
                 revoked = crl_data.get_revoked_certificate_by_serial_number(cert.serial_number)
@@ -368,7 +424,7 @@ class NetworkResolver:
 
         if not self._is_cache_fresh(cache_path, self.aia_cache_ttl_days * 24):
             if cache_path.exists() and self.debug:
-                AIA_LOG.log(f"AKI: {aki[:8]}", _("Cache expired based on TTL, refreshing..."))
+                AIA_LOG.log(f"{_('AKI')}: {aki[:8]}", _("Cache expired based on TTL, refreshing..."))
             return None
 
         try:
@@ -418,14 +474,26 @@ class NetworkResolver:
             return False
 
     def _save_to_aia_cache(self, aki: str, cert: x509.Certificate) -> None:
-        """Persists the certificate to the local filesystem."""
-        fp = hashlib.sha256(cert.public_bytes(serialization.Encoding.DER)).hexdigest()[:16]
-        aki_dir = self.aia_cache / aki
-        aki_dir.mkdir(parents=True, exist_ok=True)
-        cache_path = self.aia_cache / f"{fp}.der"
+        """
+        Saves a certificate to the AIA cache using atomic writes to prevent corruption.
+        """
         try:
-            with open(cache_path, "wb") as f:
-                f.write(cert.public_bytes(serialization.Encoding.DER))
+            aki_dir = self.aia_cache / aki
+            aki_dir.mkdir(parents=True, exist_ok=True)
+            fp = self._get_fp(cert)
+            final_path = aki_dir / f"{fp}.der"
+
+            with tempfile.NamedTemporaryFile(dir=aki_dir, delete=False, suffix=".tmp") as tmp_file:
+                tmp_file.write(cert.public_bytes(serialization.Encoding.DER))
+                temp_path = tmp_file.name
+
+            try:
+                os.replace(temp_path, final_path)
+            except Exception:
+                if os.path.exists(temp_path):
+                    os.unlink(temp_path)
+                raise
+
         except Exception as e:
             if self.debug:
-                ERROR.log("Cache", f"{_('Could not save certificate to cache')}: {e}")
+                ERROR.log(_("CACHE"), f"{_('Could not save certificate to cache')}: {e}")

@@ -22,11 +22,19 @@ class XmlInputProvider(BaseInputProvider):
 
     def __init__(
         self,
-        input_source: Union[Path, str],
+        input_source: Union[Path, str, bytes],
         repository: Optional[CertificateRepository] = None,
         is_raw_data: bool = False,
         **kwargs,
     ):
+        """
+        Initializes the XML provider.
+
+        Args:
+            input_source: Path to the XML file or raw XML string/bytes.
+            repository: Shared CertificateRepository instance.
+            is_raw_data: Set to True if input_source is raw XML data.
+        """
         super().__init__(repository=repository, **kwargs)
         self.input_source = input_source
         self.is_raw_data = is_raw_data
@@ -34,20 +42,22 @@ class XmlInputProvider(BaseInputProvider):
     def _get_xml_root(self) -> Optional[ET.Element]:
         """
         Parses the input source and returns the XML root element.
-        Handles both file paths and raw string data (stdin).
+        Handles namespaces and potential leading garbage in Nmap output.
         """
         try:
             if self.is_raw_data:
+                # Ensure we are working with a string for cleaning
                 xml_data = self.input_source
+                if isinstance(xml_data, bytes):
+                    xml_data = xml_data.decode('utf-8', errors='ignore')
 
                 if not isinstance(xml_data, str):
                     return None
 
-                # Strip potential leading garbage before the XML declaration
-                if "<nmaprun" in xml_data:
-                    start_idx = xml_data.find("<nmaprun")
-                    if start_idx != -1:
-                        xml_data = xml_data[start_idx:]
+                # Nmap sometimes prepends comments or headers; find the start of the XML
+                start_match = re.search(r'<(?:[a-zA-Z0-9_]+:)?nmaprun', xml_data)
+                if start_match:
+                    xml_data = xml_data[start_match.start():]
 
                 return ET.fromstring(xml_data)
 
@@ -60,13 +70,13 @@ class XmlInputProvider(BaseInputProvider):
 
     def get_groups(self) -> List[TrustStoreGroup]:
         """
-        Identifies the XML structure and dispatches to the appropriate parser.
+        Detects the XML schema (e.g., Nmap) and extracts certificates.
         """
         root = self._get_xml_root()
         if root is None:
             return []
 
-        # Use partial tag match for namespace tolerance
+        # Check for Nmap-specific root tag
         if "nmaprun" in root.tag.lower():
             return self._parse_nmap_xml(root)
 
@@ -74,67 +84,67 @@ class XmlInputProvider(BaseInputProvider):
 
     def _parse_nmap_xml(self, root: ET.Element) -> List[TrustStoreGroup]:
         """
-        Iterates through Nmap XML to find hosts, ports, and 'ssl-cert' script output.
+        Extracts certificates from Nmap 'ssl-cert' script output.
+        Maps findings to a virtual directory structure: nmap/ip/port.
         """
         groups = []
 
-        # Helper to strip namespaces from tags
         def get_local_tag(tag):
             return tag.split('}')[-1] if '}' in tag else tag
 
-        for host in root.iter():
-            if get_local_tag(host.tag) != "host":
-                continue
-
+        for host in root.findall(".//host"):
             address = "Unknown Host"
-            # Extract IP or hostname
-            addr_elem = next((e for e in host if get_local_tag(e.tag) == "address"), None)
+            # Get the primary IP address
+            addr_elem = host.find("./address[@addrtype='ipv4']")
+            if addr_elem is None:
+                addr_elem = host.find("./address")
+
             if addr_elem is not None:
                 address = addr_elem.get("addr", address)
 
-            for port in host.iter():
-                if get_local_tag(port.tag) != "port":
-                    continue
+            for port_elem in host.findall(".//port"):
+                port_id = port_elem.get("portid", "unknown")
 
-                port_id = port.get("portid", "unknown")
+                # Look for ssl-cert script within the port
+                script = port_elem.find("./script[@id='ssl-cert']")
+                if script is not None:
+                    pem_raw = ""
+                    # Structured Nmap XML stores PEM in <elem key="pem">
+                    pem_elem = script.find("./elem[@key='pem']")
+                    if pem_elem is not None:
+                        pem_raw = pem_elem.text
+                    else:
+                        # Fallback to the text output
+                        pem_raw = script.get("output", "")
 
-                # Search for the ssl-cert script element
-                for script in port.iter():
-                    if get_local_tag(script.tag) == "script" and script.get("id") == "ssl-cert":
-                        pem_raw = ""
-                        # Attempt to find structured PEM data
-                        for elem in script.iter():
-                            if get_local_tag(elem.tag) == "elem" and elem.get("key") == "pem":
-                                pem_raw = elem.text
-                                break
+                    if pem_raw:
+                        pem_clean = self._fix_pem(pem_raw)
+                        if "-----BEGIN CERTIFICATE-----" in pem_clean:
+                            # Virtual path for metadata consistency
+                            source_info = PurePosixPath(f"nmap/{address}/{port_id}")
 
-                        # Fallback to raw script output
-                        if not pem_raw:
-                            pem_raw = script.get("output", "")
+                            # The repository handles deduplication via SHA256 DER hash
+                            certs = self.repository.add_pem_data(
+                                pem_clean.encode(),
+                                source_path=Path(source_info)
+                            )
 
-                        if pem_raw:
-                            pem_clean = self._fix_pem(pem_raw)
-                            if "-----BEGIN CERTIFICATE-----" in pem_clean:
-                                source_info = PurePosixPath(f"nmap/{address}/{port_id}")
-                                certs = self.repository.add_pem_data(
-                                    pem_clean.encode(),
-                                    source_path=source_info
-                                )
-                                if certs:
-                                    groups.append(TrustStoreGroup(
-                                        name=f"Nmap: {address}:{port_id}",
-                                        targets=certs
-                                    ))
+                            if certs:
+                                groups.append(TrustStoreGroup(
+                                    name=f"Nmap: {address}:{port_id}",
+                                    targets=certs
+                                ))
         return groups
 
     def _fix_pem(self, raw: str) -> str:
         """
-        Sanitizes raw PEM data from XML entities and formatting artifacts.
+        Cleans XML-escaped characters and ensures standard PEM delimiters.
         """
-        # Clean XML escaped hyphens and newlines
+        # Unescape XML entities commonly found in Nmap output
         clean = raw.replace("-&#45;", "--").replace("&#45;", "-")
         clean = clean.replace("&#xa;", "\n").replace("\xa0", " ")
-        # Ensure standard BEGIN/END markers
+
+        # Standardize BEGIN/END markers (Nmap/OpenSSL variations)
         clean = re.sub(r'-{3,}\s*BEGIN (?:TRUSTED )?CERTIFICATE\s*-{3,}', "-----BEGIN CERTIFICATE-----", clean)
         clean = re.sub(r'-{3,}\s*END (?:TRUSTED )?CERTIFICATE\s*-{3,}', "-----END CERTIFICATE-----", clean)
         return clean

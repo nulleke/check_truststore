@@ -31,14 +31,15 @@ class DirectoryInputProvider(BaseInputProvider):
         Args:
             folder_path: Path to the directory to be scanned.
             repository: Optional shared repository for certificate loading.
-            extensions: List of file extensions to include (default: .crt, .pem, .cer, .der).
+            extensions: List of file extensions to include.
+                       Defaults to standard PEM, DER, and PKCS#7 formats.
             recursive: If True, performs a deep scan of all subdirectories.
         """
         super().__init__(repository=repository, **kwargs)
         self.folder_path = folder_path
         self.extensions = extensions or [
-            ".crt", ".pem", ".cer", ".der",
-            ".CRT", ".PEM", ".CER", ".DER"
+            ".crt", ".pem", ".cer", ".der", ".p7b", ".p7c",
+            ".CRT", ".PEM", ".CER", ".DER", ".P7B", ".P7C",
         ]
         self.recursive = recursive
 
@@ -47,18 +48,17 @@ class DirectoryInputProvider(BaseInputProvider):
         Discovers files in the configured directory and packs them into a TrustStoreGroup.
 
         Returns:
-            A list containing a single TrustStoreGroup named after the directory.
+            A list containing a TrustStoreGroup named after the directory,
+            containing all unique discovered certificates.
         """
         if not self.folder_path.is_dir():
             return []
 
         all_paths = []
-        for ext in self.extensions:
-            # Construct glob pattern based on recursion preference
-            if self.recursive:
-                all_paths.extend(self.folder_path.rglob("*{}".format(ext)))
-            else:
-                all_paths.extend(self.folder_path.glob("*{}".format(ext)))
+        search_pattern = "**/*" if self.recursive else "*"
+        for p in self.folder_path.glob(search_pattern):
+            if p.is_file() and p.suffix in self.extensions:
+                all_paths.append(p)
 
         # Deduplicate paths and ensure they are files, then sort for consistent output
         unique_paths = sorted(list(set(p for p in all_paths if p.is_file())))

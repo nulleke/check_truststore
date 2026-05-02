@@ -8,13 +8,15 @@ environment-based variables, and automated file extension resolution.
 """
 
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict
 from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
 from check_truststore.engine.core import _, ERROR, WARNING, INFO, CertificateRepository
+
 try:
     import yaml
 except ImportError:
-    raise ImportError(_("Package 'pyyaml' is required for YAML support."))
+    # Ensuring clear feedback if the optional dependency is missing
+    raise ImportError(_("Package 'pyyaml' is required for YAML support. Install it with 'pip install pyyaml'."))
 
 class YamlInputProvider(BaseInputProvider):
     """
@@ -30,12 +32,24 @@ class YamlInputProvider(BaseInputProvider):
         is_raw_data: bool = False,
         **kwargs,
     ):
+        """
+        Initializes the YAML provider.
+
+        Args:
+            input_source: Path to the YAML file or raw YAML string.
+            repository: Shared CertificateRepository instance.
+            env: Default environment name for variable substitution.
+            is_raw_data: True if input_source contains raw YAML content.
+        """
         super().__init__(repository=repository, **kwargs)
         self.input_source = input_source
         self.env = env
         self.is_raw_data = is_raw_data
 
-    def _get_yaml_content(self) -> Optional[dict]:
+    def _get_yaml_content(self) -> Optional[Dict]:
+        """
+        Safely loads and parses YAML content.
+        """
         try:
             if self.is_raw_data:
                 return yaml.safe_load(self.input_source)
@@ -46,31 +60,33 @@ class YamlInputProvider(BaseInputProvider):
 
             with open(path, "r", encoding="utf-8") as f:
                 return yaml.safe_load(f)
-        except (yaml.YAMLError, AttributeError, PermissionError):
-            return None
-        except Exception as e:
+        except (yaml.YAMLError, AttributeError, PermissionError) as e:
             if self.debug:
-                ERROR.log(_("YAML Load Error"), str(e))
+                ERROR.log(_("YAML Parse Error"), str(e))
             return None
 
     def get_groups(self) -> List[TrustStoreGroup]:
+        """
+        Processes the YAML structure and returns initialized TrustStoreGroups.
+        """
         data = self._get_yaml_content()
         if not data or not isinstance(data, dict):
             return []
 
-        # Determine base directory for relative paths (relative to the config file)
+        # Determine base directory for relative path resolution
         base_dir = Path(self.input_source).parent if not self.is_raw_data else Path.cwd()
 
+        # Global config overrides
         env_name = data.get("env", self.env)
-        extension = data.get("certificate_file_extension", ".crt")
+        default_ext = data.get("certificate_file_extension", ".crt")
         groups = []
 
         for store in data.get("truststores", []):
             store_name = store.get("name", _("Unnamed Store"))
 
-            # Resolve cert_src_dir with environment placeholder support
-            raw_src_dir_str = store.get("cert_src_dir", ".").replace("{{ env }}", env_name)
-            raw_src_path = Path(raw_src_dir_str)
+            # Dynamic path resolution with environment support
+            raw_src_dir = store.get("cert_src_dir", ".").replace("{{ env }}", env_name)
+            raw_src_path = Path(raw_src_dir)
 
             if raw_src_path.is_absolute():
                 source_dir = raw_src_path
@@ -87,26 +103,25 @@ class YamlInputProvider(BaseInputProvider):
                 if not cert_name:
                     continue
 
-                # Ensure filename has the correct extension
-                filename = cert_name if cert_name.endswith(extension) else f"{cert_name}{extension}"
+                # Auto-append extension if missing
+                filename = cert_name if "." in cert_name else f"{cert_name}{default_ext}"
                 p = source_dir / filename
 
                 if p.is_file():
-                    # Consistent repository loading
+                    # Centralized loading ensures PEM/PKCS7/DER support and deduplication
                     certs = self.repository.load_from_files([p])
                     if certs:
                         group_certs.extend(certs)
                     elif self.debug:
-                        ERROR.log(filename, _("File exists but failed to load certificate."), label=_("LOAD_ERR"))
+                        ERROR.log(filename, _("Failed to extract valid certificates from file."), label=_("LOAD_ERR"))
                 elif self.debug:
-                    WARNING.log(filename, _("Certificate file not found in {}").format(source_dir), label=_("MISSING"))
+                    WARNING.log(filename, _("Certificate not found in {}").format(source_dir), label=_("MISSING"))
 
             if group_certs:
                 if self.debug:
-                    INFO.log(_("Group Loaded"), _("Group '{name}' loaded with {count} certificates.").format(
-                        name=store_name, count=len(group_certs)))
+                    INFO.log(store_name, _("Loaded group with {count} certificates.").format(count=len(group_certs)))
                 groups.append(TrustStoreGroup(name=store_name, targets=group_certs))
             else:
-                WARNING.log(store_name, _("Group has NO valid certificates."), label=_("EMPTY_GROUP"))
+                WARNING.log(store_name, _("Group contains no valid certificates."), label=_("EMPTY_GROUP"))
 
         return groups

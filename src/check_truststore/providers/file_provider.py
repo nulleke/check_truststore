@@ -49,9 +49,14 @@ class SingleFileInputProvider(BaseInputProvider):
         group_name = "Stdin Input"
 
         if self.is_raw_data:
-            # Handle raw string input (e.g., piped data)
             content = self.input_source.encode() if isinstance(self.input_source, str) else self.input_source
-            certs = self.repository.add_pem_data(content, source_path=None)
+
+            # Smart detection for raw data (e.g., piped PKCS#7 or PEM)
+            if b"PKCS7" in content or (not content.startswith(b"-----BEGIN") and len(content) > 100):
+                # If it looks like PKCS7 (header present) or binary (no PEM header), try PKCS7 parser
+                certs = self.repository.add_pkcs7_data(content, source_path=None)
+            else:
+                certs = self.repository.add_pem_data(content, source_path=None)
         else:
             # Handle file path input
             path = Path(self.input_source)
