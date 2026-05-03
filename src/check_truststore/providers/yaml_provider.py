@@ -7,16 +7,11 @@ Advanced configuration-driven provider that supports YAML syntax,
 environment-based variables, and automated file extension resolution.
 """
 
+import yaml
 from pathlib import Path
 from typing import List, Optional, Union, Dict
 from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
 from check_truststore.engine.core import _, ERROR, WARNING, INFO, CertificateRepository
-
-try:
-    import yaml
-except ImportError:
-    # Ensuring clear feedback if the optional dependency is missing
-    raise ImportError(_("Package 'pyyaml' is required for YAML support. Install it with 'pip install pyyaml'."))
 
 class YamlInputProvider(BaseInputProvider):
     """

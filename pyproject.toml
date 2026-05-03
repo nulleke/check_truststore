@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "check_truststore"
-version = "1.1.3"
+version = "1.1.4"
 description = "Lightweight certificate trust chain analyzer"
 readme = "README.md"
 requires-python = ">=3.6"
@@ -15,19 +15,16 @@ keywords = ["ssl", "x509", "pki", "certificate", "truststore", "audit"]
 dependencies = [
     "cryptography",
     "requests",
+    "PyYAML",
 ]
 
 [project.optional-dependencies]
-yaml = [
-    "PyYAML"
-]
 pydantic = [
     "pydantic>=2.0.0; python_version >= '3.8'"
 ]
 # 'all' combineert nu de bovenstaande twee groepen
 all = [
-    "check_truststore[yaml]",
-    "check_truststore[pydantic]"
+    "check_truststore[pydantic]",
 ]
 
 [project.scripts]
