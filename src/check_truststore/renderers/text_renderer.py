@@ -10,7 +10,7 @@ display.
 
 from datetime import datetime, timezone
 from typing import List, Any
-from check_truststore.engine.core import (
+from check_truststore.engine import (
     _,
     Icons,
     SYSTEM,
@@ -147,8 +147,10 @@ class TextRenderer(BaseRenderer):
                 findings = getattr(n, "findings", [])
                 eku_finding = next((f for f in findings if getattr(f, "code", "") == "EKU_PURPOSE"), None)
                 if eku_finding:
-                    eku_text = eku_finding.message.replace("Certificate purpose: ", "")
-                    eku_display = f"[{_('Usage')}: {eku_text}]"
+                    usages = eku_finding.params.get("usages", [])
+                    translated_usages = [_(u) for u in usages]
+                    eku_text = ", ".join(translated_usages)
+                    eku_display = f" [{_('Usage')}: {eku_text}]"
 
             # Optional SAN display
             san_display = ""
@@ -190,7 +192,11 @@ class TextRenderer(BaseRenderer):
                     is_last_finding = (f_idx == len(filtered_findings) - 1) and not children
                     f_connector = "└── " if is_last_finding else "├── "
                     f_icon = "[!]" if f.level == "ERROR" else "[i]"
-                    lines.append(f"{base_indent}{f_connector}{f_icon} {f.message} ({f.code})")
+                    try:
+                        translated_msg = _(f.message).format(**(f.params or {}))
+                    except (KeyError, ValueError):
+                        translated_msg = _(f.message)
+                    lines.append(f"{base_indent}{f_connector}{f_icon} {translated_msg} ({f.code})")
 
             # Recurse for child certificates (Intermediate/Root)
             children = getattr(n, "children", [])

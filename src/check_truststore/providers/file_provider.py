@@ -11,7 +11,7 @@ or a dedicated configuration.
 from pathlib import Path
 from typing import List, Optional, Union
 from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
-from check_truststore.engine.core import CertificateRepository
+from check_truststore.engine import CertificateRepository
 
 class SingleFileInputProvider(BaseInputProvider):
     """

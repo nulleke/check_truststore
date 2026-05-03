@@ -1,3 +1,13 @@
+"""
+TrustStore Analyzer & Visualizer - DOMAIN MODELS
+Architect: Serge van Thillo
+SPDX-License-Identifier: LGPL-3.0-or-later
+
+This module defines the core data structures for the engine, including
+Certificate and CertificateGroup objects, as well as unique identifiers
+for orphans and circular references.
+"""
+
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Union, Optional
 

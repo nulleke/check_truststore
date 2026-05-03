@@ -1,6 +1,12 @@
-# CHANGELOG
+# 📜 CHANGELOG
 
 All notable changes to this project will be documented in this file.
+
+## [1.1.5] - 2026-05-03 (Stable)
+* **Robustness:** Added a global `KeyboardInterrupt` handler in `cli.py` to prevent stacktraces during user interruptions.
+* **Integrity:** Integrated GitLab source and issue tracker URLs into PyPI metadata.
+* **Automation:** Full GitLab CI/CD pipeline for multi-version Python testing (3.6 to 3.14).
+* **Localization:** Improved `gettext` integration with automated `.mo` compilation in the build process.
 
 ## [1.1.3] - 2026-05-02 (In Progress)
 

@@ -20,7 +20,7 @@ class TrustStoreRenderer:
     def render(self, tree_data, format_type, **kwargs):
         renderer = self._renderers.get(format_type)
         if not renderer:
-            from check_truststore.engine.core import _
+            from check_truststore.engine import _
 
             raise ValueError(_("Unknown format: {}").format(format_type))
 

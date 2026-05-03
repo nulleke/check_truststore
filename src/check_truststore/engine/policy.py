@@ -13,6 +13,9 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.x509.oid import ExtensionOID, ExtendedKeyUsageOID
 from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
 
+def N_(message):
+    return message
+
 class PolicyFinding:
     """
     Represents a specific policy violation or security warning.
@@ -59,6 +62,7 @@ class PolicyEngine:
         self.min_rsa_bits = 2048
         self.min_ecdsa_bits = 256
         self.debug = kwargs.get('debug', False)
+        self.internal_tlds = {'.lan', '.local', '.internal', '.home.arpa', '.node'}
 
     def validate(self, cert: x509.Certificate, issuer: Optional[x509.Certificate] = None, path_depth: Optional[int] = None) -> List[PolicyFinding]:
         """
@@ -89,7 +93,7 @@ class PolicyEngine:
             if not self.verify_signature(cert, issuer):
                 findings.append(PolicyFinding(
                     "ERROR", "SIG_INVALID",
-                    "The cryptographic signature is invalid or could not be verified.",
+                    N_("The cryptographic signature is invalid or could not be verified."),
                     code_int=4
                 ))
 
@@ -98,7 +102,7 @@ class PolicyEngine:
                 issuer_name = issuer.subject.rfc4514_string()
                 findings.append(PolicyFinding(
                     "ERROR", "PARENT_NOT_A_CA",
-                    f"Issuer '{issuer_name}' is not a CA or lacks keyCertSign usage.",
+                    N_("Issuer '{issuer}' is not a CA or lacks keyCertSign usage."),
                     params={"issuer": issuer_name},
                     code_int=4
                 ))
@@ -110,7 +114,7 @@ class PolicyEngine:
             findings.append(PolicyFinding(
                 level="ERROR",
                 code="NO_TRUST",
-                message="The certificate issuer could not be found in the truststore, making this chain untrusted.",
+                message=N_("The certificate issuer could not be found in the truststore, making this chain untrusted."),
                 code_int=3
             ))
 
@@ -190,6 +194,34 @@ class PolicyEngine:
 
         return True
 
+    def _is_internal_domain(self, cert: x509.Certificate) -> bool:
+        """
+        Detects if a certificate is intended for internal/private use.
+        Checks for private TLDs, non-FQDNs, and private IP address ranges.
+        """
+        try:
+            common_names = cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+            if common_names:
+                cn = common_names[0].value.lower()
+                if any(cn.endswith(tld) for tld in self.internal_tlds):
+                    return True
+
+            present_oids = [ext.oid for ext in cert.extensions]
+            if ExtensionOID.SUBJECT_ALTERNATIVE_NAME in present_oids:
+                san = cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+
+                for name in san.value.get_values_for_type(x509.DNSName):
+                    if any(name.lower().endswith(tld) for tld in self.internal_tlds):
+                        return True
+
+                for ip in san.value.get_values_for_type(x509.IPAddress):
+                    if ip.is_private:
+                        return True
+
+        except Exception:
+            pass
+        return False
+
     def _check_key_strength(self, cert: x509.Certificate) -> List[PolicyFinding]:
         """
         Evaluates the public key size/type against minimum security requirements.
@@ -201,7 +233,7 @@ class PolicyEngine:
             if pub_key.key_size < self.min_rsa_bits:
                 findings.append(PolicyFinding(
                     "ERROR", "WEAK_RSA",
-                    f"RSA key size ({pub_key.key_size} bits) is below the minimum required {self.min_rsa_bits} bits.",
+                    N_("RSA key size ({bits} bits) is below the minimum required {min_bits} bits."),
                     params={"bits": pub_key.key_size, "min_bits": self.min_rsa_bits},
                     code_int=4
                 ))
@@ -209,7 +241,7 @@ class PolicyEngine:
             if pub_key.key_size < self.min_ecdsa_bits:
                 findings.append(PolicyFinding(
                     "ERROR", "WEAK_ECC",
-                    f"ECC key size ({pub_key.key_size} bits) is below the minimum required {self.min_ecdsa_bits} bits.",
+                    N_("ECC key size ({bits} bits) is below the minimum required {min_bits} bits."),
                     params={"bits": pub_key.key_size, "min_bits": self.min_ecdsa_bits},
                     code_int=4
                 ))
@@ -224,7 +256,7 @@ class PolicyEngine:
         if isinstance(cert.signature_hash_algorithm, hashes.SHA1):
             findings.append(PolicyFinding(
                 "ERROR", "DEPRECATED_HASH",
-                "Certificate uses SHA-1 signature algorithm which is no longer trusted.",
+                N_("Certificate uses SHA-1 signature algorithm which is no longer trusted."),
                 params={"algo": "SHA-1"},
                 code_int=4
             ))
@@ -244,7 +276,7 @@ class PolicyEngine:
             if not self.is_ca(cert):
                 findings.append(PolicyFinding(
                     "INFO", "MISSING_EKU",
-                    "End-entity certificate lacks Extended Key Usage extension.",
+                    N_("End-entity certificate lacks Extended Key Usage extension."),
                     code_int=1
                 ))
             return findings
@@ -257,7 +289,7 @@ class PolicyEngine:
             if "2.5.29.37.0" in usages:
                 findings.append(PolicyFinding(
                     "WARNING", "ANY_EKU_PRESENT",
-                    "Certificate contains 'Any Extended Key Usage', which is overly permissive.",
+                    N_("Certificate contains 'Any Extended Key Usage', which is overly permissive."),
                     code_int=2
                 ))
 
@@ -266,7 +298,7 @@ class PolicyEngine:
                ExtendedKeyUsageOID.CODE_SIGNING.dotted_string in usages:
                 findings.append(PolicyFinding(
                     "WARNING", "EKU_OVERPRIVILEGED",
-                    "Certificate allows both Server Auth and Code Signing. Functional separation is recommended.",
+                    N_("Certificate allows both Server Auth and Code Signing. Functional separation is recommended."),
                     code_int=2
                 ))
 
@@ -283,7 +315,7 @@ class PolicyEngine:
         except Exception:
             findings.append(PolicyFinding(
                 "ERROR", "EKU_PARSE_ERROR",
-                "Could not parse Extended Key Usage extension data.",
+                N_("Could not parse Extended Key Usage extension data."),
                 code_int=4
             ))
 
@@ -301,18 +333,21 @@ class PolicyEngine:
             eku = cert.extensions.get_extension_for_oid(ExtensionOID.EXTENDED_KEY_USAGE)
 
             mapping = {
-                ExtendedKeyUsageOID.SERVER_AUTH.dotted_string: "Server Authentication",
-                ExtendedKeyUsageOID.CLIENT_AUTH.dotted_string: "Client Authentication",
-                ExtendedKeyUsageOID.CODE_SIGNING.dotted_string: "Code Signing",
-                ExtendedKeyUsageOID.EMAIL_PROTECTION.dotted_string: "Email Protection",
-                ExtendedKeyUsageOID.TIME_STAMPING.dotted_string: "Time Stamping",
-                ExtendedKeyUsageOID.OCSP_SIGNING.dotted_string: "OCSP Signing",
-                "1.3.6.1.5.5.7.3.17": "IPSec User",
-                "1.3.6.1.5.5.7.3.18": "IPSec Intermediate",
-                "1.3.6.1.5.5.7.3.19": "IPSec Tunnel",
+                ExtendedKeyUsageOID.SERVER_AUTH.dotted_string: N_("Server Authentication"),
+                ExtendedKeyUsageOID.CLIENT_AUTH.dotted_string: N_("Client Authentication"),
+                ExtendedKeyUsageOID.CODE_SIGNING.dotted_string: N_("Code Signing"),
+                ExtendedKeyUsageOID.EMAIL_PROTECTION.dotted_string: N_("Email Protection"),
+                ExtendedKeyUsageOID.TIME_STAMPING.dotted_string: N_("Time Stamping"),
+                ExtendedKeyUsageOID.OCSP_SIGNING.dotted_string: N_("OCSP Signing"),
+                "1.3.6.1.5.5.7.3.17": N_("IPSec User"),
+                "1.3.6.1.5.5.7.3.18": N_("IPSec Intermediate"),
+                "1.3.6.1.5.5.7.3.19": N_("IPSec Tunnel"),
             }
 
-            return [mapping.get(u.dotted_string, f"Unknown ({u.dotted_string})") for u in eku.value]
+            return [
+                mapping.get(u.dotted_string, N_("Unknown ({oid})").format(oid=u.dotted_string))
+                for u in eku.value
+            ]
         except Exception:
             return []
 
@@ -338,10 +373,12 @@ class PolicyEngine:
 
         if not self.is_ca(cert):
             if duration.days > 398:
+                is_internal = self._is_internal_domain(cert)
+                level = "INFO" if is_internal else "WARNING"
                 findings.append(PolicyFinding(
-                    level="WARNING",
+                    level=level,
                     code="LONG_VALIDITY",
-                    message=f"Certificate validity period ({duration.days} days) exceeds the 398-day limit.",
+                    message=N_("Certificate validity period ({duration_days} days) exceeds the 398-day limit."),
                     params={"duration_days": duration.days, "status_code": 1},
                     code_int=1
                 ))
@@ -354,6 +391,7 @@ class PolicyEngine:
         the Common Name (CN) must also be included within the SAN list.
         """
         findings = []
+        is_internal = self._is_internal_domain(cert)
 
         if self.is_ca(cert):
             return findings
@@ -367,21 +405,31 @@ class PolicyEngine:
 
         if ExtensionOID.SUBJECT_ALTERNATIVE_NAME in present_oids:
             san = cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
-            san_names = san.value.get_values_for_type(x509.DNSName)
+            san_dns = [name.lower() for name in san.value.get_values_for_type(x509.DNSName)]
             san_ips = [str(ip) for ip in san.value.get_values_for_type(x509.IPAddress)]
-            all_san_values = [name.lower() for name in san_names] + san_ips
+            all_san_values = san_dns + san_ips
 
             if cn_value not in all_san_values:
                 findings.append(PolicyFinding(
                     "WARNING", "RFC6125_MISMATCH",
-                    f"Common Name '{cn_value}' is missing from Subject Alternative Names (SAN).",
-                    params={"cn": cn_value, "san": all_san_values},
+                    N_("Common Name '{cn}' is missing from Subject Alternative Names (SAN)."),
+                    params={"cn": cn_value},
                     code_int=2
                 ))
+
+                for name in san_dns:
+                    if "." not in name:
+                        level = "INFO" if is_internal else "WARNING"
+                        findings.append(PolicyFinding(
+                            level, "NON_FQDN_SAN",
+                            N_("SAN contains a non-FQDN '{name}', which is disallowed for public certificates."),
+                            params={"name": name},
+                            code_int=0 if is_internal else 2
+                        ))
         else:
             findings.append(PolicyFinding(
                 "WARNING", "MISSING_SAN",
-                "Certificate lacks a SAN extension. Relying solely on CN is deprecated.",
+                N_("Certificate lacks a SAN extension. Relying solely on CN is deprecated."),
                 code_int=2
             ))
 
@@ -394,16 +442,18 @@ class PolicyEngine:
         """
         findings = []
         is_root = cert.subject == cert.issuer
+        is_internal = self._is_internal_domain(cert)
 
         if not self.is_ca(cert):
             present_oids = [ext.oid for ext in cert.extensions]
             if ExtensionOID.CRL_DISTRIBUTION_POINTS not in present_oids:
                 if not is_root:
+                    level = "INFO" if is_internal else "WARNING"
                     findings.append(PolicyFinding(
-                    "WARNING", "CRL_MISSING",
-                    "Certificate lacks CRL Distribution Points (CDP). Revocation checking may be limited.",
-                    code_int=2
-                ))
+                        level, "CRL_MISSING",
+                        N_("Certificate lacks CRL Distribution Points (CDP). Revocation checking may be limited."),
+                        code_int=0 if is_internal else 2
+                    ))
         return findings
 
     def _check_path_limit(self, cert: x509.Certificate, issuer: x509.Certificate, depth: int) -> List[PolicyFinding]:
@@ -425,8 +475,8 @@ class PolicyEngine:
             if path_len is not None and (depth - 1) > path_len:
                 findings.append(PolicyFinding(
                     "ERROR", "PATH_LEN_EXCEEDED",
-                    f"Path length constraint exceeded. Issuer allows max {path_len} intermediate(s), but found at depth {depth-1}.",
-                    params={"limit": path_len, "actual_depth": depth - 1},
+                    N_("Path length constraint exceeded. Issuer allows max {limit} intermediate(s)."),
+                    params={"limit": bc.value.path_length, "actual_depth": depth - 1},
                     code_int=4
                 ))
 

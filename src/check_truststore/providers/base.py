@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 from typing import List, Optional, Any
 from pathlib import Path
 
-from check_truststore.engine.core import Certificate, CertificateRepository
+from check_truststore.engine import Certificate, CertificateRepository
 
 
 class TrustStoreGroup:

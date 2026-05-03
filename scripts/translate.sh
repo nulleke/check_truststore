@@ -15,6 +15,7 @@ echo "Updating translations for: ${LANG_CODE}..."
 
 find "$BASE_DIR" -name "*.py" | xgettext -L Python --from-code=UTF-8 \
     --keyword=_ \
+    --keyword=N_ \
     -o "$POT_FILE" -f -
 
 mkdir -p "$PO_DIR"
