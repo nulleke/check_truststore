@@ -1,6 +1,8 @@
 # TrustStore Analyzer
+[![pipeline status](https://gitlab.com/nulleke/check_truststore/badges/main/pipeline.svg)](https://gitlab.com/nulleke/check_truststore/-/commits/main)
 [![License: LGPL v3](https://img.shields.io/badge/License-LGPLv3-blue.svg)](https://www.gnu.org/licenses/lgpl-3.0)
 [![Python: 3.6+](https://img.shields.io/badge/python-3.6+-green.svg)](https://www.python.org/)
+[![PyPI version](https://badge.fury.io/py/check-truststore.svg)](https://badge.fury.io/py/check-truststore)
 
 A tool for system administrators and security engineers to audit certificate truststores. This utility transforms flat certificate directories into logical hierarchies, making it easy to spot broken chains or expiring certificates.
 
@@ -318,7 +320,7 @@ When using `--format status`, the tool generates a deep-inspection JSON object. 
 ```json
 {
   "metadata": {
-    "version": "1.1.3",
+    "version": "1.1.5",
     "engine": "1.1.2",
     "scanDate": "2026-05-02T11:51:52Z",
     "exitCode": 0
@@ -428,7 +430,7 @@ For integration with security vulnerability dashboards, the tool exports results
       "tool": {
         "driver": {
           "name": "TrustStore Analyzer",
-          "semanticVersion": "1.1.3",
+          "semanticVersion": "1.1.5",
           "rules": [
             { "id": "TSA-002", "shortDescription": { "text": "Certificate expired" } },
             { "id": "TSA-003", "shortDescription": { "text": "Incomplete trust chain" } },
@@ -587,4 +589,4 @@ This program is free software: you can redistribute it and/or modify it under th
 This project is licensed under the **LGPL-3.0-or-later** - see the [LICENSE](LICENSE) file for details.
 
 ---
-**Status:** Version: 1.1.3 | Stable | **Logic validated for current system date:** May 2, 2026
+**Status:** Version: 1.1.5 | Stable | **Logic validated for current system date:** May 3, 2026

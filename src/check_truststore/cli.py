@@ -33,7 +33,7 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from check_truststore.engine.core import (
+from check_truststore.engine import (
     _,
     ERROR,
     WARNING,
@@ -88,163 +88,163 @@ def get_provider(input_str: str, stdin_content: Optional[str], repo: Certificate
     return SingleFileInputProvider(path, repository=repo, **kwargs)
 
 def main() -> None:
-    _("ERROR")
-    _("WARNING")
-    _("OK")
-    _("INFO")
-    _("CHAIN")
-    _("INVALID")
-    _("EXPIRED")
-    _("EXPIRING")
-    _("SYSTEM")
-    _("PARENT_NOT_A_CA")
-
-    def valid_path(path_str: str) -> Path:
-        if path_str == "-":
-            return None
-
-        path = Path(path_str)
-        if not path.exists():
-            raise argparse.ArgumentTypeError(
-                _("Path '{path}' does not exist.").format(path=path_str)
-            )
-        return path
-
-    parser = argparse.ArgumentParser(
-        description=_(
-            "Analyze certificate truststores and visualize the chain hierarchy."
-        ),
-        epilog=_("Compatible with Python 3.6+"),
-        add_help=False,
-    )
-    parser.add_argument(
-        "-h",
-        "--help",
-        action="help",
-        default=argparse.SUPPRESS,
-        help=_("Show this help message and exit"),
-    )
-    parser.add_argument(
-        "inputs", type=str, nargs="*", help=_("Path to the input source(s)")
-    )
-
-    input_group = parser.add_argument_group(_("Input & Network Configuration"))
-    input_group.add_argument(
-        "-s",
-        "--system",
-        action="store_true",
-        default=False,
-        help=_("Incorporate system truststore"),
-    )
-    input_group.add_argument(
-        "-O",
-        "--online",
-        action="store_true",
-        default=False,
-        help=_("Allow internet access for AIA discovery and revocation checks"),
-    )
-    input_group.add_argument(
-        "--no-cache",
-        action="store_true",
-        help=_("Bypass local cache and force download of AIA/CRL/OCSP data")
-    )
-    input_group.add_argument(
-        "-F", "--force",
-        action="store_true",
-        help=_("Override safety limits (max file size and certificate count)")
-    )
-
-    analysis_group = parser.add_argument_group(_("Analysis Settings"))
-    analysis_group.add_argument(
-        "-t",
-        "--threshold",
-        type=int,
-        default=30,
-        help=_("Expiration threshold in days (default: 30)"),
-    )
-    analysis_group.add_argument(
-        "--max-depth",
-        type=int,
-        default=4,
-        help=_("Maximum recursion depth for chain discovery (default: 4)"),
-    )
-
-    output_group = parser.add_argument_group(_("Output & Debugging"))
-    output_group.add_argument(
-        "-f",
-        "--format",
-        choices=["json", "text", "status", "sarif", "dot"],
-        default="json",
-        help=_("Output format"),
-    )
-    output_group.add_argument(
-        "-v", "--verbose",
-        action="count",
-        default=0,
-        dest="verbosity",
-        help=_("Increase output verbosity (e.g., -v for SANs, -vv for policy findings)")
-    )
-    output_group.add_argument(
-        "-d", "--debug",
-        action="store_true",
-        default=False,
-        help=_("Show debug info")
-    )
-
-    parser.add_argument(
-        "--mock",
-        action="store_true",
-        default=False,
-        help=argparse.SUPPRESS,
-    )
-    parser.add_argument(
-        "-o",
-        action="store_true",
-        help=argparse.SUPPRESS,
-    )
-
-    args = parser.parse_args()
-
-    if "-o" in sys.argv:
-        ERROR.log(
-            _("Parameter '-o' is unknown"),
-            _("Did you mean '-O' (uppercase) for online discovery?"),
-        )
-        sys.exit(1)
-
-    stdin_content = None
-    if "-" in args.inputs or (not args.mock and not args.inputs):
-        if not sys.stdin.isatty():
-            stdin_content = sys.stdin.read().strip()
-        elif "-" in args.inputs:
-            parser.error(_("Stdin requested via '-' but no data piped."))
-
-    repo = CertificateRepository(**vars(args))
-    analysis_groups = []
-
-    if args.mock:
-        from check_truststore.providers.mock_provider import MockProvider
-        analysis_groups.extend(MockProvider(repository=repo).get_groups())
-
-    # Main provider loop
-    effective_inputs = args.inputs if args.inputs else ["-"]
-    for input_str in effective_inputs:
-        provider = get_provider(input_str, stdin_content, repo, **vars(args))
-
-        if provider:
-            groups = provider.get_groups()
-            if groups:
-                analysis_groups.extend(groups)
-            elif args.debug:
-                WARNING.log(input_str, _("No certificates found via this provider."))
-        elif input_str != "-" or stdin_content:
-             WARNING.log(input_str, _("Could not determine provider for this input."))
-
-    if not analysis_groups:
-        WARNING.log(_("No certificates found to display."))
-        sys.exit(0)
-
     try:
+        _("ERROR")
+        _("WARNING")
+        _("OK")
+        _("INFO")
+        _("CHAIN")
+        _("INVALID")
+        _("EXPIRED")
+        _("EXPIRING")
+        _("SYSTEM")
+        _("PARENT_NOT_A_CA")
+
+        def valid_path(path_str: str) -> Path:
+            if path_str == "-":
+                return None
+
+            path = Path(path_str)
+            if not path.exists():
+                raise argparse.ArgumentTypeError(
+                    _("Path '{path}' does not exist.").format(path=path_str)
+                )
+            return path
+
+        parser = argparse.ArgumentParser(
+            description=_(
+                "Analyze certificate truststores and visualize the chain hierarchy."
+            ),
+            epilog=_("Compatible with Python 3.6+"),
+            add_help=False,
+        )
+        parser.add_argument(
+            "-h",
+            "--help",
+            action="help",
+            default=argparse.SUPPRESS,
+            help=_("Show this help message and exit"),
+        )
+        parser.add_argument(
+            "inputs", type=str, nargs="*", help=_("Path to the input source(s)")
+        )
+
+        input_group = parser.add_argument_group(_("Input & Network Configuration"))
+        input_group.add_argument(
+            "-s",
+            "--system",
+            action="store_true",
+            default=False,
+            help=_("Incorporate system truststore"),
+        )
+        input_group.add_argument(
+            "-O",
+            "--online",
+            action="store_true",
+            default=False,
+            help=_("Allow internet access for AIA discovery and revocation checks"),
+        )
+        input_group.add_argument(
+            "--no-cache",
+            action="store_true",
+            help=_("Bypass local cache and force download of AIA/CRL/OCSP data")
+        )
+        input_group.add_argument(
+            "-F", "--force",
+            action="store_true",
+            help=_("Override safety limits (max file size and certificate count)")
+        )
+
+        analysis_group = parser.add_argument_group(_("Analysis Settings"))
+        analysis_group.add_argument(
+            "-t",
+            "--threshold",
+            type=int,
+            default=30,
+            help=_("Expiration threshold in days (default: 30)"),
+        )
+        analysis_group.add_argument(
+            "--max-depth",
+            type=int,
+            default=4,
+            help=_("Maximum recursion depth for chain discovery (default: 4)"),
+        )
+
+        output_group = parser.add_argument_group(_("Output & Debugging"))
+        output_group.add_argument(
+            "-f",
+            "--format",
+            choices=["json", "text", "status", "sarif", "dot"],
+            default="json",
+            help=_("Output format"),
+        )
+        output_group.add_argument(
+            "-v", "--verbose",
+            action="count",
+            default=0,
+            dest="verbosity",
+            help=_("Increase output verbosity (e.g., -v for SANs, -vv for policy findings)")
+        )
+        output_group.add_argument(
+            "-d", "--debug",
+            action="store_true",
+            default=False,
+            help=_("Show debug info")
+        )
+
+        parser.add_argument(
+            "--mock",
+            action="store_true",
+            default=False,
+            help=argparse.SUPPRESS,
+        )
+        parser.add_argument(
+            "-o",
+            action="store_true",
+            help=argparse.SUPPRESS,
+        )
+
+        args = parser.parse_args()
+
+        if "-o" in sys.argv:
+            ERROR.log(
+                _("Parameter '-o' is unknown"),
+                _("Did you mean '-O' (uppercase) for online discovery?"),
+            )
+            sys.exit(1)
+
+        stdin_content = None
+        if "-" in args.inputs or (not args.mock and not args.inputs):
+            if not sys.stdin.isatty():
+                stdin_content = sys.stdin.read().strip()
+            elif "-" in args.inputs:
+                parser.error(_("Stdin requested via '-' but no data piped."))
+
+        repo = CertificateRepository(**vars(args))
+        analysis_groups = []
+
+        if args.mock:
+            from check_truststore.providers.mock_provider import MockProvider
+            analysis_groups.extend(MockProvider(repository=repo).get_groups())
+
+        # Main provider loop
+        effective_inputs = args.inputs if args.inputs else ["-"]
+        for input_str in effective_inputs:
+            provider = get_provider(input_str, stdin_content, repo, **vars(args))
+
+            if provider:
+                groups = provider.get_groups()
+                if groups:
+                    analysis_groups.extend(groups)
+                elif args.debug:
+                    WARNING.log(input_str, _("No certificates found via this provider."))
+            elif input_str != "-" or stdin_content:
+                WARNING.log(input_str, _("Could not determine provider for this input."))
+
+        if not analysis_groups:
+            WARNING.log(_("No certificates found to display."))
+            sys.exit(0)
+
         analyzer = TrustStoreAnalyzer(groups=analysis_groups, repository=repo, **vars(args))
         results = analyzer.analyze()
 

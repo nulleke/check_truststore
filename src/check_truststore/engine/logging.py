@@ -1,11 +1,11 @@
 """
-TrustStore Analyzer & Visualizer - LOGGING MODULE
+TrustStore Analyzer & Visualizer - LOGGING & UI
 Architect: Serge van Thillo
 SPDX-License-Identifier: LGPL-3.0-or-later
 
-This module provides high-level terminal logging with support for internationalization (i18n),
-ANSI color-coded output, and Unicode iconography. It is designed to output primarily to
-stderr to keep stdout clean for data redirection (JSON/XML).
+This module provides high-level terminal logging with i18n support,
+ANSI color-coded output, and Unicode iconography for consistent
+status reporting across the engine.
 """
 
 import sys

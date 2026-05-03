@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-02 15:15+0200\n"
+"POT-Creation-Date: 2026-05-03 15:14+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,307 +17,442 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/check_truststore/engine/core.py:74
-#: src/check_truststore/engine/core.py:141
-#, python-brace-format
-msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
-msgstr ""
-
-#: src/check_truststore/engine/core.py:87
-msgid "Skipping duplicate certificate (already loaded)"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:88
-msgid "DUPLICATE"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:104
-msgid "Invalid certificate structure"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:113
-msgid "PKCS7-container"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:125
-msgid "Legacy cryptography detected, falling back."
-msgstr ""
-
-#: src/check_truststore/engine/core.py:129
-#, python-brace-format
-msgid "Failed to parse PKCS7: {error}"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:176
-#, python-brace-format
-msgid "File too large ({size:.1f}MB). Use --force to override."
-msgstr ""
-
-#: src/check_truststore/engine/core.py:189
-#: src/check_truststore/engine/core.py:194
-msgid "READ_ERROR"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:190
-msgid "File not found"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:190
-msgid "Permission denied"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:414
-#, python-brace-format
-msgid "Broken circular chain at {ski_id}"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:415
-msgid "CYCLE_BREAKER"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:518
-msgid "SIG_ERR"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:521
-msgid "REVOKED"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:524 src/check_truststore/cli.py:96
-msgid "INVALID"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:567
-#, python-brace-format
-msgid "Missing issuer for: {name}"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:570
-msgid "UNTRUSTED"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:781
-#: src/check_truststore/engine/core.py:783
-#: src/check_truststore/renderers/text_renderer.py:89
-msgid "Unknown"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:885
-msgid "Successfully discovered issuer via AIA"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:958
-msgid "Processing Group"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:1029
-#, python-brace-format
-msgid "Used {used} out of {total} system certs"
-msgstr ""
-
-#: src/check_truststore/engine/core.py:1034
-msgid "System usage"
-msgstr ""
-
-#: src/check_truststore/engine/discovery.py:85
-#: src/check_truststore/engine/discovery.py:436
-#: src/check_truststore/engine/discovery.py:443
+#: src/check_truststore/engine/discovery.py:87
+#: src/check_truststore/engine/discovery.py:501
+#: src/check_truststore/engine/discovery.py:508
 msgid "Cache"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:85
+#: src/check_truststore/engine/discovery.py:87
 msgid "Could not create cache directory"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:112
+#: src/check_truststore/engine/discovery.py:115
 msgid "AIA_CACHE"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:112
+#: src/check_truststore/engine/discovery.py:115
 msgid "Skipping network discovery: valid issuers found in cache"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:112
-#: src/check_truststore/engine/discovery.py:355
-#: src/check_truststore/engine/discovery.py:499
+#: src/check_truststore/engine/discovery.py:115
+#: src/check_truststore/engine/discovery.py:422
+#: src/check_truststore/engine/discovery.py:564
 msgid "CACHE"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:116
-#: src/check_truststore/engine/discovery.py:184
+#: src/check_truststore/engine/discovery.py:119
+#: src/check_truststore/engine/discovery.py:207
 msgid "AIA_FETCH"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:116
+#: src/check_truststore/engine/discovery.py:119
 msgid "Bypassing cache due to --no-cache flag"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:116
-#: src/check_truststore/engine/discovery.py:361
+#: src/check_truststore/engine/discovery.py:119
 msgid "AUDIT"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:137
+#: src/check_truststore/engine/discovery.py:141
+msgid "Thread execution error"
+msgstr ""
+
+#: src/check_truststore/engine/discovery.py:142
+msgid "AIA_THREAD"
+msgstr ""
+
+#: src/check_truststore/engine/discovery.py:160
 msgid "CACHE_LOAD"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:137
+#: src/check_truststore/engine/discovery.py:160
 msgid "Failed to load cached cert"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:168
-#: src/check_truststore/engine/discovery.py:210
+#: src/check_truststore/engine/discovery.py:191
+#: src/check_truststore/engine/discovery.py:233
 msgid "AIA_PARSE"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:168
+#: src/check_truststore/engine/discovery.py:191
 msgid "Error parsing AIA extension"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:184
+#: src/check_truststore/engine/discovery.py:207
 msgid "Downloading"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:196
+#: src/check_truststore/engine/discovery.py:219
 msgid "AIA_SIZE"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:196
+#: src/check_truststore/engine/discovery.py:219
 msgid "Certificate too large"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:209
+#: src/check_truststore/engine/discovery.py:232
 #, python-brace-format
 msgid "Could not load cert from {url} (Tried DER & PEM)"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:216
+#: src/check_truststore/engine/discovery.py:239
 msgid "AIA_FAILED"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:216
+#: src/check_truststore/engine/discovery.py:239
 msgid "Connection failed"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:219
+#: src/check_truststore/engine/discovery.py:242
 msgid "AIA_ERROR"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:219
+#: src/check_truststore/engine/discovery.py:242
 msgid "Unexpected error"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:266
+#: src/check_truststore/engine/discovery.py:287
 msgid "OCSP_BUILD"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:278
+#: src/check_truststore/engine/discovery.py:307
+msgid "OCSP thread error"
+msgstr ""
+
+#: src/check_truststore/engine/discovery.py:308
+msgid "OCSP_THREAD"
+msgstr ""
+
+#: src/check_truststore/engine/discovery.py:322
 #, python-brace-format
 msgid "Checking: {url}"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:279
+#: src/check_truststore/engine/discovery.py:323
 msgid "OCSP_CHECK"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:302
+#: src/check_truststore/engine/discovery.py:349
 msgid "OCSP_FAILED"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:302
+#: src/check_truststore/engine/discovery.py:349
 msgid "OCSP request failed"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:336
+#: src/check_truststore/engine/discovery.py:381
 msgid "CRL_CHECK"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:336
+#: src/check_truststore/engine/discovery.py:381
 msgid "No CRL endpoints found in certificate"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:354
+#: src/check_truststore/engine/discovery.py:401
+msgid "CRL thread error"
+msgstr ""
+
+#: src/check_truststore/engine/discovery.py:402
+msgid "CRL_THREAD"
+msgstr ""
+
+#: src/check_truststore/engine/discovery.py:421
 msgid "Using cached CRL for"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:355
-#: src/check_truststore/engine/discovery.py:358
-#: src/check_truststore/engine/discovery.py:361
-#: src/check_truststore/engine/discovery.py:394
+#: src/check_truststore/engine/discovery.py:422
+#: src/check_truststore/engine/discovery.py:476
 msgid "CRL_CACHE"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:358
-msgid "Cached CRL is stale (nextUpdate passed)"
-msgstr ""
-
-#: src/check_truststore/engine/discovery.py:358
-msgid "EXPIRE"
-msgstr ""
-
-#: src/check_truststore/engine/discovery.py:361
-msgid "Bypassing cached CRL due to --no-cache flag"
-msgstr ""
-
-#: src/check_truststore/engine/discovery.py:367
-msgid "DEBUG_CRL"
-msgstr ""
-
-#: src/check_truststore/engine/discovery.py:367
-msgid "Skip download (already done in this run)"
-msgstr ""
-
-#: src/check_truststore/engine/discovery.py:372
+#: src/check_truststore/engine/discovery.py:433
 msgid "CRL_FETCH"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:372
+#: src/check_truststore/engine/discovery.py:433
 msgid "Downloading CRL"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:400
+#: src/check_truststore/engine/discovery.py:448
 #, python-brace-format
 msgid "Serial {serial_number} is REVOKED"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:401
+#: src/check_truststore/engine/discovery.py:449
 msgid "CRL_RESULT"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:409
+#: src/check_truststore/engine/discovery.py:457
 msgid "CRL_FAILED"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:409
+#: src/check_truststore/engine/discovery.py:457
 msgid "Failed to check CRL"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:427
+#: src/check_truststore/engine/discovery.py:476
+msgid "Could not save CRL to cache"
+msgstr ""
+
+#: src/check_truststore/engine/discovery.py:492
 msgid "AKI"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:427
+#: src/check_truststore/engine/discovery.py:492
 msgid "Cache expired based on TTL, refreshing..."
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:436
+#: src/check_truststore/engine/discovery.py:501
 msgid "Cached certificate expired on"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:443
+#: src/check_truststore/engine/discovery.py:508
 msgid "Error reading cache"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:473
+#: src/check_truststore/engine/discovery.py:538
 msgid "DNS"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:473
+#: src/check_truststore/engine/discovery.py:538
 msgid "Could not resolve host"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:499
+#: src/check_truststore/engine/discovery.py:564
 msgid "Could not save certificate to cache"
+msgstr ""
+
+#: src/check_truststore/engine/orchestrator.py:51
+msgid "Processing Group"
+msgstr ""
+
+#: src/check_truststore/engine/orchestrator.py:122
+#, python-brace-format
+msgid "Used {used} out of {total} system certs"
+msgstr ""
+
+#: src/check_truststore/engine/orchestrator.py:127
+msgid "System usage"
+msgstr ""
+
+#: src/check_truststore/engine/repository.py:63
+#: src/check_truststore/engine/repository.py:130
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
+msgstr ""
+
+#: src/check_truststore/engine/repository.py:76
+msgid "Skipping duplicate certificate (already loaded)"
+msgstr ""
+
+#: src/check_truststore/engine/repository.py:77
+msgid "DUPLICATE"
+msgstr ""
+
+#: src/check_truststore/engine/repository.py:93
+msgid "Invalid certificate structure"
+msgstr ""
+
+#: src/check_truststore/engine/repository.py:102
+msgid "PKCS7-container"
+msgstr ""
+
+#: src/check_truststore/engine/repository.py:114
+msgid "Legacy cryptography detected, falling back."
+msgstr ""
+
+#: src/check_truststore/engine/repository.py:118
+#, python-brace-format
+msgid "Failed to parse PKCS7: {error}"
+msgstr ""
+
+#: src/check_truststore/engine/repository.py:165
+#, python-brace-format
+msgid "File too large ({size:.1f}MB). Use --force to override."
+msgstr ""
+
+#: src/check_truststore/engine/repository.py:178
+#: src/check_truststore/engine/repository.py:183
+msgid "READ_ERROR"
+msgstr ""
+
+#: src/check_truststore/engine/repository.py:179
+msgid "File not found"
+msgstr ""
+
+#: src/check_truststore/engine/repository.py:179
+msgid "Permission denied"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:164
+#, python-brace-format
+msgid "Broken circular chain at {ski_id}"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:165
+msgid "CYCLE_BREAKER"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:268
+msgid "SIG_ERR"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:271
+msgid "REVOKED"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:274 src/check_truststore/cli.py:97
+msgid "INVALID"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:317
+#, python-brace-format
+msgid "Missing issuer for: {name}"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:320
+msgid "UNTRUSTED"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:531
+#: src/check_truststore/engine/builder.py:533
+#: src/check_truststore/renderers/text_renderer.py:89
+msgid "Unknown"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:621
+#, python-brace-format
+msgid "AIA: {name}"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:622
+msgid "Successfully discovered issuer via AIA"
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:96
+msgid "The cryptographic signature is invalid or could not be verified."
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:105
+#, python-brace-format
+msgid "Issuer '{issuer}' is not a CA or lacks keyCertSign usage."
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:117
+msgid ""
+"The certificate issuer could not be found in the truststore, making this "
+"chain untrusted."
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:236
+#, python-brace-format
+msgid ""
+"RSA key size ({bits} bits) is below the minimum required {min_bits} bits."
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:244
+#, python-brace-format
+msgid ""
+"ECC key size ({bits} bits) is below the minimum required {min_bits} bits."
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:259
+msgid "Certificate uses SHA-1 signature algorithm which is no longer trusted."
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:279
+msgid "End-entity certificate lacks Extended Key Usage extension."
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:292
+msgid ""
+"Certificate contains 'Any Extended Key Usage', which is overly permissive."
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:301
+msgid ""
+"Certificate allows both Server Auth and Code Signing. Functional separation "
+"is recommended."
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:318
+msgid "Could not parse Extended Key Usage extension data."
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:336
+msgid "Server Authentication"
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:337
+msgid "Client Authentication"
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:338
+msgid "Code Signing"
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:339
+msgid "Email Protection"
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:340
+msgid "Time Stamping"
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:341
+msgid "OCSP Signing"
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:342
+msgid "IPSec User"
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:343
+msgid "IPSec Intermediate"
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:344
+msgid "IPSec Tunnel"
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:348
+#, python-brace-format
+msgid "Unknown ({oid})"
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:381
+#, python-brace-format
+msgid ""
+"Certificate validity period ({duration_days} days) exceeds the 398-day limit."
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:415
+#, python-brace-format
+msgid "Common Name '{cn}' is missing from Subject Alternative Names (SAN)."
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:425
+#, python-brace-format
+msgid ""
+"SAN contains a non-FQDN '{name}', which is disallowed for public "
+"certificates."
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:432
+msgid "Certificate lacks a SAN extension. Relying solely on CN is deprecated."
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:454
+msgid ""
+"Certificate lacks CRL Distribution Points (CDP). Revocation checking may be "
+"limited."
+msgstr ""
+
+#: src/check_truststore/engine/policy.py:478
+#, python-brace-format
+msgid ""
+"Path length constraint exceeded. Issuer allows max {limit} intermediate(s)."
 msgstr ""
 
 #: src/check_truststore/providers/json_provider.py:73
@@ -325,46 +460,40 @@ msgid "Unknown JSON format or malformed structure."
 msgstr ""
 
 #: src/check_truststore/providers/json_provider.py:87
-#: src/check_truststore/providers/yaml_provider.py:85
+#: src/check_truststore/providers/yaml_provider.py:80
 msgid "Unnamed Store"
 msgstr ""
 
-#: src/check_truststore/providers/yaml_provider.py:19
-msgid ""
-"Package 'pyyaml' is required for YAML support. Install it with 'pip install "
-"pyyaml'."
-msgstr ""
-
-#: src/check_truststore/providers/yaml_provider.py:65
+#: src/check_truststore/providers/yaml_provider.py:60
 msgid "YAML Parse Error"
 msgstr ""
 
-#: src/check_truststore/providers/yaml_provider.py:116
+#: src/check_truststore/providers/yaml_provider.py:111
 msgid "Failed to extract valid certificates from file."
 msgstr ""
 
-#: src/check_truststore/providers/yaml_provider.py:116
+#: src/check_truststore/providers/yaml_provider.py:111
 msgid "LOAD_ERR"
 msgstr ""
 
-#: src/check_truststore/providers/yaml_provider.py:118
+#: src/check_truststore/providers/yaml_provider.py:113
 msgid "Certificate not found in {}"
 msgstr ""
 
-#: src/check_truststore/providers/yaml_provider.py:118
+#: src/check_truststore/providers/yaml_provider.py:113
 msgid "MISSING"
 msgstr ""
 
-#: src/check_truststore/providers/yaml_provider.py:122
+#: src/check_truststore/providers/yaml_provider.py:117
 #, python-brace-format
 msgid "Loaded group with {count} certificates."
 msgstr ""
 
-#: src/check_truststore/providers/yaml_provider.py:125
+#: src/check_truststore/providers/yaml_provider.py:120
 msgid "Group contains no valid certificates."
 msgstr ""
 
-#: src/check_truststore/providers/yaml_provider.py:125
+#: src/check_truststore/providers/yaml_provider.py:120
 msgid "EMPTY_GROUP"
 msgstr ""
 
@@ -405,141 +534,141 @@ msgstr ""
 msgid "CIRCULAR REFERENCE"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:151
+#: src/check_truststore/renderers/text_renderer.py:153
 msgid "Usage"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:162
 #: src/check_truststore/renderers/text_renderer.py:164
+#: src/check_truststore/renderers/text_renderer.py:166
 msgid "ALT"
 msgstr ""
 
-#: src/check_truststore/cli.py:91
+#: src/check_truststore/cli.py:92
 msgid "ERROR"
 msgstr ""
 
-#: src/check_truststore/cli.py:92
+#: src/check_truststore/cli.py:93
 msgid "WARNING"
 msgstr ""
 
-#: src/check_truststore/cli.py:93
+#: src/check_truststore/cli.py:94
 msgid "OK"
 msgstr ""
 
-#: src/check_truststore/cli.py:94
+#: src/check_truststore/cli.py:95
 msgid "INFO"
 msgstr ""
 
-#: src/check_truststore/cli.py:95
+#: src/check_truststore/cli.py:96
 msgid "CHAIN"
 msgstr ""
 
-#: src/check_truststore/cli.py:97
+#: src/check_truststore/cli.py:98
 msgid "EXPIRED"
 msgstr ""
 
-#: src/check_truststore/cli.py:98
+#: src/check_truststore/cli.py:99
 msgid "EXPIRING"
 msgstr ""
 
-#: src/check_truststore/cli.py:99
+#: src/check_truststore/cli.py:100
 msgid "SYSTEM"
 msgstr ""
 
-#: src/check_truststore/cli.py:100
+#: src/check_truststore/cli.py:101
 msgid "PARENT_NOT_A_CA"
 msgstr ""
 
-#: src/check_truststore/cli.py:109
+#: src/check_truststore/cli.py:110
 #, python-brace-format
 msgid "Path '{path}' does not exist."
 msgstr ""
 
-#: src/check_truststore/cli.py:115
+#: src/check_truststore/cli.py:116
 msgid "Analyze certificate truststores and visualize the chain hierarchy."
 msgstr ""
 
-#: src/check_truststore/cli.py:117
+#: src/check_truststore/cli.py:118
 msgid "Compatible with Python 3.6+"
 msgstr ""
 
-#: src/check_truststore/cli.py:125
+#: src/check_truststore/cli.py:126
 msgid "Show this help message and exit"
 msgstr ""
 
-#: src/check_truststore/cli.py:128
+#: src/check_truststore/cli.py:129
 msgid "Path to the input source(s)"
 msgstr ""
 
-#: src/check_truststore/cli.py:131
+#: src/check_truststore/cli.py:132
 msgid "Input & Network Configuration"
 msgstr ""
 
-#: src/check_truststore/cli.py:137
+#: src/check_truststore/cli.py:138
 msgid "Incorporate system truststore"
 msgstr ""
 
-#: src/check_truststore/cli.py:144
+#: src/check_truststore/cli.py:145
 msgid "Allow internet access for AIA discovery and revocation checks"
 msgstr ""
 
-#: src/check_truststore/cli.py:149
+#: src/check_truststore/cli.py:150
 msgid "Bypass local cache and force download of AIA/CRL/OCSP data"
 msgstr ""
 
-#: src/check_truststore/cli.py:154
+#: src/check_truststore/cli.py:155
 msgid "Override safety limits (max file size and certificate count)"
 msgstr ""
 
-#: src/check_truststore/cli.py:157
+#: src/check_truststore/cli.py:158
 msgid "Analysis Settings"
 msgstr ""
 
-#: src/check_truststore/cli.py:163
+#: src/check_truststore/cli.py:164
 msgid "Expiration threshold in days (default: 30)"
 msgstr ""
 
-#: src/check_truststore/cli.py:169
+#: src/check_truststore/cli.py:170
 msgid "Maximum recursion depth for chain discovery (default: 4)"
 msgstr ""
 
-#: src/check_truststore/cli.py:172
+#: src/check_truststore/cli.py:173
 msgid "Output & Debugging"
 msgstr ""
 
-#: src/check_truststore/cli.py:178
+#: src/check_truststore/cli.py:179
 msgid "Output format"
 msgstr ""
 
-#: src/check_truststore/cli.py:185
+#: src/check_truststore/cli.py:186
 msgid "Increase output verbosity (e.g., -v for SANs, -vv for policy findings)"
 msgstr ""
 
-#: src/check_truststore/cli.py:191
+#: src/check_truststore/cli.py:192
 msgid "Show debug info"
 msgstr ""
 
-#: src/check_truststore/cli.py:210
+#: src/check_truststore/cli.py:211
 msgid "Parameter '-o' is unknown"
 msgstr ""
 
-#: src/check_truststore/cli.py:211
+#: src/check_truststore/cli.py:212
 msgid "Did you mean '-O' (uppercase) for online discovery?"
 msgstr ""
 
-#: src/check_truststore/cli.py:220
+#: src/check_truststore/cli.py:221
 msgid "Stdin requested via '-' but no data piped."
 msgstr ""
 
-#: src/check_truststore/cli.py:239
+#: src/check_truststore/cli.py:240
 msgid "No certificates found via this provider."
 msgstr ""
 
-#: src/check_truststore/cli.py:241
+#: src/check_truststore/cli.py:242
 msgid "Could not determine provider for this input."
 msgstr ""
 
-#: src/check_truststore/cli.py:244
+#: src/check_truststore/cli.py:245
 msgid "No certificates found to display."
 msgstr ""
 

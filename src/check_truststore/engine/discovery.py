@@ -14,6 +14,7 @@ import time
 import socket
 import hashlib
 import requests
+import concurrent.futures
 from pathlib import Path
 from datetime import datetime, timezone
 from urllib.parse import urlparse
@@ -61,6 +62,7 @@ class NetworkResolver:
         self.debug: bool = kwargs.get('debug', False)
         self.processed_urls: Set[str] = set()
         self.no_cache: bool = kwargs.get('no_cache', False)
+        self.max_workers = kwargs.get('max_workers', 5)
 
         self.headers = {
             'User-Agent': (
@@ -105,6 +107,7 @@ class NetworkResolver:
                         if cert and self._get_fp(cert) not in seen_fingerprints:
                             issuers.append(cert)
                             seen_fingerprints.add(self._get_fp(cert))
+            pass
 
         if self.online:
             if issuers and not self.no_cache:
@@ -116,16 +119,36 @@ class NetworkResolver:
                 INFO.log(_("AIA_FETCH"), _("Bypassing cache due to --no-cache flag"), label=_("AUDIT"))
 
             urls = self.find_aia_urls(child_cert)
-            for url in urls:
-                new_cert = self.fetch_issuer(url)
+            if not urls:
+                return issuers
+
+            if len(urls) == 1:
+                new_cert = self.fetch_issuer(urls[0])
                 if new_cert:
-                    fp = self._get_fp(new_cert)
-                    if fp not in seen_fingerprints:
-                        issuers.append(new_cert)
-                        seen_fingerprints.add(fp)
-                        self._save_to_aia_cache(aki, new_cert)
+                    self._process_new_issuer(aki, new_cert, issuers, seen_fingerprints)
+
+            else:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                    future_to_url = {executor.submit(self.fetch_issuer, url): url for url in urls}
+
+                    for future in concurrent.futures.as_completed(future_to_url):
+                        try:
+                            new_cert = future.result()
+                            if new_cert:
+                                self._process_new_issuer(aki, new_cert, issuers, seen_fingerprints)
+                        except Exception as e:
+                            if self.debug:
+                                msg = f"{_('Thread execution error')}: {e}"
+                                ERROR.log(_("AIA_THREAD"), msg)
 
         return issuers
+
+    def _process_new_issuer(self, aki: str, cert: x509.Certificate, issuers: list, seen: set):
+        fp = self._get_fp(cert)
+        if fp not in seen:
+            issuers.append(cert)
+            seen.add(fp)
+            self._save_to_aia_cache(aki, cert)
 
     def _load_cert_file(self, path: Path) -> Optional[x509.Certificate]:
         """Helper to load a DER certificate from disk."""
@@ -236,10 +259,8 @@ class NetworkResolver:
 
     def check_ocsp_status(self, cert: x509.Certificate, issuer: x509.Certificate) -> str:
         """
-        Queries OCSP responders for certificate status.
-
-        Returns:
-            One of ['GOOD', 'REVOKED', 'UNKNOWN', 'ERROR'].
+        Queries OCSP responders in parallel for certificate status.
+        Returns: One of ['GOOD', 'REVOKED', 'UNKNOWN', 'ERROR'].
         """
         if cert.subject == cert.issuer:
             return "GOOD"
@@ -248,60 +269,86 @@ class NetworkResolver:
             return "UNKNOWN"
 
         urls = self.find_ocsp_urls(cert)
-        if urls:
-            try:
-                # Build OCSP Request
-                builder = ocsp.OCSPRequestBuilder()
-                builder = builder.add_certificate(cert, issuer, hashes.SHA1())
-                if OCSPNonce:
-                    nonce = os.urandom(16)
-                    try:
-                        builder = builder.add_extension(OCSPNonce(nonce), critical=False)
-                    except Exception:
-                        pass
+        if not urls:
+            return self.check_crl_status(cert)
 
-                request_der = builder.build().public_bytes(serialization.Encoding.DER)
-            except Exception as e:
-                if self.debug:
-                    ERROR.log(_("OCSP_BUILD"), str(e))
-                return "ERROR"
+        try:
+            builder = ocsp.OCSPRequestBuilder()
+            builder = builder.add_certificate(cert, issuer, hashes.SHA1())
+            if OCSPNonce:
+                nonce = os.urandom(16)
+                try:
+                    builder = builder.add_extension(OCSPNonce(nonce), critical=False)
+                except Exception:
+                    pass
+            request_der = builder.build().public_bytes(serialization.Encoding.DER)
+        except Exception as e:
+            if self.debug:
+                ERROR.log(_("OCSP_BUILD"), str(e))
+            return "ERROR"
+
+        final_status = "UNKNOWN"
+
+        if len(urls) == 1:
+            final_status = self._fetch_single_ocsp(urls[0], request_der)
+        else:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                future_to_url = {executor.submit(self._fetch_single_ocsp, url, request_der): url for url in urls}
+
+                for future in concurrent.futures.as_completed(future_to_url):
+                    try:
+                        status = future.result()
+                        if status == "REVOKED":
+                            return "REVOKED"
+                        if status == "GOOD":
+                            final_status = "GOOD"
+                    except Exception as e:
+                        if self.debug:
+                            msg = f"{_('OCSP thread error')}: {e}"
+                            WARNING.log(_("OCSP_THREAD"), msg)
+
+        if final_status == "GOOD":
+            return "GOOD"
+
+        return self.check_crl_status(cert)
+
+    def _fetch_single_ocsp(self, url: str, request_der: bytes) -> str:
+        """Helper method for a single OCSP call within a thread."""
+        if not self._can_resolve(url):
+            return "ERROR"
+
+        try:
+            if self.debug:
+                msg = _("Checking: {url}").format(url=url)
+                INFO.log(_("OCSP_CHECK"), msg)
 
             ocsp_headers = self.headers.copy()
             ocsp_headers['Content-Type'] = 'application/ocsp-request'
 
-            for url in urls:
-                if not self._can_resolve(url):
-                    continue
+            response = requests.post(
+                url,
+                data=request_der,
+                headers=ocsp_headers,
+                timeout=(1.0, self.timeout)
+            )
+            response.raise_for_status()
 
-                try:
-                    if self.debug:
-                        msg = _("Checking: {url}").format(url=url)
-                        INFO.log(_("OCSP_CHECK"), msg)
+            ocsp_resp = ocsp.load_der_ocsp_response(response.content)
 
-                    response = requests.post(
-                        url,
-                        data=request_der,
-                        headers=ocsp_headers,
-                        timeout=(1.0, self.timeout)
-                    )
-                    response.raise_for_status()
+            if ocsp_resp.response_status != ocsp.OCSPResponseStatus.SUCCESSFUL:
+                return "ERROR"
 
-                    ocsp_resp = ocsp.load_der_ocsp_response(response.content)
+            cert_status = ocsp_resp.certificate_status
+            if cert_status == ocsp.OCSPCertStatus.GOOD:
+                return "GOOD"
+            elif cert_status == ocsp.OCSPCertStatus.REVOKED:
+                return "REVOKED"
 
-                    if ocsp_resp.response_status != ocsp.OCSPResponseStatus.SUCCESSFUL:
-                        continue
+        except Exception as e:
+            if self.debug:
+                WARNING.log(_("OCSP_FAILED"), f"{_('OCSP request failed')} {url}: {e}")
 
-                    cert_status = ocsp_resp.certificate_status
-                    if cert_status == ocsp.OCSPCertStatus.GOOD:
-                        return "GOOD"
-                    elif cert_status == ocsp.OCSPCertStatus.REVOKED:
-                        return "REVOKED"
-
-                except Exception as e:
-                    if self.debug:
-                        WARNING.log(_("OCSP_FAILED"), f"{_('OCSP request failed')} {url}: {e}")
-
-        return self.check_crl_status(cert)
+        return "ERROR"
 
     def find_crl_urls(self, cert: x509.Certificate) -> List[str]:
         """Parses CRL Distribution Points (CDP) from certificate extensions."""
@@ -319,10 +366,8 @@ class NetworkResolver:
 
     def check_crl_status(self, cert: x509.Certificate) -> str:
         """
-        Validates certificate status against CRLs. Uses local caching to speed up
-        validation for certificates sharing the same distribution point.
-
-        Note: Warnings for missing CRL endpoints are suppressed for Root certificates.
+        Validates certificate status against CRLs in parallel.
+        Returns: One of ['GOOD', 'REVOKED', 'UNKNOWN', 'ERROR'].
         """
         # A Root certificate is self-signed; revocation is handled by trust store management, not CRLs.
         is_root = (cert.subject == cert.issuer)
@@ -336,79 +381,99 @@ class NetworkResolver:
                 WARNING.log(_("CRL_CHECK"), _("No CRL endpoints found in certificate"))
             return "UNKNOWN"
 
-        for url in urls:
-            try:
-                url_hash = hashlib.md5(url.encode()).hexdigest()
-                cache_path = self.ocsp_cache / f"crl_{url_hash}.der"
-                crl_data: Optional[x509.CertificateRevocationList] = None
+        final_status = "UNKNOWN"
 
-                # Check if cached CRL exists and is within TTL
-                if not self.no_cache:
-                    if self._is_cache_fresh(cache_path, self.ocsp_cache_ttl_hours):
-                        with open(cache_path, "rb") as f:
-                            temp_crl = x509.load_der_x509_crl(f.read(), default_backend())
-                            next_upd = self._get_next_update(temp_crl)
+        if len(urls) == 1:
+            final_status = self._process_single_crl(urls[0], cert)
+        else:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                future_to_url = {executor.submit(self._process_single_crl, url, cert): url for url in urls}
 
-                            if next_upd > datetime.now(timezone.utc):
-                                if self.debug:
-                                    msg = _("Using cached CRL for")
-                                    INFO.log(_("CRL_CACHE"), f"{msg}: {urlparse(url).hostname}", label=_("CACHE"))
-                                crl_data = temp_crl
-                            elif self.debug:
-                                INFO.log(_("CRL_CACHE"), _("Cached CRL is stale (nextUpdate passed)"), label=_("EXPIRE"))
-                elif self.debug:
-                    # Log dat we de cache bewust negeren voor de audit
-                    INFO.log(_("CRL_CACHE"), _("Bypassing cached CRL due to --no-cache flag"), label=_("AUDIT"))
-
-                # Fetch CRL if not in cache or expired
-                if crl_data is None:
-                    if url in self.processed_urls:
-                        if self.debug:
-                            INFO.log(_("DEBUG_CRL"), f"{_('Skip download (already done in this run)')}: {url}")
-                        return "UNKNOWN"
-                    if not self.online:
-                        continue
-                    if self.debug:
-                        INFO.log(_("CRL_FETCH"), f"{_('Downloading CRL')}: {url}")
-
-                    response = requests.get(
-                        url,
-                        headers=self.headers,
-                        timeout=(1.5, max(self.timeout, 5.0))
-                    )
-                    response.raise_for_status()
-
-                    crl_data = x509.load_der_x509_crl(response.content, default_backend())
-
+                for future in concurrent.futures.as_completed(future_to_url):
                     try:
-                        self.ocsp_cache.mkdir(parents=True, exist_ok=True)
-                        with tempfile.NamedTemporaryFile(dir=self.ocsp_cache, delete=False, suffix=".tmp") as tmp_file:
-                            tmp_file.write(response.content)
-                            temp_path = tmp_file.name
-
-                        os.replace(temp_path, cache_path)
+                        status = future.result()
+                        if status == "REVOKED":
+                            return "REVOKED"
+                        if status == "GOOD":
+                            final_status = "GOOD"
                     except Exception as e:
-                        if 'temp_path' in locals() and os.path.exists(temp_path):
-                            os.unlink(temp_path)
                         if self.debug:
-                            WARNING.log(_("CRL_CACHE"), f"Could not save CRL to cache: {e}")
+                            msg = f"{_('CRL thread error')}: {e}"
+                            WARNING.log(_("CRL_THREAD"), msg)
 
-                # Check for serial number in CRL
-                revoked = crl_data.get_revoked_certificate_by_serial_number(cert.serial_number)
-                if revoked:
-                    if self.debug:
-                        msg = _("Serial {serial_number} is REVOKED").format(serial_number=cert.serial_number)
-                        WARNING.log(_("CRL_RESULT"), msg)
-                    return "REVOKED"
+        return final_status
 
-                self.processed_urls.add(url)
-                return "GOOD"
+    def _process_single_crl(self, url: str, cert: x509.Certificate) -> str:
+        """Helper method to download, cache, and inspect a single CRL."""
+        try:
+            url_hash = hashlib.md5(url.encode()).hexdigest()
+            cache_path = self.ocsp_cache / f"crl_{url_hash}.der"
+            crl_data: Optional[x509.CertificateRevocationList] = None
 
-            except Exception as e:
+            if not self.no_cache:
+                if self._is_cache_fresh(cache_path, self.ocsp_cache_ttl_hours):
+                    with open(cache_path, "rb") as f:
+                        temp_crl = x509.load_der_x509_crl(f.read(), default_backend())
+                        next_upd = self._get_next_update(temp_crl)
+
+                        if next_upd > datetime.now(timezone.utc):
+                            if self.debug:
+                                msg = _("Using cached CRL for")
+                                INFO.log(_("CRL_CACHE"), f"{msg}: {urlparse(url).hostname}", label=_("CACHE"))
+                            crl_data = temp_crl
+
+            if crl_data is None:
+                if not self.online or url in self.processed_urls:
+                    return "UNKNOWN"
+
+                if not self._can_resolve(url):
+                    return "ERROR"
+
                 if self.debug:
-                    WARNING.log(_("CRL_FAILED"), f"{_('Failed to check CRL')} {url}: {e}")
+                    INFO.log(_("CRL_FETCH"), f"{_('Downloading CRL')}: {url}")
 
-        return "UNKNOWN"
+                response = requests.get(
+                    url,
+                    headers=self.headers,
+                    timeout=(1.5, max(self.timeout, 5.0))
+                )
+                response.raise_for_status()
+                crl_data = x509.load_der_x509_crl(response.content, default_backend())
+
+                self._save_crl_to_cache(cache_path, response.content)
+
+            revoked = crl_data.get_revoked_certificate_by_serial_number(cert.serial_number)
+            if revoked:
+                if self.debug:
+                    msg = _("Serial {serial_number} is REVOKED").format(serial_number=cert.serial_number)
+                    WARNING.log(_("CRL_RESULT"), msg)
+                return "REVOKED"
+
+            self.processed_urls.add(url)
+            return "GOOD"
+
+        except Exception as e:
+            if self.debug:
+                WARNING.log(_("CRL_FAILED"), f"{_('Failed to check CRL')} {url}: {e}")
+
+        return "ERROR"
+
+    def _save_crl_to_cache(self, cache_path: Path, content: bytes) -> None:
+        """
+        Saves CRL data to the local cache using an atomic write operation.
+
+        This prevents race conditions where one thread might attempt to read
+         a partially written file created by another thread.
+        """
+        try:
+            self.ocsp_cache.mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile(dir=self.ocsp_cache, delete=False, suffix=".tmp") as tmp_file:
+                tmp_file.write(content)
+                temp_path = tmp_file.name
+            os.replace(temp_path, cache_path)
+        except Exception as e:
+            if self.debug:
+                WARNING.log(_("CRL_CACHE"), f"{_('Could not save CRL to cache')}: {e}")
 
     def _is_cache_fresh(self, cache_path: Path, ttl_hours: float) -> bool:
         """Checks if a cache file is newer than the allowed TTL in hours."""

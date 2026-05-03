@@ -10,7 +10,7 @@ import json
 from pathlib import Path
 from typing import List, Optional, Union, Dict
 from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
-from check_truststore.engine.core import CertificateRepository, _, WARNING
+from check_truststore.engine import CertificateRepository, _, WARNING
 
 class JsonInputProvider(BaseInputProvider):
     """

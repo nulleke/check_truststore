@@ -10,7 +10,6 @@ from typing import Any, Dict, List
 from .base import BaseRenderer
 from check_truststore import __version__ as tool_version
 
-
 class SarifRenderer(BaseRenderer):
     """
     Renders audit results in the industry-standard SARIF format.
@@ -73,11 +72,20 @@ class SarifRenderer(BaseRenderer):
         file_path = getattr(cert, "file_name", "unknown_location")
         common_name = getattr(cert, "common_name", "Unknown")
 
+        params = audit.get("params", {}).copy()
+        if "{issuer}" in audit['message'] and "issuer" not in params:
+            parent = getattr(cert, "parent", None)
+            params["issuer"] = getattr(parent, "common_name", "Unknown Issuer") if parent else "Unknown Issuer"
+        try:
+            message_text = audit['message'].format(**params)
+        except (KeyError, ValueError):
+            message_text = audit['message']
+
         return {
             "ruleId": rule_id,
             "level": self._map_level(audit["label"]),
             "message": {
-                "text": f"Certificate '{common_name}' failed validation: {audit['message']}"
+                "text": f"Certificate '{cert.common_name}' failed validation: {message_text}"
             },
             "locations": [
                 {

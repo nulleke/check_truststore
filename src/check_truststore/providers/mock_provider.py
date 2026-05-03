@@ -15,7 +15,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.backends import default_backend
 
 from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
-from check_truststore.engine.core import CertificateRepository
+from check_truststore.engine import CertificateRepository
 
 class MockProvider(BaseInputProvider):
     """

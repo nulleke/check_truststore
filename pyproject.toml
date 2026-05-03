@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "check_truststore"
-version = "1.1.4"
+version = "1.1.5"
 description = "Lightweight certificate trust chain analyzer"
 readme = "README.md"
 requires-python = ">=3.6"
@@ -22,7 +22,6 @@ dependencies = [
 pydantic = [
     "pydantic>=2.0.0; python_version >= '3.8'"
 ]
-# 'all' combineert nu de bovenstaande twee groepen
 all = [
     "check_truststore[pydantic]",
 ]
@@ -38,3 +37,9 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 check_truststore = ["locale/**/*.mo", "locale/**/*.po"]
+
+[project.urls]
+"Homepage" = "https://gitlab.com/nulleke/check_truststore/"
+"Source" = "https://gitlab.com/nulleke/check_truststore/"
+"Issue Tracker" = "https://gitlab.com/nulleke/check_truststore/-/issues"
+"Documentation" = "https://gitlab.com/nulleke/check_truststore/-/blob/main/README.md"

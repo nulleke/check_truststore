@@ -8,7 +8,7 @@ import json
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Union
 
-from check_truststore.engine.core import ORPHAN_NODE_ID
+from check_truststore.engine import ORPHAN_NODE_ID
 from .base import BaseRenderer, DateTimeEncoder
 from check_truststore import __version__ as tool_version
 

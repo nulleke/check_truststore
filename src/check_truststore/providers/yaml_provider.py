@@ -11,7 +11,7 @@ import yaml
 from pathlib import Path
 from typing import List, Optional, Union, Dict
 from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
-from check_truststore.engine.core import _, ERROR, WARNING, INFO, CertificateRepository
+from check_truststore.engine import _, ERROR, WARNING, INFO, CertificateRepository
 
 class YamlInputProvider(BaseInputProvider):
     """
