@@ -92,30 +92,24 @@ class YamlInputProvider(BaseInputProvider):
                 else:
                     source_dir = raw_src_path.resolve()
 
-            group_certs = []
+            group_targets = []
             for link in store.get("cert_chain", []):
                 cert_name = link.get("link")
                 if not cert_name:
                     continue
 
-                # Auto-append extension if missing
                 filename = cert_name if "." in cert_name else f"{cert_name}{default_ext}"
                 p = source_dir / filename
 
                 if p.is_file():
-                    # Centralized loading ensures PEM/PKCS7/DER support and deduplication
-                    certs = self.repository.load_from_files([p])
-                    if certs:
-                        group_certs.extend(certs)
-                    elif self.debug:
-                        ERROR.log(filename, _("Failed to extract valid certificates from file."), label=_("LOAD_ERR"))
+                    group_targets.append(p)
                 elif self.debug:
                     WARNING.log(filename, _("Certificate not found in {}").format(source_dir), label=_("MISSING"))
 
-            if group_certs:
+            if group_targets:
                 if self.debug:
-                    INFO.log(store_name, _("Loaded group with {count} certificates.").format(count=len(group_certs)))
-                groups.append(TrustStoreGroup(name=store_name, targets=group_certs))
+                    INFO.log(store_name, _("Loaded group configuration with {count} files.").format(count=len(group_targets)))
+                groups.append(TrustStoreGroup(name=store_name, targets=group_targets))
             else:
                 WARNING.log(store_name, _("Group contains no valid certificates."), label=_("EMPTY_GROUP"))
 

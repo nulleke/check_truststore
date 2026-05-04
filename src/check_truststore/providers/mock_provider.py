@@ -3,11 +3,15 @@ TrustStore Analyzer - Mock Provider
 Generates in-memory certificates for testing all edge cases without physical files.
 Architect: Serge van Thillo
 SPDX-License-Identifier: LGPL-3.0-or-later
+
+This provider generates mock X.509 data for testing purposes. It returns
+metadata dictionaries to the orchestrator to ensure registration happens
+after the repository cache reset.
 """
 
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from cryptography import x509
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes, serialization
@@ -26,7 +30,7 @@ class MockProvider(BaseInputProvider):
         keys (Dict[str, rsa.RSAPrivateKey]): Cache of generated keys to maintain
             consistency between issuers and subjects.
     """
-    def __init__(self, repository: Optional[CertificateRepository] = None, **kwargs) -> None:
+    def __init__(self, repository: Optional[CertificateRepository] = None, **kwargs: Any) -> None:
         """
         Initializes the mock provider.
 
@@ -126,27 +130,30 @@ class MockProvider(BaseInputProvider):
 
     def get_groups(self) -> List[TrustStoreGroup]:
         """
-        Generates the mock test suite and registers it with the repository.
+        Generates the mock test suite.
 
-        Returns:
-            A list containing a 'Mock Test Suite' group with all generated certificates.
+        Returns certificate data as dictionaries so the Orchestrator can handle
+        the registration after the cache reset.
         """
         certs = self._generate_test_suite()
-        pool = []
+        pool: List[Dict[str, Any]] = []
 
         for cert in certs:
-            # Extract common name for the virtual mock path
             cn_attributes = cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
             cn = cn_attributes[0].value if cn_attributes else "Unknown"
+            der_bytes = cert.public_bytes(serialization.Encoding.DER)
 
-            # By using add_pem_data, we trigger the new v1.1.3 deduplication logic
-            # which uses the DER-based SHA256 hash.
-            metadata = self.repository.add_pem_data(
-                cert.public_bytes(serialization.Encoding.PEM),
-                source_path=Path("MockData") / f"{cn}.pem",
-            )
-            if metadata:
-                pool.extend(metadata)
+            digest = hashes.Hash(hashes.SHA256(), backend=default_backend())
+            digest.update(der_bytes)
+            cert_hash = digest.finalize().hex()
+
+            metadata = {
+                "cert": cert,
+                "path": Path("MockData") / f"{cn}.pem",
+                "hash": cert_hash,
+                "is_system_cert": False
+            }
+            pool.append(metadata)
 
         return [TrustStoreGroup(name="Mock Test Suite", targets=pool)]
 
@@ -182,17 +189,9 @@ class MockProvider(BaseInputProvider):
         certs.append(self.create_cert("Duplicate Intermediate", issuer_cn="Root CA", is_ca=True, subject_key_override=inter_b_key, issuer_key_override=root_key))
         certs.append(self.create_cert("Leaf Path B", issuer_cn="Duplicate Intermediate", issuer_key_override=inter_b_key))
 
-        # Loop Detection (Ruff Fix: Removed unused assignments)
-        loop_a = self.create_cert(
-            "Loop CA A",
-            issuer_cn="Loop CA B",
-            is_ca=True,
-        )
-        loop_b = self.create_cert(
-            "Loop CA B",
-            issuer_cn="Loop CA A",
-            is_ca=True,
-        )
+        # Loop Detection
+        loop_a = self.create_cert("Loop CA A", issuer_cn="Loop CA B", is_ca=True)
+        loop_b = self.create_cert("Loop CA B", issuer_cn="Loop CA A", is_ca=True)
         certs.extend([loop_a, loop_b])
 
         # Orphans (AIA / Untrusted)
