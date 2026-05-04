@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-03 15:14+0200\n"
+"POT-Creation-Date: 2026-05-04 18:32+0200\n"
 "PO-Revision-Date: 2026-04-13 11:08+0200\n"
 "Last-Translator: Serge van Thillo <nulleke76@gmail.com>\n"
 "Language-Team: Dutch <vertaling@vrijschrift.org>\n"
@@ -223,114 +223,6 @@ msgstr "Hostnaam kon niet worden omgezet (DNS)"
 msgid "Could not save certificate to cache"
 msgstr "Kon certificaat niet opslaan in cache"
 
-#: src/check_truststore/engine/orchestrator.py:51
-msgid "Processing Group"
-msgstr "Groep verwerken"
-
-# python-brace-format
-#: src/check_truststore/engine/orchestrator.py:122
-#, python-brace-format
-msgid "Used {used} out of {total} system certs"
-msgstr "{used} van de {total} systeem-certificaten gebruikt"
-
-#: src/check_truststore/engine/orchestrator.py:127
-msgid "System usage"
-msgstr "Systeemgebruik"
-
-#: src/check_truststore/engine/repository.py:63
-#: src/check_truststore/engine/repository.py:130
-#, python-brace-format
-msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
-msgstr "Maximale certificaatlimiet ({limit}) bereikt. Scan wordt gestopt."
-
-#: src/check_truststore/engine/repository.py:76
-msgid "Skipping duplicate certificate (already loaded)"
-msgstr "Duplicaat certificaat overgeslagen (reeds geladen)"
-
-#: src/check_truststore/engine/repository.py:77
-msgid "DUPLICATE"
-msgstr "DUPLICAAT"
-
-#: src/check_truststore/engine/repository.py:93
-msgid "Invalid certificate structure"
-msgstr "Ongeldige certificaat structuur"
-
-#: src/check_truststore/engine/repository.py:102
-msgid "PKCS7-container"
-msgstr "PKCS7-container"
-
-#: src/check_truststore/engine/repository.py:114
-msgid "Legacy cryptography detected, falling back."
-msgstr "Verouderde cryptografie gedetecteerd, fallback wordt uitgevoerd."
-
-#: src/check_truststore/engine/repository.py:118
-#, python-brace-format
-msgid "Failed to parse PKCS7: {error}"
-msgstr "Parsen van PKCS7 mislukt: {error}"
-
-#: src/check_truststore/engine/repository.py:165
-#, python-brace-format
-msgid "File too large ({size:.1f}MB). Use --force to override."
-msgstr "Bestand te groot ({size:.1f}MB). Gebruik --force om dit te negeren."
-
-#: src/check_truststore/engine/repository.py:178
-#: src/check_truststore/engine/repository.py:183
-msgid "READ_ERROR"
-msgstr "LEES_FOUT"
-
-#: src/check_truststore/engine/repository.py:179
-msgid "File not found"
-msgstr "Bestand niet gevonden"
-
-#: src/check_truststore/engine/repository.py:179
-msgid "Permission denied"
-msgstr "Toegang geweigerd"
-
-#: src/check_truststore/engine/builder.py:164
-#, python-brace-format
-msgid "Broken circular chain at {ski_id}"
-msgstr "Circulaire keten verbroken bij {ski_id}"
-
-#: src/check_truststore/engine/builder.py:165
-msgid "CYCLE_BREAKER"
-msgstr "CYCLUS_BREKER"
-
-#: src/check_truststore/engine/builder.py:268
-msgid "SIG_ERR"
-msgstr "SIG_FOUT"
-
-#: src/check_truststore/engine/builder.py:271
-msgid "REVOKED"
-msgstr "INGETROKKEN"
-
-#: src/check_truststore/engine/builder.py:274 src/check_truststore/cli.py:97
-msgid "INVALID"
-msgstr "ONGELDIG"
-
-#: src/check_truststore/engine/builder.py:317
-#, python-brace-format
-msgid "Missing issuer for: {name}"
-msgstr "Ontbrekende issuer voor: {name}"
-
-#: src/check_truststore/engine/builder.py:320
-msgid "UNTRUSTED"
-msgstr "GEEN_TRUST"
-
-#: src/check_truststore/engine/builder.py:531
-#: src/check_truststore/engine/builder.py:533
-#: src/check_truststore/renderers/text_renderer.py:89
-msgid "Unknown"
-msgstr "Onbekend"
-
-#: src/check_truststore/engine/builder.py:621
-#, python-brace-format
-msgid "AIA: {name}"
-msgstr "AIA: {name}"
-
-#: src/check_truststore/engine/builder.py:622
-msgid "Successfully discovered issuer via AIA"
-msgstr "Uitgever succesvol gevonden via AIA"
-
 #: src/check_truststore/engine/policy.py:96
 msgid "The cryptographic signature is invalid or could not be verified."
 msgstr ""
@@ -473,45 +365,151 @@ msgstr ""
 "Padlengte-beperking overschreden. Uitgever staat maximaal {limit} tussen-"
 "certificaten toe."
 
-#: src/check_truststore/providers/json_provider.py:73
+#: src/check_truststore/engine/orchestrator.py:58
+msgid "SystemProvider"
+msgstr "Systeem-provider"
+
+#: src/check_truststore/engine/orchestrator.py:58
+#, python-brace-format
+msgid "Could not load system truststore: {error}"
+msgstr "Kon systeem-truststore niet laden: {error}"
+
+#: src/check_truststore/engine/orchestrator.py:62
+msgid "Processing Group"
+msgstr "Groep verwerken"
+
+# python-brace-format
+#: src/check_truststore/engine/orchestrator.py:120
+#, python-brace-format
+msgid "{used} of the {total} system certificates used"
+msgstr "{used} van de {total} systeem-certificaten gebruikt"
+
+#: src/check_truststore/engine/orchestrator.py:124
+msgid "System usage"
+msgstr "Systeemgebruik"
+
+#: src/check_truststore/engine/repository.py:64
+msgid "Invalid DER structure"
+msgstr "Ongeldige DER structuur"
+
+#: src/check_truststore/engine/repository.py:82
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached."
+msgstr "Maximale certificaatlimiet ({limit}) bereikt."
+
+#: src/check_truststore/engine/repository.py:94
+msgid "Skipping duplicate certificate (already loaded)"
+msgstr "Duplicaat certificaat overgeslagen (reeds geladen)"
+
+#: src/check_truststore/engine/repository.py:95
+msgid "DUPLICATE"
+msgstr "DUPLICAAT"
+
+#: src/check_truststore/engine/repository.py:110
+msgid "Invalid certificate structure"
+msgstr "Ongeldige certificaat structuur"
+
+#: src/check_truststore/engine/repository.py:117
+msgid "PKCS7-container"
+msgstr "PKCS7-container"
+
+#: src/check_truststore/engine/repository.py:127
+msgid "Legacy cryptography detected, falling back."
+msgstr "Verouderde cryptografie gedetecteerd, fallback wordt uitgevoerd."
+
+#: src/check_truststore/engine/repository.py:130
+#, python-brace-format
+msgid "Failed to parse PKCS7: {error}"
+msgstr "Parsen van PKCS7 mislukt: {error}"
+
+#: src/check_truststore/engine/repository.py:137
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
+msgstr "Maximale certificaatlimiet ({limit}) bereikt. Scan wordt gestopt."
+
+#: src/check_truststore/engine/repository.py:164
+#, python-brace-format
+msgid "File too large ({size:.1f}MB)"
+msgstr "Bestand te groot ({size:.1f}MB)."
+
+#: src/check_truststore/engine/builder.py:181
+#, python-brace-format
+msgid "Broken circular chain at {ski_id}"
+msgstr "Circulaire keten verbroken bij {ski_id}"
+
+#: src/check_truststore/engine/builder.py:182
+msgid "CYCLE_BREAKER"
+msgstr "CYCLUS_BREKER"
+
+#: src/check_truststore/engine/builder.py:285
+msgid "SIG_ERR"
+msgstr "SIG_FOUT"
+
+#: src/check_truststore/engine/builder.py:288
+msgid "REVOKED"
+msgstr "INGETROKKEN"
+
+#: src/check_truststore/engine/builder.py:291 src/check_truststore/cli.py:97
+msgid "INVALID"
+msgstr "ONGELDIG"
+
+#: src/check_truststore/engine/builder.py:334
+#, python-brace-format
+msgid "Missing issuer for: {name}"
+msgstr "Ontbrekende issuer voor: {name}"
+
+#: src/check_truststore/engine/builder.py:337
+msgid "UNTRUSTED"
+msgstr "GEEN_TRUST"
+
+#: src/check_truststore/engine/builder.py:548
+#: src/check_truststore/engine/builder.py:550
+#: src/check_truststore/renderers/text_renderer.py:89
+msgid "Unknown"
+msgstr "Onbekend"
+
+#: src/check_truststore/engine/builder.py:638
+#, python-brace-format
+msgid "AIA: {name}"
+msgstr "AIA: {name}"
+
+#: src/check_truststore/engine/builder.py:639
+msgid "Successfully discovered issuer via AIA"
+msgstr "Uitgever succesvol gevonden via AIA"
+
+#: src/check_truststore/providers/json_provider.py:76
 msgid "Unknown JSON format or malformed structure."
 msgstr "Onbekend JSON-formaat of ongeldige structuur."
 
-#: src/check_truststore/providers/json_provider.py:87
+#: src/check_truststore/providers/json_provider.py:90
 #: src/check_truststore/providers/yaml_provider.py:80
 msgid "Unnamed Store"
 msgstr "Naamloze store"
+
+#: src/check_truststore/providers/json_provider.py:110
+#: src/check_truststore/providers/yaml_provider.py:107
+msgid "Certificate not found in {}"
+msgstr "Certificaat niet gevonden in {}"
+
+#: src/check_truststore/providers/json_provider.py:110
+#: src/check_truststore/providers/yaml_provider.py:107
+msgid "MISSING"
+msgstr "ONTBREEKT"
 
 #: src/check_truststore/providers/yaml_provider.py:60
 msgid "YAML Parse Error"
 msgstr "YAML Verwerkingsfout"
 
 #: src/check_truststore/providers/yaml_provider.py:111
-msgid "Failed to extract valid certificates from file."
-msgstr "Mislukt om geldige certificaten uit bestand te extraheren."
-
-#: src/check_truststore/providers/yaml_provider.py:111
-msgid "LOAD_ERR"
-msgstr "LAAD_FOUT"
-
-#: src/check_truststore/providers/yaml_provider.py:113
-msgid "Certificate not found in {}"
-msgstr "Certificaat niet gevonden in {}"
-
-#: src/check_truststore/providers/yaml_provider.py:113
-msgid "MISSING"
-msgstr "ONTBREEKT"
-
-#: src/check_truststore/providers/yaml_provider.py:117
 #, python-brace-format
-msgid "Loaded group with {count} certificates."
-msgstr "Groep geladen met {count} certificaten."
+msgid "Loaded group configuration with {count} files."
+msgstr "Groep configuratie geladen met {count} certificaten."
 
-#: src/check_truststore/providers/yaml_provider.py:120
+#: src/check_truststore/providers/yaml_provider.py:114
 msgid "Group contains no valid certificates."
 msgstr "Groep heeft GEEN geldige certificaten."
 
-#: src/check_truststore/providers/yaml_provider.py:120
+#: src/check_truststore/providers/yaml_provider.py:114
 msgid "EMPTY_GROUP"
 msgstr "LEGE_GROEP"
 

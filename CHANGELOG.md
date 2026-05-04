@@ -2,11 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.1.6] - 2026-05-04 (Stable)
+
+### 🚀 Highlights
+*   **Lazy Loading Architecture**: The `TrustStoreAnalyzer` now loads certificates only when they are actually needed per group.
+*   **Efficiency**: This prevents cache pollution between different truststore groups and significantly improves performance for large datasets.
+*   **Enhanced System Integration**: The `SystemInputProvider` has been completely overhauled.
+*   **System Certificate Handling**: System certificates are now treated as a separate 'pool' that is only accessed to complete chains, rather than being loaded directly into every scan.
+
+### Fixed
+*   **Legacy Python Support**: Resolved a `pyo3_runtime.PanicException` affecting Python 3.6 environments.
+*   **Dependency Pinning**: The `cryptography` library is now pinned to `< 3.5` via environment markers in `pyproject.toml`.
+*   **Deduplication Logic**: Robustness of `cert_id` generation in the `TrustChainBuilder` has been improved.
+*   **Fallback Mechanism**: If a *Subject Key Identifier* (SKI) is missing, a consistent SHA256 hash is now generated based on the DER-encoded public key.
+
+### Changed
+*   **Provider Refactoring**: All providers (`Json`, `Yaml`, `Directory`, `Xml`) have been optimized for the new orchestrator model.
+*   **Memory Optimization**: Providers now pass file paths instead of fully parsed objects, which saves memory.
+*   **I18n & Localization**: Dutch translations (`.po` files) have been updated to correctly reflect new technical terms regarding providers and system usage.
+*   **Model Cleanup**: Several internal metadata fields (such as `is_system_cert`) have been standardized for better consistency in JSON and SARIF output.
+
+### CI/CD & Dependencies
+*   **PyPI Metadata**: Badges in the `README.md` have been updated and now point to the correct PyPI locations.
+*   **Test Matrix**: Automated tests now explicitly validate compatibility across different `cryptography` versions for both legacy and modern Python environments.
+
 ## [1.1.5] - 2026-05-03 (Stable)
-* **Robustness:** Added a global `KeyboardInterrupt` handler in `cli.py` to prevent stacktraces during user interruptions.
-* **Integrity:** Integrated GitLab source and issue tracker URLs into PyPI metadata.
-* **Automation:** Full GitLab CI/CD pipeline for multi-version Python testing (3.6 to 3.14).
-* **Localization:** Improved `gettext` integration with automated `.mo` compilation in the build process.
+*   **Robustness**: Added a global `KeyboardInterrupt` handler in `cli.py` to prevent stacktraces during user interruptions.
+*   **Integrity**: Integrated GitLab source and issue tracker URLs into PyPI metadata.
+*   **Automation**: Full GitLab CI/CD pipeline for multi-version Python testing (3.6 to 3.14).
+*   **Localization**: Improved `gettext` integration with automated `.mo` compilation in the build process.
 
 ## [1.1.3] - 2026-05-02 (In Progress)
 

@@ -39,10 +39,27 @@ class TrustChainBuilder:
         self.policy_engine = PolicyEngine(**kwargs)
         self.parents_map: Dict[str, List[str]] = defaultdict(list)
 
-    def build(self, raw_certs_meta: List[Dict[str, Any]], resolver: Optional[Any] = None, max_depth: int = 4) -> List[Certificate]:
-        """Main entry point for tree construction."""
+    def build(
+        self,
+        raw_certs_meta: List[Dict[str, Any]],
+        authority_pool: Optional[List[Dict[str, Any]]] = None,
+        resolver: Optional[Any] = None,
+        max_depth: int = 4
+    ) -> List[Certificate]:
+        """
+        Main entry point for tree construction.
+
+        :param raw_certs_meta: Certificaten die de gebruiker expliciet wil scannen.
+        :param authority_pool: Systeem- of extra certificaten (alleen gebruiken als nodig).
+        :param resolver: Optionele NetworkResolver voor AIA/OCSP.
+        :param max_depth: Maximale diepte voor recursie.
+        """
         for item in raw_certs_meta:
             self._process_metadata(item)
+
+        if authority_pool:
+            for item in authority_pool:
+                self._process_metadata(item)
 
         if resolver:
             self._perform_aia_discovery(resolver, max_depth=max_depth)
@@ -64,10 +81,15 @@ class TrustChainBuilder:
 
         ski = self._get_extension(cert, x509.ExtensionOID.SUBJECT_KEY_IDENTIFIER)
         cn = self._get_common_name(cert)
-        # Use SKI as ID, fallback to public key hash if SKI is missing
-        cert_id = (
-            ski if ski else hashlib.sha256(cert.subject.public_bytes()).hexdigest()
-        )
+        if ski:
+            cert_id = ski
+        else:
+            public_key_bytes = cert.public_key().public_bytes(
+                encoding=serialization.Encoding.DER,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo
+            )
+            cert_id = hashlib.sha256(public_key_bytes).hexdigest()
+
         aki = self._get_extension(cert, x509.ExtensionOID.AUTHORITY_KEY_IDENTIFIER)
         is_root = (cert.subject == cert.issuer)
 
@@ -140,11 +162,6 @@ class TrustChainBuilder:
             ))
 
         self.cert_data[cert_id] = cert_obj
-
-        if aki and aki != cert_id:
-            self.parent_map[cert_id] = aki
-        elif not cert_obj.is_root:
-            self.parent_map[cert_id] = ORPHAN_NODE_ID
 
     def _sanitize_parent_map(self, relevant_skis: Set[str]):
         """
