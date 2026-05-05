@@ -6,6 +6,14 @@
 
 A tool for system administrators and security engineers to audit certificate truststores. This utility transforms flat certificate directories into logical hierarchies, making it easy to spot broken chains or expiring certificates.
 
+## ⚡ Quick Start (TL;DR)
+**Audit your truststores in seconds:**
+1. **Install:** `pip install check-truststore`
+2. **Run Ad-hoc:** `check_truststore /path/to/certs/`
+3. **Visualize:** `check_truststore /path/to/certs/ --visualize`
+
+*Supports **PEM**, **DER**, and **PKCS#7**. Works on Windows, macOS, and Linux.*
+
 ## ✨ Features
 
 * **Chain Visualization:** Automatically builds a tree structure of your certificate hierarchy.
