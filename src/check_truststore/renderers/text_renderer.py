@@ -48,6 +48,9 @@ class TextRenderer(BaseRenderer):
         self.verbosity = kwargs.get("verbosity", 0)
 
         for group in groups_results:
+            if hasattr(self, "_rendered_fingerprints"):
+                self._rendered_fingerprints.clear()
+
             # Handle both raw objects and dictionary inputs
             if isinstance(group, dict):
                 group_name = group.get("group_name", _("Unnamed Group"))
@@ -83,7 +86,17 @@ class TextRenderer(BaseRenderer):
         Recursively builds the tree string using ASCII connectors.
         """
         lines = []
-        for i, n in enumerate(nodes):
+
+        sorted_nodes = sorted(
+            nodes,
+            key=lambda x: getattr(x, "expiry_date", None) or datetime(1970, 1, 1, tzinfo=timezone.utc),
+            reverse=True
+        )
+
+        for i, n in enumerate(sorted_nodes):
+            if self._should_skip(n):
+                continue
+
             # Extract attributes safely
             audit = n.get_audit_status()
             raw_name = getattr(n, "common_name", _("Unknown"))

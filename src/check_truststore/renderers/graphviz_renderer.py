@@ -142,3 +142,6 @@ class GraphvizRenderer(BaseRenderer):
 
         label += '</table>'
         return label
+
+    def _should_deduplicate(self, cert_node: Any) -> bool:
+        return False

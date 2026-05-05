@@ -10,6 +10,7 @@ and long-term data storage.
 
 import json
 from typing import Any
+from datetime import datetime, timezone
 from .base import BaseRenderer, DateTimeEncoder
 
 
@@ -51,10 +52,23 @@ class JsonRenderer(BaseRenderer):
         """
         # Handle lists (like a list of groups)
         if isinstance(data, list):
-            return [self._to_basic_dict(item) for item in data]
+            sorted_nodes = sorted(
+                data,
+                key=lambda x: getattr(x, "expiry_date", None) or datetime.min.replace(tzinfo=timezone.utc),
+                reverse=True
+            )
+
+            result = []
+            for item in sorted_nodes:
+                if not self._should_skip(item):
+                    result.append(self._to_basic_dict(item))
+            return result
 
         # Handle CertificateGroup objects
         if hasattr(data, "groupName") or hasattr(data, "group_name"):
+            if hasattr(self, "_rendered_fingerprints"):
+                self._rendered_fingerprints.clear()
+
             return {
                 "groupName": getattr(
                     data, "groupName", getattr(data, "group_name", "Unknown")
