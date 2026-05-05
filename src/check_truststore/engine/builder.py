@@ -496,6 +496,7 @@ class TrustChainBuilder:
 
             if parent_status == "REVOKED":
                  cert_info.ocsp_status = "REVOKED"
+                 cert_info.is_valid = False
 
             # Recurse for children
             child_skis = children_by_parent.get(ski, [])
