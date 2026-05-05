@@ -6,15 +6,13 @@ build:
     tools:
         python: "3.11"
 
-        # Configuration for MkDocs
-        mkdocs:
-          configuration: mkdocs.yml
+mkdocs:
+  configuration: mkdocs.yml
 
-          # Optional: install dependencies needed to build the docs
-          python:
-            install:
-                - method: pip
-                      path: .
-                            extra_requirements:
-                                    - all
+python:
+  install:
+    - method: pip
+      path: .
+      extra_requirements:
+        - all
                                     
