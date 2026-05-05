@@ -10,7 +10,7 @@ A tool for system administrators and security engineers to audit certificate tru
 **Audit your truststores in seconds:**
 1. **Install:** `pip install check-truststore`
 2. **Run Ad-hoc:** `check_truststore /path/to/certs/`
-3. **Visualize:** `check_truststore /path/to/certs/ --visualize`
+3. **Visualize:** `check_truststore /path/to/certs/ -f text`
 
 *Supports **PEM**, **DER**, and **PKCS#7**. Works on Windows, macOS, and Linux.*
 
