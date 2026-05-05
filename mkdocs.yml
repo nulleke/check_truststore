@@ -4,6 +4,6 @@ site_description: Audit and visualize certificate truststores.
 theme:
   name: material
 
-  nav:
-    - Home: README.md
-    - Contributing: CONTRIBUTING.md
+nav:
+  - Home: README.md
+  - Contributing: CONTRIBUTING.md
