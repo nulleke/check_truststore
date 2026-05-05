@@ -1,0 +1,18 @@
+# Include the license and readme
+include LICENSE
+include README.md
+include MODELS.md
+include CONTRIBUTING.md
+
+# Include all translation files (.po and .mo)
+recursive-include src/check_truststore/locale *.mo
+recursive-include src/check_truststore/locale *.po
+
+# Include documentation images
+recursive-include docs/images *.png
+recursive-include docs/images *.svg
+
+# Exclude temporary files and bytecode
+global-exclude *.py[cod]
+global-exclude __pycache__
+global-exclude .DS_Store
