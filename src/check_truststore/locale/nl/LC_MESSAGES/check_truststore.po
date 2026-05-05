@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-05 11:40+0200\n"
+"POT-Creation-Date: 2026-05-05 14:18+0200\n"
 "PO-Revision-Date: 2026-04-13 11:08+0200\n"
 "Last-Translator: Serge van Thillo <nulleke76@gmail.com>\n"
 "Language-Team: Dutch <vertaling@vrijschrift.org>\n"
@@ -241,7 +241,15 @@ msgstr ""
 "De uitgever van het certificaat is niet gevonden in de truststore, waardoor "
 "deze keten niet wordt vertrouwd."
 
-#: src/check_truststore/engine/policy.py:236
+#: src/check_truststore/engine/policy.py:124
+msgid ""
+"This certificate is untrusted because it or an issuer in its chain has been "
+"revoked."
+msgstr ""
+"Dit certificaat wordt niet vertrouwd omdat het certificaat zelf of een uitgever "
+"in de keten is ingetrokken (revoked)."
+
+#: src/check_truststore/engine/policy.py:243
 #, python-brace-format
 msgid ""
 "RSA key size ({bits} bits) is below the minimum required {min_bits} bits."
@@ -249,7 +257,7 @@ msgstr ""
 "RSA-sleutelgrootte ({bits} bits) is kleiner dan de minimaal vereiste "
 "{min_bits} bits."
 
-#: src/check_truststore/engine/policy.py:244
+#: src/check_truststore/engine/policy.py:251
 #, python-brace-format
 msgid ""
 "ECC key size ({bits} bits) is below the minimum required {min_bits} bits."
@@ -257,22 +265,22 @@ msgstr ""
 "ECC-sleutelgrootte ({bits} bits) is kleiner dan de minimaal vereiste "
 "{min_bits} bits."
 
-#: src/check_truststore/engine/policy.py:259
+#: src/check_truststore/engine/policy.py:266
 msgid "Certificate uses SHA-1 signature algorithm which is no longer trusted."
 msgstr ""
 "Certificaat gebruikt het SHA-1 algoritme, dat niet langer wordt vertrouwd."
 
-#: src/check_truststore/engine/policy.py:279
+#: src/check_truststore/engine/policy.py:286
 msgid "End-entity certificate lacks Extended Key Usage extension."
 msgstr "End-entity certificaat mist de 'Extended Key Usage' (EKU) extensie."
 
-#: src/check_truststore/engine/policy.py:292
+#: src/check_truststore/engine/policy.py:299
 msgid ""
 "Certificate contains 'Any Extended Key Usage', which is overly permissive."
 msgstr ""
 "Certificaat bevat 'Any Extended Key Usage', wat overmatig permissief is."
 
-#: src/check_truststore/engine/policy.py:301
+#: src/check_truststore/engine/policy.py:308
 msgid ""
 "Certificate allows both Server Auth and Code Signing. Functional separation "
 "is recommended."
@@ -280,76 +288,76 @@ msgstr ""
 "Certificaat staat zowel Server Auth als Code Signing toe. Functionele "
 "scheiding wordt aanbevolen."
 
-#: src/check_truststore/engine/policy.py:318
+#: src/check_truststore/engine/policy.py:325
 msgid "Could not parse Extended Key Usage extension data."
 msgstr "Kon de 'Extended Key Usage' data niet verwerken."
 
-#: src/check_truststore/engine/policy.py:336
+#: src/check_truststore/engine/policy.py:343
 msgid "Server Authentication"
 msgstr "Server Authenticatie"
 
-#: src/check_truststore/engine/policy.py:337
+#: src/check_truststore/engine/policy.py:344
 msgid "Client Authentication"
 msgstr "Client Authenticatie"
 
-#: src/check_truststore/engine/policy.py:338
+#: src/check_truststore/engine/policy.py:345
 msgid "Code Signing"
 msgstr "Code Ondertekening"
 
-#: src/check_truststore/engine/policy.py:339
+#: src/check_truststore/engine/policy.py:346
 msgid "Email Protection"
 msgstr "E-mailbeveiliging"
 
-#: src/check_truststore/engine/policy.py:340
+#: src/check_truststore/engine/policy.py:347
 msgid "Time Stamping"
 msgstr "Tijdstempeling"
 
-#: src/check_truststore/engine/policy.py:341
+#: src/check_truststore/engine/policy.py:348
 msgid "OCSP Signing"
 msgstr "OCSP Ondertekening"
 
-#: src/check_truststore/engine/policy.py:342
+#: src/check_truststore/engine/policy.py:349
 msgid "IPSec User"
 msgstr "IPSec Gebruiker"
 
-#: src/check_truststore/engine/policy.py:343
+#: src/check_truststore/engine/policy.py:350
 msgid "IPSec Intermediate"
 msgstr "IPSec Intermediate"
 
-#: src/check_truststore/engine/policy.py:344
+#: src/check_truststore/engine/policy.py:351
 msgid "IPSec Tunnel"
 msgstr "IPSec Tunnel"
 
-#: src/check_truststore/engine/policy.py:348
+#: src/check_truststore/engine/policy.py:355
 #, python-brace-format
 msgid "Unknown ({oid})"
 msgstr "Onbekend ({oid})"
 
-#: src/check_truststore/engine/policy.py:381
+#: src/check_truststore/engine/policy.py:388
 #, python-brace-format
 msgid ""
 "Certificate validity period ({duration_days} days) exceeds the 398-day limit."
 msgstr ""
 "Geldigheidsduur ({duration_days} dagen) overschrijdt de limiet van 398 dagen."
 
-#: src/check_truststore/engine/policy.py:415
+#: src/check_truststore/engine/policy.py:422
 #, python-brace-format
 msgid "Common Name '{cn}' is missing from Subject Alternative Names (SAN)."
 msgstr "Common Name '{cn}' ontbreekt in de Subject Alternative Names (SAN)."
 
-#: src/check_truststore/engine/policy.py:425
+#: src/check_truststore/engine/policy.py:432
 #, python-brace-format
 msgid ""
 "SAN contains a non-FQDN '{name}', which is disallowed for public "
 "certificates."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:432
+#: src/check_truststore/engine/policy.py:439
 msgid "Certificate lacks a SAN extension. Relying solely on CN is deprecated."
 msgstr ""
 "Certificaat mist een SAN-extensie. Vertrouwen op alleen de CN is verouderd."
 
-#: src/check_truststore/engine/policy.py:454
+#: src/check_truststore/engine/policy.py:461
 msgid ""
 "Certificate lacks CRL Distribution Points (CDP). Revocation checking may be "
 "limited."
@@ -357,7 +365,7 @@ msgstr ""
 "Certificaat mist CRL-distributiepunten (CDP). Intrekkingscontrole is "
 "mogelijk beperkt."
 
-#: src/check_truststore/engine/policy.py:478
+#: src/check_truststore/engine/policy.py:485
 #, python-brace-format
 msgid ""
 "Path length constraint exceeded. Issuer allows max {limit} intermediate(s)."
@@ -365,71 +373,86 @@ msgstr ""
 "Padlengte-beperking overschreden. Uitgever staat maximaal {limit} tussen-"
 "certificaten toe."
 
-#: src/check_truststore/engine/builder.py:181
+#: src/check_truststore/engine/builder.py:168
+msgid ""
+"This certificate is explicitly untrusted by the Operating System "
+"(Blacklisted)."
+msgstr ""
+"Dit certificaat wordt expliciet gewantrouwd door het besturingssysteem "
+"(op de zwarte lijst)."
+
+#: src/check_truststore/engine/builder.py:198
 #, python-brace-format
 msgid "Broken circular chain at {ski_id}"
 msgstr "Circulaire keten verbroken bij {ski_id}"
 
-#: src/check_truststore/engine/builder.py:182
+#: src/check_truststore/engine/builder.py:199
 msgid "CYCLE_BREAKER"
 msgstr "CYCLUS_BREKER"
 
-#: src/check_truststore/engine/builder.py:285
+#: src/check_truststore/engine/builder.py:302
 msgid "SIG_ERR"
 msgstr "SIG_FOUT"
 
-#: src/check_truststore/engine/builder.py:288
+#: src/check_truststore/engine/builder.py:305
 msgid "REVOKED"
 msgstr "INGETROKKEN"
 
-#: src/check_truststore/engine/builder.py:291 src/check_truststore/cli.py:110
+#: src/check_truststore/engine/builder.py:308 src/check_truststore/cli.py:110
 msgid "INVALID"
 msgstr "ONGELDIG"
 
-#: src/check_truststore/engine/builder.py:334
+#: src/check_truststore/engine/builder.py:351
 #, python-brace-format
 msgid "Missing issuer for: {name}"
 msgstr "Ontbrekende issuer voor: {name}"
 
-#: src/check_truststore/engine/builder.py:337
+#: src/check_truststore/engine/builder.py:354
 msgid "UNTRUSTED"
 msgstr "GEEN_TRUST"
 
-#: src/check_truststore/engine/builder.py:548
-#: src/check_truststore/engine/builder.py:550
-#: src/check_truststore/renderers/text_renderer.py:89
+#: src/check_truststore/engine/builder.py:493
+msgid ""
+"The chain is untrusted because an upstream issuer is blacklisted by the OS."
+msgstr ""
+"De keten wordt niet vertrouwd omdat een bovenliggende uitgever op de "
+"blacklist van het besturingssysteem staat."
+
+#: src/check_truststore/engine/builder.py:575
+#: src/check_truststore/engine/builder.py:577
+#: src/check_truststore/renderers/text_renderer.py:96
 msgid "Unknown"
 msgstr "Onbekend"
 
-#: src/check_truststore/engine/builder.py:638
+#: src/check_truststore/engine/builder.py:665
 #, python-brace-format
 msgid "AIA: {name}"
 msgstr "AIA: {name}"
 
-#: src/check_truststore/engine/builder.py:639
+#: src/check_truststore/engine/builder.py:666
 msgid "Successfully discovered issuer via AIA"
 msgstr "Uitgever succesvol gevonden via AIA"
 
-#: src/check_truststore/engine/orchestrator.py:58
+#: src/check_truststore/engine/orchestrator.py:63
 msgid "SystemProvider"
 msgstr "Systeem-provider"
 
-#: src/check_truststore/engine/orchestrator.py:58
+#: src/check_truststore/engine/orchestrator.py:63
 #, python-brace-format
 msgid "Could not load system truststore: {error}"
 msgstr "Kon systeem-truststore niet laden: {error}"
 
-#: src/check_truststore/engine/orchestrator.py:62
+#: src/check_truststore/engine/orchestrator.py:67
 msgid "Processing Group"
 msgstr "Groep verwerken"
 
 # python-brace-format
-#: src/check_truststore/engine/orchestrator.py:120
+#: src/check_truststore/engine/orchestrator.py:125
 #, python-brace-format
 msgid "{used} of the {total} system certificates used"
 msgstr "{used} van de {total} systeem-certificaten gebruikt"
 
-#: src/check_truststore/engine/orchestrator.py:124
+#: src/check_truststore/engine/orchestrator.py:129
 msgid "System usage"
 msgstr "Systeemgebruik"
 
@@ -513,8 +536,8 @@ msgid ""
 "Found unquoted Jinja2 delimiters. Wrap expressions like '{{ var }}' in "
 "quotes."
 msgstr ""
-"Niet-gequote Jinja2 delimiters gevonden. Omsluit expressies zoals '{{ var }}' "
-"met aanhalingstekens."
+"Niet-gequote Jinja2 delimiters gevonden. Omsluit expressies zoals "
+"'{{ var }}' met aanhalingstekens."
 
 #: src/check_truststore/providers/yaml_provider.py:155
 msgid "YAML Parse Error"
@@ -544,29 +567,29 @@ msgstr "ONGELDIGE_KETEN"
 msgid "Certificate Hierarchy:"
 msgstr "Certificaat Hiërarchie:"
 
-#: src/check_truststore/renderers/text_renderer.py:53
 #: src/check_truststore/renderers/text_renderer.py:56
+#: src/check_truststore/renderers/text_renderer.py:59
 msgid "Unnamed Group"
 msgstr "Naamloze groep"
 
-#: src/check_truststore/renderers/text_renderer.py:64
+#: src/check_truststore/renderers/text_renderer.py:67
 msgid "(No certificates found)"
 msgstr "(Geen certificaten gevonden)"
 
-#: src/check_truststore/renderers/text_renderer.py:135
+#: src/check_truststore/renderers/text_renderer.py:142
 msgid "EXTERNAL ISSUER / MISSING ROOT"
 msgstr "EXTERNE UITGEVER / ONBEKENDE ROOT"
 
-#: src/check_truststore/renderers/text_renderer.py:137
+#: src/check_truststore/renderers/text_renderer.py:144
 msgid "CIRCULAR REFERENCE"
 msgstr "CIRCULAIRE VERWIJZING"
 
-#: src/check_truststore/renderers/text_renderer.py:153
+#: src/check_truststore/renderers/text_renderer.py:160
 msgid "Usage"
 msgstr "Gebruik"
 
-#: src/check_truststore/renderers/text_renderer.py:164
-#: src/check_truststore/renderers/text_renderer.py:166
+#: src/check_truststore/renderers/text_renderer.py:171
+#: src/check_truststore/renderers/text_renderer.py:173
 msgid "ALT"
 msgstr "ALT"
 
