@@ -1,0 +1,20 @@
+version: 2
+
+# Build documentation with MkDocs
+build:
+  os: ubuntu-22.04
+    tools:
+        python: "3.11"
+
+        # Configuration for MkDocs
+        mkdocs:
+          configuration: mkdocs.yml
+
+          # Optional: install dependencies needed to build the docs
+          python:
+            install:
+                - method: pip
+                      path: .
+                            extra_requirements:
+                                    - all
+                                    
