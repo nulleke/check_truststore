@@ -53,7 +53,7 @@ class _BaseUniversal:
         Interprets special nodes like orphans. If a node is identified as
         an orphan, it sets default 'invalid' states and a Unix epoch expiry date.
         """
-        cn = data.get("common_name") or data.get("commonName")
+        cn = data.get("common_name")
         if cn in [ORPHAN_NODE_ID, CYCLE_NODE_ID]:
             special = {
                 "is_valid": False,

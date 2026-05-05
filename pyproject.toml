@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "check_truststore"
-version = "1.1.6"
+version = "1.1.7"
 description = "Lightweight certificate trust chain analyzer"
 readme = "README.md"
 requires-python = ">=3.6"
 license = {text = "LGPL-3.0-or-later"}
 authors = [{name = "Serge van Thillo", email = "nulleke76@gmail.com"}]
-keywords = ["ssl", "x509", "pki", "certificate", "truststore", "audit"]
+keywords = ["ssl", "x509", "pki", "certificate", "truststore", "audit", "jinja2"]
 
 dependencies = [
     "cryptography < 3.5; python_version <= '3.6'",
@@ -20,11 +20,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+jinja2 = [
+    "Jinja2>=3.0.0; python_version >= '3.7'",
+    "Jinja2<3.1.0; python_version <= '3.6'"
+]
 pydantic = [
     "pydantic>=2.0.0; python_version >= '3.8'"
 ]
 all = [
-    "pydantic>=2.0.0; python_version >= '3.8'"
+    "pydantic>=2.0.0; python_version >= '3.8'",
+    "Jinja2>=3.0.0; python_version >= '3.7'",
+    "Jinja2<3.1.0; python_version <= '3.6'"
 ]
 
 [project.scripts]

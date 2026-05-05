@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-04 18:32+0200\n"
+"POT-Creation-Date: 2026-05-05 11:40+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -348,6 +348,51 @@ msgid ""
 "Path length constraint exceeded. Issuer allows max {limit} intermediate(s)."
 msgstr ""
 
+#: src/check_truststore/engine/builder.py:181
+#, python-brace-format
+msgid "Broken circular chain at {ski_id}"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:182
+msgid "CYCLE_BREAKER"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:285
+msgid "SIG_ERR"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:288
+msgid "REVOKED"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:291 src/check_truststore/cli.py:110
+msgid "INVALID"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:334
+#, python-brace-format
+msgid "Missing issuer for: {name}"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:337
+msgid "UNTRUSTED"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:548
+#: src/check_truststore/engine/builder.py:550
+#: src/check_truststore/renderers/text_renderer.py:89
+msgid "Unknown"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:638
+#, python-brace-format
+msgid "AIA: {name}"
+msgstr ""
+
+#: src/check_truststore/engine/builder.py:639
+msgid "Successfully discovered issuer via AIA"
+msgstr ""
+
 #: src/check_truststore/engine/orchestrator.py:58
 msgid "SystemProvider"
 msgstr ""
@@ -414,89 +459,53 @@ msgstr ""
 msgid "File too large ({size:.1f}MB)"
 msgstr ""
 
-#: src/check_truststore/engine/builder.py:181
-#, python-brace-format
-msgid "Broken circular chain at {ski_id}"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:182
-msgid "CYCLE_BREAKER"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:285
-msgid "SIG_ERR"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:288
-msgid "REVOKED"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:291 src/check_truststore/cli.py:97
-msgid "INVALID"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:334
-#, python-brace-format
-msgid "Missing issuer for: {name}"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:337
-msgid "UNTRUSTED"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:548
-#: src/check_truststore/engine/builder.py:550
-#: src/check_truststore/renderers/text_renderer.py:89
-msgid "Unknown"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:638
-#, python-brace-format
-msgid "AIA: {name}"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:639
-msgid "Successfully discovered issuer via AIA"
-msgstr ""
-
 #: src/check_truststore/providers/json_provider.py:76
 msgid "Unknown JSON format or malformed structure."
 msgstr ""
 
 #: src/check_truststore/providers/json_provider.py:90
-#: src/check_truststore/providers/yaml_provider.py:80
+#: src/check_truststore/providers/yaml_provider.py:174
 msgid "Unnamed Store"
 msgstr ""
 
 #: src/check_truststore/providers/json_provider.py:110
-#: src/check_truststore/providers/yaml_provider.py:107
+#: src/check_truststore/providers/yaml_provider.py:189
 msgid "Certificate not found in {}"
 msgstr ""
 
 #: src/check_truststore/providers/json_provider.py:110
-#: src/check_truststore/providers/yaml_provider.py:107
+#: src/check_truststore/providers/yaml_provider.py:189
 msgid "MISSING"
 msgstr ""
 
-#: src/check_truststore/providers/yaml_provider.py:60
+#: src/check_truststore/providers/yaml_provider.py:91
+msgid "Jinja2 Render Error"
+msgstr ""
+
+#: src/check_truststore/providers/yaml_provider.py:95
+msgid "Jinja2 not found. Using regex fallback."
+msgstr ""
+
+#: src/check_truststore/providers/yaml_provider.py:145
+msgid "YAML Syntax Error"
+msgstr ""
+
+#: src/check_truststore/providers/yaml_provider.py:146
+msgid ""
+"Found unquoted Jinja2 delimiters. Wrap expressions like '{{ var }}' in "
+"quotes."
+msgstr ""
+
+#: src/check_truststore/providers/yaml_provider.py:155
 msgid "YAML Parse Error"
 msgstr ""
 
-#: src/check_truststore/providers/yaml_provider.py:111
-#, python-brace-format
-msgid "Loaded group configuration with {count} files."
-msgstr ""
-
-#: src/check_truststore/providers/yaml_provider.py:114
+#: src/check_truststore/providers/yaml_provider.py:194
 msgid "Group contains no valid certificates."
 msgstr ""
 
-#: src/check_truststore/providers/yaml_provider.py:114
+#: src/check_truststore/providers/yaml_provider.py:194
 msgid "EMPTY_GROUP"
-msgstr ""
-
-#: src/check_truststore/renderers/__init__.py:25
-msgid "Unknown format: {}"
 msgstr ""
 
 #: src/check_truststore/renderers/text_renderer.py:41
@@ -541,139 +550,138 @@ msgstr ""
 msgid "ALT"
 msgstr ""
 
-#: src/check_truststore/cli.py:92
+#: src/check_truststore/renderers/__init__.py:56
+msgid "Unknown format: {}"
+msgstr ""
+
+#: src/check_truststore/cli.py:105
 msgid "ERROR"
 msgstr ""
 
-#: src/check_truststore/cli.py:93
+#: src/check_truststore/cli.py:106
 msgid "WARNING"
 msgstr ""
 
-#: src/check_truststore/cli.py:94
+#: src/check_truststore/cli.py:107
 msgid "OK"
 msgstr ""
 
-#: src/check_truststore/cli.py:95
+#: src/check_truststore/cli.py:108
 msgid "INFO"
 msgstr ""
 
-#: src/check_truststore/cli.py:96
+#: src/check_truststore/cli.py:109
 msgid "CHAIN"
 msgstr ""
 
-#: src/check_truststore/cli.py:98
+#: src/check_truststore/cli.py:111
 msgid "EXPIRED"
 msgstr ""
 
-#: src/check_truststore/cli.py:99
+#: src/check_truststore/cli.py:112
 msgid "EXPIRING"
 msgstr ""
 
-#: src/check_truststore/cli.py:100
+#: src/check_truststore/cli.py:113
 msgid "SYSTEM"
 msgstr ""
 
-#: src/check_truststore/cli.py:101
+#: src/check_truststore/cli.py:114
 msgid "PARENT_NOT_A_CA"
 msgstr ""
 
-#: src/check_truststore/cli.py:110
-#, python-brace-format
-msgid "Path '{path}' does not exist."
-msgstr ""
-
-#: src/check_truststore/cli.py:116
+#: src/check_truststore/cli.py:118
 msgid "Analyze certificate truststores and visualize the chain hierarchy."
 msgstr ""
 
-#: src/check_truststore/cli.py:118
+#: src/check_truststore/cli.py:120
 msgid "Compatible with Python 3.6+"
 msgstr ""
 
-#: src/check_truststore/cli.py:126
+#: src/check_truststore/cli.py:128
 msgid "Show this help message and exit"
 msgstr ""
 
-#: src/check_truststore/cli.py:129
+#: src/check_truststore/cli.py:131
 msgid "Path to the input source(s)"
 msgstr ""
 
-#: src/check_truststore/cli.py:132
+#: src/check_truststore/cli.py:134
 msgid "Input & Network Configuration"
 msgstr ""
 
-#: src/check_truststore/cli.py:138
+#: src/check_truststore/cli.py:140
 msgid "Incorporate system truststore"
 msgstr ""
 
-#: src/check_truststore/cli.py:145
+#: src/check_truststore/cli.py:147
 msgid "Allow internet access for AIA discovery and revocation checks"
 msgstr ""
 
-#: src/check_truststore/cli.py:150
+#: src/check_truststore/cli.py:152
 msgid "Bypass local cache and force download of AIA/CRL/OCSP data"
 msgstr ""
 
-#: src/check_truststore/cli.py:155
+#: src/check_truststore/cli.py:157
 msgid "Override safety limits (max file size and certificate count)"
 msgstr ""
 
-#: src/check_truststore/cli.py:158
+#: src/check_truststore/cli.py:160
 msgid "Analysis Settings"
 msgstr ""
 
-#: src/check_truststore/cli.py:164
+#: src/check_truststore/cli.py:166
 msgid "Expiration threshold in days (default: 30)"
 msgstr ""
 
-#: src/check_truststore/cli.py:170
+#: src/check_truststore/cli.py:172
 msgid "Maximum recursion depth for chain discovery (default: 4)"
 msgstr ""
 
-#: src/check_truststore/cli.py:173
+#: src/check_truststore/cli.py:175
 msgid "Output & Debugging"
 msgstr ""
 
-#: src/check_truststore/cli.py:179
+#: src/check_truststore/cli.py:181
 msgid "Output format"
 msgstr ""
 
-#: src/check_truststore/cli.py:186
+#: src/check_truststore/cli.py:188
 msgid "Increase output verbosity (e.g., -v for SANs, -vv for policy findings)"
 msgstr ""
 
-#: src/check_truststore/cli.py:192
+#: src/check_truststore/cli.py:194
 msgid "Show debug info"
 msgstr ""
 
-#: src/check_truststore/cli.py:211
+#: src/check_truststore/cli.py:213
 msgid "Parameter '-o' is unknown"
 msgstr ""
 
-#: src/check_truststore/cli.py:212
+#: src/check_truststore/cli.py:214
 msgid "Did you mean '-O' (uppercase) for online discovery?"
 msgstr ""
 
-#: src/check_truststore/cli.py:221
+#: src/check_truststore/cli.py:223
 msgid "Stdin requested via '-' but no data piped."
 msgstr ""
 
-#: src/check_truststore/cli.py:240
+#: src/check_truststore/cli.py:242
 msgid "No certificates found via this provider."
 msgstr ""
 
-#: src/check_truststore/cli.py:242
+#: src/check_truststore/cli.py:244
 msgid "Could not determine provider for this input."
 msgstr ""
 
-#: src/check_truststore/cli.py:245
+#: src/check_truststore/cli.py:247
 msgid "No certificates found to display."
 msgstr ""
 
-#: src/check_truststore/cli.py:267
+#: src/check_truststore/cli.py:272
 msgid "Analysis interrupted by user"
 msgstr ""
 
-#: src/check_truststore/cli.py:270
+#: src/check_truststore/cli.py:275
 msgid "An unexpected error occurred"
 msgstr ""

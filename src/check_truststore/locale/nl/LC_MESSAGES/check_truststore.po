@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-04 18:32+0200\n"
+"POT-Creation-Date: 2026-05-05 11:40+0200\n"
 "PO-Revision-Date: 2026-04-13 11:08+0200\n"
 "Last-Translator: Serge van Thillo <nulleke76@gmail.com>\n"
 "Language-Team: Dutch <vertaling@vrijschrift.org>\n"
@@ -365,6 +365,51 @@ msgstr ""
 "Padlengte-beperking overschreden. Uitgever staat maximaal {limit} tussen-"
 "certificaten toe."
 
+#: src/check_truststore/engine/builder.py:181
+#, python-brace-format
+msgid "Broken circular chain at {ski_id}"
+msgstr "Circulaire keten verbroken bij {ski_id}"
+
+#: src/check_truststore/engine/builder.py:182
+msgid "CYCLE_BREAKER"
+msgstr "CYCLUS_BREKER"
+
+#: src/check_truststore/engine/builder.py:285
+msgid "SIG_ERR"
+msgstr "SIG_FOUT"
+
+#: src/check_truststore/engine/builder.py:288
+msgid "REVOKED"
+msgstr "INGETROKKEN"
+
+#: src/check_truststore/engine/builder.py:291 src/check_truststore/cli.py:110
+msgid "INVALID"
+msgstr "ONGELDIG"
+
+#: src/check_truststore/engine/builder.py:334
+#, python-brace-format
+msgid "Missing issuer for: {name}"
+msgstr "Ontbrekende issuer voor: {name}"
+
+#: src/check_truststore/engine/builder.py:337
+msgid "UNTRUSTED"
+msgstr "GEEN_TRUST"
+
+#: src/check_truststore/engine/builder.py:548
+#: src/check_truststore/engine/builder.py:550
+#: src/check_truststore/renderers/text_renderer.py:89
+msgid "Unknown"
+msgstr "Onbekend"
+
+#: src/check_truststore/engine/builder.py:638
+#, python-brace-format
+msgid "AIA: {name}"
+msgstr "AIA: {name}"
+
+#: src/check_truststore/engine/builder.py:639
+msgid "Successfully discovered issuer via AIA"
+msgstr "Uitgever succesvol gevonden via AIA"
+
 #: src/check_truststore/engine/orchestrator.py:58
 msgid "SystemProvider"
 msgstr "Systeem-provider"
@@ -432,90 +477,56 @@ msgstr "Maximale certificaatlimiet ({limit}) bereikt. Scan wordt gestopt."
 msgid "File too large ({size:.1f}MB)"
 msgstr "Bestand te groot ({size:.1f}MB)."
 
-#: src/check_truststore/engine/builder.py:181
-#, python-brace-format
-msgid "Broken circular chain at {ski_id}"
-msgstr "Circulaire keten verbroken bij {ski_id}"
-
-#: src/check_truststore/engine/builder.py:182
-msgid "CYCLE_BREAKER"
-msgstr "CYCLUS_BREKER"
-
-#: src/check_truststore/engine/builder.py:285
-msgid "SIG_ERR"
-msgstr "SIG_FOUT"
-
-#: src/check_truststore/engine/builder.py:288
-msgid "REVOKED"
-msgstr "INGETROKKEN"
-
-#: src/check_truststore/engine/builder.py:291 src/check_truststore/cli.py:97
-msgid "INVALID"
-msgstr "ONGELDIG"
-
-#: src/check_truststore/engine/builder.py:334
-#, python-brace-format
-msgid "Missing issuer for: {name}"
-msgstr "Ontbrekende issuer voor: {name}"
-
-#: src/check_truststore/engine/builder.py:337
-msgid "UNTRUSTED"
-msgstr "GEEN_TRUST"
-
-#: src/check_truststore/engine/builder.py:548
-#: src/check_truststore/engine/builder.py:550
-#: src/check_truststore/renderers/text_renderer.py:89
-msgid "Unknown"
-msgstr "Onbekend"
-
-#: src/check_truststore/engine/builder.py:638
-#, python-brace-format
-msgid "AIA: {name}"
-msgstr "AIA: {name}"
-
-#: src/check_truststore/engine/builder.py:639
-msgid "Successfully discovered issuer via AIA"
-msgstr "Uitgever succesvol gevonden via AIA"
-
 #: src/check_truststore/providers/json_provider.py:76
 msgid "Unknown JSON format or malformed structure."
 msgstr "Onbekend JSON-formaat of ongeldige structuur."
 
 #: src/check_truststore/providers/json_provider.py:90
-#: src/check_truststore/providers/yaml_provider.py:80
+#: src/check_truststore/providers/yaml_provider.py:174
 msgid "Unnamed Store"
 msgstr "Naamloze store"
 
 #: src/check_truststore/providers/json_provider.py:110
-#: src/check_truststore/providers/yaml_provider.py:107
+#: src/check_truststore/providers/yaml_provider.py:189
 msgid "Certificate not found in {}"
 msgstr "Certificaat niet gevonden in {}"
 
 #: src/check_truststore/providers/json_provider.py:110
-#: src/check_truststore/providers/yaml_provider.py:107
+#: src/check_truststore/providers/yaml_provider.py:189
 msgid "MISSING"
 msgstr "ONTBREEKT"
 
-#: src/check_truststore/providers/yaml_provider.py:60
+#: src/check_truststore/providers/yaml_provider.py:91
+msgid "Jinja2 Render Error"
+msgstr "Jinja2 Render-fout"
+
+#: src/check_truststore/providers/yaml_provider.py:95
+msgid "Jinja2 not found. Using regex fallback."
+msgstr "Jinja2 niet gevonden. Gebruik regex-fallback."
+
+#: src/check_truststore/providers/yaml_provider.py:145
+msgid "YAML Syntax Error"
+msgstr "YAML Verwerkingsfout"
+
+#: src/check_truststore/providers/yaml_provider.py:146
+msgid ""
+"Found unquoted Jinja2 delimiters. Wrap expressions like '{{ var }}' in "
+"quotes."
+msgstr ""
+"Niet-gequote Jinja2 delimiters gevonden. Omsluit expressies zoals '{{ var }}' "
+"met aanhalingstekens."
+
+#: src/check_truststore/providers/yaml_provider.py:155
 msgid "YAML Parse Error"
 msgstr "YAML Verwerkingsfout"
 
-#: src/check_truststore/providers/yaml_provider.py:111
-#, python-brace-format
-msgid "Loaded group configuration with {count} files."
-msgstr "Groep configuratie geladen met {count} certificaten."
-
-#: src/check_truststore/providers/yaml_provider.py:114
+#: src/check_truststore/providers/yaml_provider.py:194
 msgid "Group contains no valid certificates."
 msgstr "Groep heeft GEEN geldige certificaten."
 
-#: src/check_truststore/providers/yaml_provider.py:114
+#: src/check_truststore/providers/yaml_provider.py:194
 msgid "EMPTY_GROUP"
 msgstr "LEGE_GROEP"
-
-#: src/check_truststore/renderers/__init__.py:25
-msgid "Unknown format: {}"
-msgstr "Onbekend formaat: {}"
 
 #: src/check_truststore/renderers/text_renderer.py:41
 msgid "SIG_INVALID"
@@ -559,142 +570,141 @@ msgstr "Gebruik"
 msgid "ALT"
 msgstr "ALT"
 
-#: src/check_truststore/cli.py:92
+#: src/check_truststore/renderers/__init__.py:56
+msgid "Unknown format: {}"
+msgstr "Onbekend formaat: {}"
+
+#: src/check_truststore/cli.py:105
 msgid "ERROR"
 msgstr "FOUT"
 
-#: src/check_truststore/cli.py:93
+#: src/check_truststore/cli.py:106
 msgid "WARNING"
 msgstr "WAARSCHUWING"
 
-#: src/check_truststore/cli.py:94
+#: src/check_truststore/cli.py:107
 msgid "OK"
 msgstr "OK"
 
-#: src/check_truststore/cli.py:95
+#: src/check_truststore/cli.py:108
 msgid "INFO"
 msgstr "INFO"
 
-#: src/check_truststore/cli.py:96
+#: src/check_truststore/cli.py:109
 msgid "CHAIN"
 msgstr "KETEN"
 
-#: src/check_truststore/cli.py:98
+#: src/check_truststore/cli.py:111
 msgid "EXPIRED"
 msgstr "VERLOPEN"
 
-#: src/check_truststore/cli.py:99
+#: src/check_truststore/cli.py:112
 msgid "EXPIRING"
 msgstr "BIJNA_VERLOPEN"
 
-#: src/check_truststore/cli.py:100
+#: src/check_truststore/cli.py:113
 msgid "SYSTEM"
 msgstr "SYSTEEM"
 
-#: src/check_truststore/cli.py:101
+#: src/check_truststore/cli.py:114
 msgid "PARENT_NOT_A_CA"
 msgstr "OUDER_GEEN_CA"
 
-#: src/check_truststore/cli.py:110
-#, python-brace-format
-msgid "Path '{path}' does not exist."
-msgstr "Pad '{path}' bestaat niet."
-
-#: src/check_truststore/cli.py:116
+#: src/check_truststore/cli.py:118
 msgid "Analyze certificate truststores and visualize the chain hierarchy."
 msgstr "Analyseer certificaat truststores en visualiseer de hiërarchie."
 
-#: src/check_truststore/cli.py:118
+#: src/check_truststore/cli.py:120
 msgid "Compatible with Python 3.6+"
 msgstr "Compatibel met Python 3.6+"
 
-#: src/check_truststore/cli.py:126
+#: src/check_truststore/cli.py:128
 msgid "Show this help message and exit"
 msgstr "Toon dit helpbericht en sluit af"
 
-#: src/check_truststore/cli.py:129
+#: src/check_truststore/cli.py:131
 msgid "Path to the input source(s)"
 msgstr "Pad naar de invoerbron(en)"
 
-#: src/check_truststore/cli.py:132
+#: src/check_truststore/cli.py:134
 msgid "Input & Network Configuration"
 msgstr "Input- & Netwerkconfiguratie"
 
-#: src/check_truststore/cli.py:138
+#: src/check_truststore/cli.py:140
 msgid "Incorporate system truststore"
 msgstr "Systeem-truststore betrekken bij analyse"
 
-#: src/check_truststore/cli.py:145
+#: src/check_truststore/cli.py:147
 msgid "Allow internet access for AIA discovery and revocation checks"
 msgstr "Sta internettoegang toe voor AIA-discovery en intrekkingscontroles"
 
-#: src/check_truststore/cli.py:150
+#: src/check_truststore/cli.py:152
 msgid "Bypass local cache and force download of AIA/CRL/OCSP data"
 msgstr "Lokale cache omzeilen en download van AIA/CRL/OCSP-gegevens afdwingen"
 
-#: src/check_truststore/cli.py:155
+#: src/check_truststore/cli.py:157
 msgid "Override safety limits (max file size and certificate count)"
 msgstr ""
 "Veiligheidslimieten negeren (max. bestandsgrootte en aantal certificaten)"
 
-#: src/check_truststore/cli.py:158
+#: src/check_truststore/cli.py:160
 msgid "Analysis Settings"
 msgstr "Analyse-instellingen"
 
-#: src/check_truststore/cli.py:164
+#: src/check_truststore/cli.py:166
 msgid "Expiration threshold in days (default: 30)"
 msgstr "Vervaldrempel in dagen (standaard: 30)"
 
-#: src/check_truststore/cli.py:170
+#: src/check_truststore/cli.py:172
 msgid "Maximum recursion depth for chain discovery (default: 4)"
 msgstr "Maximale recursiediepte voor keten-ontdekking (standaard: 4)"
 
-#: src/check_truststore/cli.py:173
+#: src/check_truststore/cli.py:175
 msgid "Output & Debugging"
 msgstr "Output & Debugging"
 
-#: src/check_truststore/cli.py:179
+#: src/check_truststore/cli.py:181
 msgid "Output format"
 msgstr "Output formaat"
 
-#: src/check_truststore/cli.py:186
+#: src/check_truststore/cli.py:188
 msgid "Increase output verbosity (e.g., -v for SANs, -vv for policy findings)"
 msgstr ""
 "Verhoog de uitgebreidheid van de output (bijv. -v voor SANs, -vv voor "
 "beleidsbevindingen)"
 
-#: src/check_truststore/cli.py:192
+#: src/check_truststore/cli.py:194
 msgid "Show debug info"
 msgstr "Toon debug informatie"
 
-#: src/check_truststore/cli.py:211
+#: src/check_truststore/cli.py:213
 msgid "Parameter '-o' is unknown"
 msgstr "Parameter '-o' is onbekend"
 
-#: src/check_truststore/cli.py:212
+#: src/check_truststore/cli.py:214
 msgid "Did you mean '-O' (uppercase) for online discovery?"
 msgstr "Bedoelde u '-O' (hoofdletter) voor online ontdekking?"
 
-#: src/check_truststore/cli.py:221
+#: src/check_truststore/cli.py:223
 msgid "Stdin requested via '-' but no data piped."
 msgstr "Stdin aangevraagd via '-', maar geen data ontvangen via pipe."
 
-#: src/check_truststore/cli.py:240
+#: src/check_truststore/cli.py:242
 msgid "No certificates found via this provider."
 msgstr "Geen certificaten gevonden via deze provider."
 
-#: src/check_truststore/cli.py:242
+#: src/check_truststore/cli.py:244
 msgid "Could not determine provider for this input."
 msgstr "Kon geen geschikte provider vinden voor deze invoer."
 
-#: src/check_truststore/cli.py:245
+#: src/check_truststore/cli.py:247
 msgid "No certificates found to display."
 msgstr "Geen certificaten gevonden om weer te geven."
 
-#: src/check_truststore/cli.py:267
+#: src/check_truststore/cli.py:272
 msgid "Analysis interrupted by user"
 msgstr "Analyse afgebroken door gebruiker"
 
-#: src/check_truststore/cli.py:270
+#: src/check_truststore/cli.py:275
 msgid "An unexpected error occurred"
 msgstr "Er is een onverwachte fout opgetreden"
