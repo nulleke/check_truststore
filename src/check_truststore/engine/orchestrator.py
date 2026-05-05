@@ -41,6 +41,7 @@ class TrustStoreAnalyzer:
         analysis_results: List[CertificateGroup] = []
         system_hashes: Set[str] = set()
         system_pool: List[Dict[str, Any]] = []
+        blacklist_pool: List[Dict[str, Any]] = []
 
         if self.include_system:
             try:
@@ -48,10 +49,14 @@ class TrustStoreAnalyzer:
                 sys_provider = SystemInputProvider(repository=self.repo, **self.options)
 
                 for sys_group in sys_provider.get_groups():
+                    is_untrusted_store = "Untrusted" in sys_group.name or "Disallowed" in sys_group.name
                     resolved_sys = self._resolve_targets(sys_group.targets, is_system=True)
-                    system_pool.extend(resolved_sys)
-                    for item in resolved_sys:
-                        system_hashes.add(item["hash"])
+                    if is_untrusted_store:
+                        blacklist_pool.extend(resolved_sys)
+                    else:
+                        system_pool.extend(resolved_sys)
+                        for item in resolved_sys:
+                            system_hashes.add(item["hash"])
             except Exception as e:
                 if self.debug:
                     from .logging import WARNING

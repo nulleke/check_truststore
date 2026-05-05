@@ -53,7 +53,7 @@ class _BaseUniversal:
         Interprets special nodes like orphans. If a node is identified as
         an orphan, it sets default 'invalid' states and a Unix epoch expiry date.
         """
-        cn = data.get("common_name") or data.get("commonName")
+        cn = data.get("common_name")
         if cn in [ORPHAN_NODE_ID, CYCLE_NODE_ID]:
             special = {
                 "is_valid": False,
@@ -81,6 +81,9 @@ class _BaseUniversal:
 
         if "CHAIN_EXPIRED" in v_err:
             return {"code": 2, "label": "EXPIRED", "message": "Trust chain is broken due to expired parent.", "level": "error"}
+
+        if getattr(self, "is_blacklisted", False):
+            return {"code": 5, "label": "OS_BLACKLISTED", "message": "Explicitly untrusted by the OS.", "level": "error"}
 
         findings = getattr(self, "findings", [])
         if findings:
@@ -247,6 +250,7 @@ if PYDANTIC_AVAILABLE:
         expiry_date: Union[datetime, str] = Field("1970-01-01", alias="expiryDate")
         is_collision: bool = Field(False, alias="isCollision", exclude=True)
         is_system_cert: bool = Field(False, alias="isSystemCert", exclude=True)
+        is_blacklisted: bool = Field(False, alias="isBlacklisted", exclude=True)
         is_aia_cert: bool = Field(False, alias="isAiaCert", exclude=True)
         ocsp_status: str = Field("UNKNOWN", alias="ocspStatus", exclude=True)
         is_root: bool = Field(False, alias="isRoot", exclude=True)
@@ -286,6 +290,8 @@ if PYDANTIC_AVAILABLE:
         def model_dump(self, **kwargs):
             """Custom dump logic to ensure recursive sorting of children."""
             d = super().model_dump(by_alias=True, **kwargs)
+            d["isBlacklisted"] = self.is_blacklisted
+            d["isSystemCert"] = self.is_system_cert
             d["auditStatus"] = self.get_audit_status()
             if self.findings:
                 d["findings"] = [f.model_dump() if hasattr(f, "model_dump") else str(f) for f in self.findings]
@@ -333,6 +339,7 @@ else:
                 "signatureValid": "signature_valid",
                 "validationError": "validation_error",
                 "isSystemCert": "is_system_cert",
+                "isBlacklisted": "is_blacklisted",
                 "isRoot": "is_root",
                 "isAiaCert": "is_aia_cert",
                 "ocspStatus": "ocsp_status",
@@ -384,6 +391,7 @@ else:
                 "signatureValid": getattr(self, "signature_valid", None),
                 "sha256Hash": getattr(self, "sha256_hash", ""),
                 "isSystemCert": getattr(self, "is_system_cert", False),
+                "isBlacklisted": getattr(self, "is_blacklisted", False),
                 "ocspStatus": getattr(self, "ocsp_status", "UNKNOWN"),
                 "certId": getattr(self, "cert_id", ""),
                 "auditStatus": self.get_audit_status(),

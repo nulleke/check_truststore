@@ -28,9 +28,13 @@ class SarifRenderer(BaseRenderer):
             results = []
 
             for group in groups:
-                all_nodes = getattr(group, "chain", [])
+                if hasattr(self, "_rendered_fingerprints"):
+                    self._rendered_fingerprints.clear()
 
-                for cert in all_nodes:
+                for cert in self._get_sorted_nodes(getattr(group, "chain", [])):
+                    if self._should_skip(cert):
+                        continue
+
                     if getattr(cert, "is_system_cert", False):
                         continue
 

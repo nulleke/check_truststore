@@ -95,6 +95,9 @@ class XmlInputProvider(BaseInputProvider):
             if addr_elem is not None:
                 address = addr_elem.get("addr", address)
 
+            hostname_elem = host.find(".//hostnames/hostname[@type='user']") or host.find(".//hostnames/hostname")
+            display_name = hostname_elem.get("name") if hostname_elem is not None else address
+
             for port_elem in host.findall(".//port"):
                 port_id = port_elem.get("portid", "unknown")
                 script = port_elem.find("./script[@id='ssl-cert']")
@@ -115,7 +118,7 @@ class XmlInputProvider(BaseInputProvider):
 
                             if temp_certs:
                                 groups.append(TrustStoreGroup(
-                                    name=f"Nmap: {address}:{port_id}",
+                                    name=f"Nmap: {display_name}:{port_id}",
                                     targets=temp_certs
                                 ))
         return groups

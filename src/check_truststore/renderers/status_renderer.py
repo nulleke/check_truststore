@@ -47,14 +47,20 @@ class StatusRenderer(BaseRenderer):
             groups = tree_data if isinstance(tree_data, list) else [tree_data]
 
             for group in groups:
+                if hasattr(self, "_rendered_fingerprints"):
+                    self._rendered_fingerprints.clear()
+
                 g_name = getattr(group, "group_name", "unknown")
-                all_nodes = getattr(group, "chain", [])
+                all_nodes = self._get_sorted_nodes(getattr(group, "chain", []))
 
                 certificates_report: List[Dict[str, Any]] = []
                 group_max_code: int = 0
                 has_incomplete_chain: bool = False
 
                 for cert in all_nodes:
+                    if self._should_skip(cert):
+                        continue
+
                     c_name = getattr(cert, "common_name", "")
                     audit = cert.get_audit_status()
 

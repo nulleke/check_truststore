@@ -118,6 +118,13 @@ class PolicyEngine:
                 code_int=3
             ))
 
+        if hasattr(cert, 'ocsp_status') and cert.ocsp_status == "REVOKED":
+            findings.append(PolicyFinding(
+                "ERROR", "REVOKED_IN_CHAIN",
+                N_("This certificate is untrusted because it or an issuer in its chain has been revoked."),
+                code_int=5
+            ))
+
         # Usage & Extension checks
         findings.extend(self._check_eku_compliance(cert))
 

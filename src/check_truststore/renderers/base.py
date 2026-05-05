@@ -43,6 +43,7 @@ class BaseRenderer(ABC):
         self.output_path = output_path
         self.verbosity = 0
         self.now = datetime.now(timezone.utc).replace(microsecond=0)
+        self._rendered_fingerprints = set()
 
     @staticmethod
     def format_iso(dt: Union[datetime, date, str, None]) -> str:
@@ -78,3 +79,29 @@ class BaseRenderer(ABC):
             A string representation of the data in the target format.
         """
         pass
+
+    def _get_sorted_nodes(self, nodes: List[Any]) -> List[Any]:
+        """
+        Sorts nodes by expiry date (descending) to ensure the longest-lived
+        certificates are processed first for deduplication.
+        """
+        return sorted(
+            nodes,
+            key=lambda x: getattr(x, "expiry_date", None) or datetime(1970, 1, 1, tzinfo=timezone.utc),
+            reverse=True
+        )
+
+    def _should_skip(self, cert_node: Any) -> bool:
+        """
+        Determines if a certificate has already been rendered.
+        Used for deduplication in cross-signed trust paths.
+        """
+        fp = getattr(cert_node, "fingerprint", getattr(cert_node, "cert_id", None))
+        if not fp:
+            return False
+
+        if fp in self._rendered_fingerprints:
+            return True
+
+        self._rendered_fingerprints.add(fp)
+        return False

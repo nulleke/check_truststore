@@ -51,10 +51,17 @@ class JsonRenderer(BaseRenderer):
         """
         # Handle lists (like a list of groups)
         if isinstance(data, list):
-            return [self._to_basic_dict(item) for item in data]
+            result = []
+            for item in self._get_sorted_nodes(data):
+                if not self._should_skip(item):
+                    result.append(self._to_basic_dict(item))
+            return result
 
         # Handle CertificateGroup objects
         if hasattr(data, "groupName") or hasattr(data, "group_name"):
+            if hasattr(self, "_rendered_fingerprints"):
+                self._rendered_fingerprints.clear()
+
             return {
                 "groupName": getattr(
                     data, "groupName", getattr(data, "group_name", "Unknown")

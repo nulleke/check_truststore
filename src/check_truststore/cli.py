@@ -30,6 +30,7 @@
 import sys
 import argparse
 import json
+import io
 from pathlib import Path
 from typing import Optional
 
@@ -50,6 +51,17 @@ from check_truststore.providers import (
 )
 from check_truststore.renderers import TrustStoreRenderer
 from check_truststore.providers.base import BaseInputProvider
+
+def setup_utf8_output() -> None:
+    """
+    Forces UTF-8 encoding on stdout and stderr.
+    Crucial for older Python 3.6 environments and containers (e.g., Podman/Docker)
+    to prevent 'UnicodeEncodeError' when printing emojis or special symbols.
+    """
+    if sys.stdout.encoding is None or sys.stdout.encoding.lower() != 'utf-8':
+        if hasattr(sys.stdout, 'buffer'):
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 def get_provider(input_str: str, stdin_content: Optional[str], repo: CertificateRepository, **kwargs) -> Optional[BaseInputProvider]:
     """
@@ -88,6 +100,7 @@ def get_provider(input_str: str, stdin_content: Optional[str], repo: Certificate
     return SingleFileInputProvider(path, repository=repo, **kwargs)
 
 def main() -> None:
+    setup_utf8_output()
     try:
         _("ERROR")
         _("WARNING")
@@ -99,17 +112,6 @@ def main() -> None:
         _("EXPIRING")
         _("SYSTEM")
         _("PARENT_NOT_A_CA")
-
-        def valid_path(path_str: str) -> Path:
-            if path_str == "-":
-                return None
-
-            path = Path(path_str)
-            if not path.exists():
-                raise argparse.ArgumentTypeError(
-                    _("Path '{path}' does not exist.").format(path=path_str)
-                )
-            return path
 
         parser = argparse.ArgumentParser(
             description=_(
@@ -250,7 +252,10 @@ def main() -> None:
 
         renderer = TrustStoreRenderer()
         output = renderer.render(results, args.format, **vars(args))
-        print(output)
+
+        sys.stdout.write(output)
+        sys.stdout.flush()
+        print()
 
         if args.format == "status":
             try:

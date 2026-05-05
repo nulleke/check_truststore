@@ -43,6 +43,7 @@ class TrustChainBuilder:
         self,
         raw_certs_meta: List[Dict[str, Any]],
         authority_pool: Optional[List[Dict[str, Any]]] = None,
+        blacklist_pool: Optional[List[Dict[str, Any]]] = None,
         resolver: Optional[Any] = None,
         max_depth: int = 4
     ) -> List[Certificate]:
@@ -56,6 +57,11 @@ class TrustChainBuilder:
         """
         for item in raw_certs_meta:
             self._process_metadata(item)
+
+        if blacklist_pool:
+            for item in blacklist_pool:
+                item["is_blacklisted"] = True
+                self._process_metadata(item)
 
         if authority_pool:
             for item in authority_pool:
@@ -77,6 +83,7 @@ class TrustChainBuilder:
         path = item["path"]
         c_hash = item["hash"]
         is_system_cert = item.get("is_system_cert", False)
+        is_blacklisted = item.get("is_blacklisted", False)
         is_aia_cert = item.get("is_aia_cert", False)
 
         ski = self._get_extension(cert, x509.ExtensionOID.SUBJECT_KEY_IDENTIFIER)
@@ -148,10 +155,20 @@ class TrustChainBuilder:
             ),
             expiryDate=expiry,
             isSystemCert=is_system_cert,
+            isBlacklisted=is_blacklisted,
             isAiaCert=is_aia_cert,
             isRoot=(cert.subject == cert.issuer),
             sanNames=sans,
         )
+
+        if is_blacklisted:
+            cert_obj.add_finding(PolicyFinding(
+                level="ERROR",
+                code="OS_BLACKLISTED",
+                message=_("This certificate is explicitly untrusted by the Operating System (Blacklisted)."),
+                code_int=3
+            ))
+            cert_obj.isValid = False
 
         if cert_obj.is_expiring_soon and cert_obj.is_valid:
             cert_obj.add_finding(PolicyFinding(
@@ -468,8 +485,18 @@ class TrustChainBuilder:
                     code_int=3
                 ))
 
+            if parent_status == "OS_BLACKLISTED":
+                cert_info.is_valid = False
+                cert_info.add_finding(PolicyFinding(
+                    level="ERROR",
+                    code="CHAIN_BLACKLISTED",
+                    message=_("The chain is untrusted because an upstream issuer is blacklisted by the OS."),
+                    code_int=3
+                ))
+
             if parent_status == "REVOKED":
                  cert_info.ocsp_status = "REVOKED"
+                 cert_info.is_valid = False
 
             # Recurse for children
             child_skis = children_by_parent.get(ski, [])
