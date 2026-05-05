@@ -44,16 +44,29 @@ class SystemInputProvider(BaseInputProvider):
         import ssl
 
         groups = []
-        for store_name in ["ROOT", "CA"]:
+        target_stores = {
+            "ROOT": "Windows-Trusted-Root-CA",
+            "CA": "Windows-Intermediate-CA",
+            "Disallowed": "Windows-Untrusted-Certificates"
+        }
+        for store_name, display_name in target_stores.items():
             try:
-                certs_der = [cert[0] for cert in ssl.enum_certificates(store_name)]
+                certs = ssl.enum_certificates(store_name)
+
+                certs_der = []
+                for cert_data, encoding_type, trust_codes in certs:
+                    if encoding_type == 'x509_asn':
+                        certs_der.append(cert_data)
+
                 if certs_der:
                     groups.append(
                         TrustStoreGroup(
-                            name=f"Windows-{store_name}-Store",
+                            name=display_name,
                             targets=certs_der
                         )
                     )
+            except PermissionError:
+                continue
             except Exception:
                 continue
         return groups
@@ -77,9 +90,14 @@ class SystemInputProvider(BaseInputProvider):
                     break #
 
         elif os_type == "Darwin": # macOS
-            p = Path("/etc/ssl/cert.pem")
-            if p.exists():
-                paths.append(p)
+            common_mac_paths = [
+                "/etc/ssl/cert.pem",
+                "/usr/local/etc/openssl@3/cert.pem", # Homebrew OpenSSL 3
+            ]
+            for p_str in common_mac_paths:
+                p = Path("/etc/ssl/cert.pem")
+                if p.exists():
+                    paths.append(p)
 
         if paths:
             return [TrustStoreGroup(name=f"{os_type}-System-Store", targets=paths)]
