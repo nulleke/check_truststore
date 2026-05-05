@@ -51,13 +51,7 @@ class StatusRenderer(BaseRenderer):
                     self._rendered_fingerprints.clear()
 
                 g_name = getattr(group, "group_name", "unknown")
-                raw_nodes = getattr(group, "chain", [])
-
-                all_nodes = sorted(
-                    raw_nodes,
-                    key=lambda x: getattr(x, "expiry_date", None) or datetime(1970, 1, 1, tzinfo=timezone.utc),
-                    reverse=True
-                )
+                all_nodes = self._get_sorted_nodes(getattr(group, "chain", []))
 
                 certificates_report: List[Dict[str, Any]] = []
                 group_max_code: int = 0

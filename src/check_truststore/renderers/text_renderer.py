@@ -87,13 +87,7 @@ class TextRenderer(BaseRenderer):
         """
         lines = []
 
-        sorted_nodes = sorted(
-            nodes,
-            key=lambda x: getattr(x, "expiry_date", None) or datetime(1970, 1, 1, tzinfo=timezone.utc),
-            reverse=True
-        )
-
-        for i, n in enumerate(sorted_nodes):
+        for i, n in enumerate(self._get_sorted_nodes(nodes)):
             if self._should_skip(n):
                 continue
 

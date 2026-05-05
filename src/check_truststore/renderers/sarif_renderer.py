@@ -5,7 +5,6 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 """
 
 import json
-from datetime import datetime, timezone
 from typing import Any, Dict, List
 
 from .base import BaseRenderer
@@ -32,14 +31,7 @@ class SarifRenderer(BaseRenderer):
                 if hasattr(self, "_rendered_fingerprints"):
                     self._rendered_fingerprints.clear()
 
-                raw_nodes = getattr(group, "chain", [])
-                all_nodes = sorted(
-                    raw_nodes,
-                    key=lambda x: getattr(x, "expiry_date", None) or datetime(1970, 1, 1, tzinfo=timezone.utc),
-                    reverse=True
-                )
-
-                for cert in all_nodes:
+                for cert in self._get_sorted_nodes(getattr(group, "chain", [])):
                     if self._should_skip(cert):
                         continue
 

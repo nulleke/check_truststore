@@ -80,6 +80,17 @@ class BaseRenderer(ABC):
         """
         pass
 
+    def _get_sorted_nodes(self, nodes: List[Any]) -> List[Any]:
+        """
+        Sorts nodes by expiry date (descending) to ensure the longest-lived
+        certificates are processed first for deduplication.
+        """
+        return sorted(
+            nodes,
+            key=lambda x: getattr(x, "expiry_date", None) or datetime(1970, 1, 1, tzinfo=timezone.utc),
+            reverse=True
+        )
+
     def _should_skip(self, cert_node: Any) -> bool:
         """
         Determines if a certificate has already been rendered.
