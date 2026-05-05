@@ -498,7 +498,7 @@ The specialized **Graphviz Renderer** transforms the certificate hierarchy into 
 ### Topology Map Example
 The following map demonstrates how the analyzer handles cross-signed intermediates and flags various failure states like broken signatures or missing roots:
 
-![TrustStore Topology Map](https://gitlab.com/nulleke/check_truststore/-/raw/main/docs/images/topology.png)
+![TrustStore Topology Example](https://raw.githubusercontent.com/nulleke/check_truststore/main/docs/images/topology.png)
 
 #### Usage
 To generate a DOT file and convert it to an image (requires Graphviz installation):
