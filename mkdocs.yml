@@ -7,3 +7,6 @@ theme:
 nav:
   - Home: README.md
   - Contributing: CONTRIBUTING.md
+
+extra:
+  use_directory_urls: false
