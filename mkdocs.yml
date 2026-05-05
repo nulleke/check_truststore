@@ -1,0 +1,9 @@
+site_name: TrustStore Analyzer
+site_description: Audit and visualize certificate truststores.
+
+theme:
+  name: material
+
+  nav:
+    - Home: README.md
+    - Contributing: CONTRIBUTING.md
