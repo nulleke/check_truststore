@@ -1,8 +1,9 @@
 # Include the license and readme
 include LICENSE
 include README.md
-include MODELS.md
-include CONTRIBUTING.md
+include docs/MODELS.md
+include docs/CONTRIBUTING.md
+include docs/CHANGELOG.md
 
 # Include all translation files (.po and .mo)
 recursive-include src/check_truststore/locale *.mo

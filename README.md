@@ -587,7 +587,7 @@ To update or add translations, use the provided utility script:
 ## 🤝 Contributing
 Contributions are welcome! Whether it's reporting a bug, suggesting an enhancement, or submitting a pull request, your help is appreciated.
 
-Please see our [CONTRIBUTING.md](CONTRIBUTING.md) for details on our development standards, legacy environment support (RHEL 8), and how to get started.
+Please see our [CONTRIBUTING.md](https://raw.githubusercontent.com/nulleke/check_truststore/main/docs/CONTRIBUTING.md) for details on our development standards, legacy environment support (RHEL 8), and how to get started.
 
 ## ⚖️ License
 **Copyright (C) 2024-2026 Serge van Thillo**
