@@ -113,6 +113,14 @@ class _BaseUniversal:
         if getattr(self, "is_aia_cert", False):
             return {"code": 0, "label": "AIA", "message": "Fetched via Authority Information Access.", "level": "note"}
 
+        pk_info = getattr(self, "public_key_info", {})
+        if pk_info.get("algorithm") == "rsa" and pk_info.get("bits", 4096) < 2048:
+            return {"code": 4, "label": "WEAK_KEY", "message": "RSA key size below 2048 bits.", "level": "error"}
+
+        sig_alg = getattr(self, "signature_algorithm", "")
+        if sig_alg and "sha1" in sig_alg.lower():
+            return {"code": 4, "label": "WEAK_SIG", "message": "SHA-1 is deprecated.", "level": "error"}
+
         return {"code": 0, "label": "VALID", "message": "Valid", "level": "note"}
 
     @property
@@ -129,9 +137,19 @@ class _BaseUniversal:
     def status_label(self) -> str:
         return self.get_audit_status()["label"]
 
+    @property
+    def display_name(self) -> str:
+        """
+        Geeft de naam terug inclusief het subject-serienummer indien aanwezig.
+        """
+        cn = getattr(self, "common_name", "Unknown")
+        sn = getattr(self, "subject_serial", None)
+        if sn:
+            return f"{cn} (S/N: {sn})"
+        return cn
+
 
 if PYDANTIC_AVAILABLE:
-
     class CertificateGroup(_BaseUniversal, BaseModel):
         """
         A logical collection of certificates (e.g., a file or a system store).
@@ -183,6 +201,108 @@ if PYDANTIC_AVAILABLE:
         def model_dump(self, **kwargs):
             """Ensures JSON output uses camelCase aliases."""
             return super().model_dump(by_alias=True)
+
+    class Certificate(_BaseUniversal, BaseModel):
+        """
+        Represents a parsed X.509 certificate with validation metadata.
+        Standardizes certificate data across different Python versions.
+        """
+
+        common_name: str = Field(..., alias="commonName")
+        subject_serial: Optional[str] = Field(None, alias="subjectSerial")
+        serial_number: str = Field("UNKNOWN", alias="serialNumber")
+        file_name: str = Field("", alias="fileName", exclude=True)
+        sha256_hash: str = Field("", alias="sha256Hash", exclude=True)
+        expiry_date: Union[datetime, str] = Field("1970-01-01", alias="expiryDate")
+
+        ski: Optional[str] = Field(None, exclude=True)
+        aki: Optional[str] = Field(None, exclude=True)
+
+        is_valid: bool = Field(False, alias="isValid")
+        is_expiring_soon: bool = Field(False, alias="isExpiringSoon")
+        is_collision: bool = Field(False, alias="isCollision", exclude=True)
+        is_system_cert: bool = Field(False, alias="isSystemCert", exclude=True)
+        is_blacklisted: bool = Field(False, alias="isBlacklisted", exclude=True)
+        is_aia_cert: bool = Field(False, alias="isAiaCert", exclude=True)
+        is_in_circular_group: bool = Field(False, exclude=True)
+        is_root: bool = Field(False, alias="isRoot", exclude=True)
+
+        cert_id: str = Field("", alias="certId", exclude=True)
+
+        signature_valid: Optional[bool] = Field(None, exclude=True)
+        validation_error: Optional[str] = Field(None, exclude=True)
+        signature_algorithm: Optional[str] = Field(None, alias="signatureAlgorithm", exclude=True)
+
+        findings: List[Any] = Field(default_factory=list, exclude=False)
+
+        aia_ca_issuers: List[str] = Field(default_factory=list, alias="aiaCaIssuers", exclude=True)
+        aia_ocsp_urls: List[str] = Field(default_factory=list, alias="aiaOcspUrls", exclude=True)
+        ocsp_status: str = Field("UNKNOWN", alias="ocspStatus", exclude=True)
+
+        public_key_info: Dict[str, Any] = Field(default_factory=dict, alias="publicKeyInfo", exclude=True)
+        children: Optional[List["Certificate"]] = Field(default_factory=list)
+        parents: List["Certificate"] = Field(default_factory=list, exclude=True)
+
+        extensions: Dict[str, Any] = Field(default_factory=dict, exclude=True)
+        san_names: List[str] = Field(
+            default_factory=list, alias="sanNames", exclude=True
+        )
+
+        model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
+
+        @model_validator(mode="before")
+        @classmethod
+        def validate_node_v2(cls, data: Any) -> Any:
+            """Triggers special data handling (like orphans) before Pydantic validation."""
+            return cls._apply_special_logic(data) if isinstance(data, dict) else data
+
+        def add_parent(self, parent: "Certificate"):
+            parent_hashes = {p.sha256_hash for p in self.parents}
+            if parent.sha256_hash not in parent_hashes:
+                self.parents.append(parent)
+                parent.add_child(self)
+
+        def add_child(self, child: "Certificate"):
+            child_hashes = {c.sha256_hash for c in self.children}
+            if child.sha256_hash not in child_hashes:
+                self.children.append(child)
+
+        def model_dump(self, **kwargs):
+            """Custom dump logic to ensure recursive sorting of children."""
+            d = super().model_dump(by_alias=True, **kwargs)
+            d["subjectSerial"] = self.subject_serial
+            d["isBlacklisted"] = self.is_blacklisted
+            d["isSystemCert"] = self.is_system_cert
+            d["auditStatus"] = self.get_audit_status()
+            d["publicKeyInfo"] = self.public_key_info
+            d["signatureAlgorithm"] = self.signature_algorithm
+            d["aia"] = {"issuers": self.aia_ca_issuers, "ocsp": self.aia_ocsp_urls}
+
+            if self.findings:
+                d["findings"] = [f.model_dump() if hasattr(f, "model_dump") else str(f) for f in self.findings]
+
+            if getattr(self, "is_in_circular_group", False):
+                d["children"] = []
+                return d
+
+            if self.children:
+                sorted_children = sorted(
+                    self.children,
+                    key=lambda x: (
+                        getattr(x, "common_name", "").lower(),
+                        getattr(x, "serial_number", "").lower(),
+                        getattr(x, "sha256_hash", "").lower(),
+                    ),
+                )
+                d["children"] = [c.model_dump(**kwargs) for c in sorted_children]
+            else:
+                d["children"] = []
+
+            return d
+
+        def add_finding(self, finding):
+            self.findings.append(finding)
+
 else:
 
     class CertificateGroup(_BaseUniversal):
@@ -232,94 +352,6 @@ else:
                 "chain": [c.model_dump(**kwargs) for c in self.chain],
             }
 
-
-if PYDANTIC_AVAILABLE:
-
-    class Certificate(_BaseUniversal, BaseModel):
-        """
-        Represents a parsed X.509 certificate with validation metadata.
-        Standardizes certificate data across different Python versions.
-        """
-
-        common_name: str = Field(..., alias="commonName")
-        serial_number: str = Field("UNKNOWN", alias="serialNumber")
-        file_name: str = Field("", alias="fileName", exclude=True)
-        sha256_hash: str = Field("", alias="sha256Hash", exclude=True)
-        is_valid: bool = Field(False, alias="isValid")
-        is_expiring_soon: bool = Field(False, alias="isExpiringSoon")
-        expiry_date: Union[datetime, str] = Field("1970-01-01", alias="expiryDate")
-        is_collision: bool = Field(False, alias="isCollision", exclude=True)
-        is_system_cert: bool = Field(False, alias="isSystemCert", exclude=True)
-        is_blacklisted: bool = Field(False, alias="isBlacklisted", exclude=True)
-        is_aia_cert: bool = Field(False, alias="isAiaCert", exclude=True)
-        ocsp_status: str = Field("UNKNOWN", alias="ocspStatus", exclude=True)
-        is_root: bool = Field(False, alias="isRoot", exclude=True)
-        cert_id: str = Field("", alias="certId", exclude=True)
-        san_names: List[str] = Field(
-            default_factory=list, alias="sanNames", exclude=True
-        )
-        signature_valid: Optional[bool] = Field(None, exclude=True)
-        validation_error: Optional[str] = Field(None, exclude=True)
-        findings: List[Any] = Field(default_factory=list, exclude=False)
-        children: Optional[List["Certificate"]] = Field(default_factory=list)
-        parents: List["Certificate"] = Field(default_factory=list, exclude=True)
-        is_in_circular_group: bool = Field(False, exclude=True)
-
-        ski: Optional[str] = Field(None, exclude=True)
-        aki: Optional[str] = Field(None, exclude=True)
-
-        model_config = ConfigDict(populate_by_name=True, arbitrary_types_allowed=True)
-
-        @model_validator(mode="before")
-        @classmethod
-        def validate_node_v2(cls, data: Any) -> Any:
-            """Triggers special data handling (like orphans) before Pydantic validation."""
-            return cls._apply_special_logic(data) if isinstance(data, dict) else data
-
-        def add_parent(self, parent: "Certificate"):
-            parent_hashes = {p.sha256_hash for p in self.parents}
-            if parent.sha256_hash not in parent_hashes:
-                self.parents.append(parent)
-                parent.add_child(self)
-
-        def add_child(self, child: "Certificate"):
-            child_hashes = {c.sha256_hash for c in self.children}
-            if child.sha256_hash not in child_hashes:
-                self.children.append(child)
-
-        def model_dump(self, **kwargs):
-            """Custom dump logic to ensure recursive sorting of children."""
-            d = super().model_dump(by_alias=True, **kwargs)
-            d["isBlacklisted"] = self.is_blacklisted
-            d["isSystemCert"] = self.is_system_cert
-            d["auditStatus"] = self.get_audit_status()
-            if self.findings:
-                d["findings"] = [f.model_dump() if hasattr(f, "model_dump") else str(f) for f in self.findings]
-
-            if getattr(self, "is_in_circular_group", False):
-                d["children"] = []
-                return d
-
-            if self.children:
-                sorted_children = sorted(
-                    self.children,
-                    key=lambda x: (
-                        getattr(x, "common_name", "").lower(),
-                        getattr(x, "serial_number", "").lower(),
-                        getattr(x, "sha256_hash", "").lower(),
-                    ),
-                )
-                d["children"] = [c.model_dump(**kwargs) for c in sorted_children]
-            else:
-                d["children"] = []
-
-            return d
-
-        def add_finding(self, finding):
-            self.findings.append(finding)
-
-else:
-
     class Certificate(_BaseUniversal):
         """Fallback implementation of Certificate for environments without Pydantic."""
 
@@ -330,26 +362,38 @@ else:
 
             mapping = {
                 "commonName": "common_name",
+                "subjectSerial": "subject_serial",
                 "serialNumber": "serial_number",
                 "fileName": "file_name",
                 "sha256Hash": "sha256_hash",
+                "expiryDate": "expiry_date",
                 "isValid": "is_valid",
                 "isExpiringSoon": "is_expiring_soon",
-                "expiryDate": "expiry_date",
-                "signatureValid": "signature_valid",
-                "validationError": "validation_error",
+                "isCollision": "is_collision",
                 "isSystemCert": "is_system_cert",
                 "isBlacklisted": "is_blacklisted",
-                "isRoot": "is_root",
                 "isAiaCert": "is_aia_cert",
-                "ocspStatus": "ocsp_status",
-                "isCollision": "is_collision",
+                "isRoot": "is_root",
                 "certId": "cert_id",
+                "signatureValid": "signature_valid",
+                "validationError": "validation_error",
+                "signatureAlgorithm": "signature_algorithm",
+                "aiaCaIssuers": "aia_ca_issuers",
+                "aiaOcspUrls": "aia_ocsp_urls",
+                "ocspStatus": "ocsp_status",
+                "publicKeyInfo": "public_key_info",
+                "extensions": "extensions",
                 "sanNames": "san_names",
             }
 
+            self.subject_serial = data.get("subject_serial", data.get("subjectSerial"))
             self.children = []
             self.parents = []
+            self.aia_ca_issuers = []
+            self.aia_ocsp_urls = []
+            self.public_key_info = {}
+            self.signature_algorithm = None
+            self.extensions = {}
 
             for k, v in data.items():
                 setattr(self, mapping.get(k, k), v)
@@ -384,19 +428,26 @@ else:
             """Manual serialization to Dict for JSON output."""
             res = {
                 "commonName": getattr(self, "common_name", "UNKNOWN"),
+                "subjectSerial": getattr(self, "subject_serial", None),
                 "serialNumber": getattr(self, "serial_number", "UNKNOWN"),
                 "isValid": getattr(self, "is_valid", False),
                 "isExpiringSoon": getattr(self, "is_expiring_soon", False),
                 "expiryDate": self.expiry_date.isoformat().replace("+00:00", "Z") if isinstance(getattr(self, "expiry_date", None), datetime) else "1970-01-01",
                 "signatureValid": getattr(self, "signature_valid", None),
-                "sha256Hash": getattr(self, "sha256_hash", ""),
                 "isSystemCert": getattr(self, "is_system_cert", False),
                 "isBlacklisted": getattr(self, "is_blacklisted", False),
+                "isAiaCert": getattr(self, "is_aia_cert", False),
+                "auditStatus": self.get_audit_status(),
+                "publicKeyInfo": getattr(self, "public_key_info", {}),
+                "signatureAlgorithm": getattr(self, "signature_algorithm", None),
+                "aia": {
+                    "issuers": getattr(self, "aia_ca_issuers", []),
+                    "ocsp": getattr(self, "aia_ocsp_urls", [])
+                },
+                "findings": [f.model_dump() if hasattr(f, "model_dump") else str(f) for f in self.findings],
+                "sha256Hash": getattr(self, "sha256_hash", ""),
                 "ocspStatus": getattr(self, "ocsp_status", "UNKNOWN"),
                 "certId": getattr(self, "cert_id", ""),
-                "auditStatus": self.get_audit_status(),
-                "isAiaCert": getattr(self, "is_aia_cert", False),
-                "findings": [f.model_dump() if hasattr(f, "model_dump") else str(f) for f in self.findings],
             }
 
             if getattr(self, "is_in_circular_group", False):

@@ -95,7 +95,7 @@ class SystemInputProvider(BaseInputProvider):
                 "/usr/local/etc/openssl@3/cert.pem", # Homebrew OpenSSL 3
             ]
             for p_str in common_mac_paths:
-                p = Path("/etc/ssl/cert.pem")
+                p = Path(p_str)
                 if p.exists():
                     paths.append(p)
 

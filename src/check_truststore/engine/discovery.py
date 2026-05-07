@@ -29,7 +29,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from typing import Optional, List, Set
-from .logging import INFO, WARNING, ERROR, _, AIA as AIA_LOG
+from .logging import INFO, WARNING, ERROR, _
 
 
 class NetworkResolver:
@@ -62,7 +62,7 @@ class NetworkResolver:
         self.debug: bool = kwargs.get('debug', False)
         self.processed_urls: Set[str] = set()
         self.no_cache: bool = kwargs.get('no_cache', False)
-        self.max_workers = kwargs.get('max_workers', 5)
+        self.max_workers: int = kwargs.get('max_workers', 5)
 
         self.headers = {
             'User-Agent': (
@@ -72,130 +72,77 @@ class NetworkResolver:
             )
         }
 
-        # Cache setup
+        # Cache Paths
         self.cache_dir: Path = Path.home() / ".cache" / "truststore_analyzer"
         self.aia_cache: Path = self.cache_dir / "aia"
-        self.aia_cache_ttl_days: int = kwargs.get('aia_cache_ttl', 30)
+        self.aia_cache_ttl_days: int = kwargs.get('aia_cache_ttl', 10)
         self.ocsp_cache: Path = self.cache_dir / "ocsp"
         self.ocsp_cache_ttl_hours: int = kwargs.get('ocsp_cache_ttl_hours', 24)
 
+        self._ensure_cache_dirs()
+
+    def _ensure_cache_dirs(self) -> None:
+        """Creates necessary cache directories on initialization."""
         for p in [self.aia_cache, self.ocsp_cache]:
             try:
                 p.mkdir(parents=True, exist_ok=True)
             except Exception as e:
                 if self.debug:
-                    WARNING.log(_("Cache"), f"{_('Could not create cache directory')}: {e}")
+                    WARNING.log(_("CACHE"), f"{_('Could not create cache directory')}: {e}")
 
-    def resolve_all_issuers(self, child_cert: x509.Certificate) -> List[x509.Certificate]:
+    def resolve_via_aia_urls(self, urls: List[str], child_cert: Optional[x509.Certificate] = None) -> List[x509.Certificate]:
         """
-        Finds ALL potential issuers via local cache and AIA.
-        Crucial for cross-signed certificate graphs.
+        Primary entry point for AIA discovery.
+        Resolves issuers from URLs, checking cache first if a child_cert is provided.
         """
-        issuers = []
-        seen_fingerprints = set()
+        issuers: List[x509.Certificate] = []
+        seen_fingerprints: Set[str] = set()
 
-        aki = self._get_aki_hex(child_cert)
-        if not aki:
+        if not urls:
             return []
 
-        if not self.no_cache:
-            aki_dir = self.aia_cache / aki
-            if aki_dir.exists():
-                for cert_file in aki_dir.glob("*.der"):
-                    if self._is_cache_fresh(cert_file, self.aia_cache_ttl_days * 24):
-                        cert = self._load_cert_file(cert_file)
-                        if cert and self._get_fp(cert) not in seen_fingerprints:
-                            issuers.append(cert)
-                            seen_fingerprints.add(self._get_fp(cert))
+        if child_cert and not self.no_cache:
+            aki = self._get_aki_hex(child_cert)
+            if aki:
+                cached = self._get_from_aia_cache(aki)
+                if cached:
+                    if self.debug:
+                        INFO.log(_("AIA_CACHE"), _("Cache hit for AKI {aki}, skipping network.").format(aki=aki[:8]), label=_("CACHE"))
+                    return cached
             pass
 
-        if self.online:
-            if issuers and not self.no_cache:
-                if self.debug:
-                    INFO.log(_("AIA_CACHE"), _("Skipping network discovery: valid issuers found in cache"), label=_("CACHE"))
-                return issuers
+        if self.online and self.no_cache and self.debug:
+            INFO.log(_("AIA_FETCH"), _("Bypassing cache due to --no-cache flag"), label=_("AUDIT"))
 
-            if self.no_cache and self.debug:
-                INFO.log(_("AIA_FETCH"), _("Bypassing cache due to --no-cache flag"), label=_("AUDIT"))
+        if not self.online:
+            return []
 
-            urls = self.find_aia_urls(child_cert)
-            if not urls:
-                return issuers
+        valid_urls = [u for u in urls if u not in self.processed_urls]
+        if not valid_urls:
+            return issuers
 
-            if len(urls) == 1:
-                new_cert = self.fetch_issuer(urls[0])
-                if new_cert:
-                    self._process_new_issuer(aki, new_cert, issuers, seen_fingerprints)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            future_to_url = {executor.submit(self.fetch_issuer, url): url for url in valid_urls}
 
-            else:
-                with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-                    future_to_url = {executor.submit(self.fetch_issuer, url): url for url in urls}
-
-                    for future in concurrent.futures.as_completed(future_to_url):
-                        try:
-                            new_cert = future.result()
-                            if new_cert:
-                                self._process_new_issuer(aki, new_cert, issuers, seen_fingerprints)
-                        except Exception as e:
-                            if self.debug:
-                                msg = f"{_('Thread execution error')}: {e}"
-                                ERROR.log(_("AIA_THREAD"), msg)
+            for future in concurrent.futures.as_completed(future_to_url):
+                try:
+                    new_cert = future.result()
+                    if new_cert:
+                        fp = self._get_fingerprint(new_cert)
+                        if fp not in seen_fingerprints:
+                            issuers.append(new_cert)
+                            seen_fingerprints.add(fp)
+                            aki = self._get_aki_hex(new_cert)
+                            if aki:
+                                self._save_to_aia_cache(aki, new_cert)
+                except Exception as e:
+                    if self.debug:
+                        ERROR.log(_("AIA_THREAD"), f"{_('Thread error during discovery')}: {e}")
 
         return issuers
 
-    def _process_new_issuer(self, aki: str, cert: x509.Certificate, issuers: list, seen: set):
-        fp = self._get_fp(cert)
-        if fp not in seen:
-            issuers.append(cert)
-            seen.add(fp)
-            self._save_to_aia_cache(aki, cert)
-
-    def _load_cert_file(self, path: Path) -> Optional[x509.Certificate]:
-        """Helper to load a DER certificate from disk."""
-        try:
-            with open(path, "rb") as f:
-                return x509.load_der_x509_certificate(f.read(), default_backend())
-        except Exception as e:
-            if self.debug:
-                ERROR.log(_("CACHE_LOAD"), f"{_('Failed to load cached cert')} {path.name}: {e}")
-            return None
-
-    def _get_fp(self, cert: x509.Certificate) -> str:
-        """Helper to get SHA256 fingerprint."""
-        return hashlib.sha256(cert.public_bytes(serialization.Encoding.DER)).hexdigest()
-
-    def _get_aki_hex(self, cert: x509.Certificate) -> Optional[str]:
-        """Extracts Authority Key Identifier as hex string."""
-        try:
-            aki_ext = cert.extensions.get_extension_for_oid(ExtensionOID.AUTHORITY_KEY_IDENTIFIER)
-            if aki_ext.value.key_identifier:
-                return aki_ext.value.key_identifier.hex()
-        except x509.ExtensionNotFound:
-            pass
-        return None
-
-    def find_aia_urls(self, cert: x509.Certificate) -> List[str]:
-        """Parses Authority Information Access (AIA) for CA Issuer URIs."""
-        urls = []
-        try:
-            aia = cert.extensions.get_extension_for_oid(ExtensionOID.AUTHORITY_INFORMATION_ACCESS)
-            for access_description in aia.value:
-                if access_description.access_method == AuthorityInformationAccessOID.CA_ISSUERS:
-                    uri = access_description.access_location.value
-                    if isinstance(uri, str) and uri.startswith("http"):
-                        urls.append(uri)
-        except x509.ExtensionNotFound:
-            pass
-        except Exception as e:
-            if self.debug:
-                ERROR.log(_("AIA_PARSE"), f"{_('Error parsing AIA extension')} :{e}")
-        return urls
-
     def fetch_issuer(self, url: str) -> Optional[x509.Certificate]:
-        """
-        Download certificate with strict connection and read timeouts.
-        Returns None if download fails or internet is disabled.
-        """
+        """Downloads and parses a single certificate from a URL."""
         if not self.online or url in self.processed_urls:
             return None
 
@@ -206,58 +153,35 @@ class NetworkResolver:
             if self.debug:
                 INFO.log(_("AIA_FETCH"), f"{_('Downloading')}: {url}")
 
-            response = requests.get(
-                url,
-                headers=self.headers,
-                timeout=(1.0, self.timeout)
-            )
+            response = requests.get(url, headers=self.headers, timeout=(1.0, self.timeout))
             response.raise_for_status()
 
-            content = response.content
-            if len(content) > 1024 * 50:
+            if len(response.content) > 51200:
                 if self.debug:
-                    ERROR.log(_("AIA_SIZE"), _("Certificate too large"))
+                    ERROR.log(_("AIA_SIZE"), _("Certificate at {url} exceeds size limit.").format(url=url))
                 return None
 
             self.processed_urls.add(url)
-
-            # Try DER (binary) first, then PEM (base64)
-            try:
-                return x509.load_der_x509_certificate(content)
-            except Exception:
-                try:
-                    return x509.load_pem_x509_certificate(content)
-                except Exception as pem_err:
-                    if self.debug:
-                        msg = _("Could not load cert from {url} (Tried DER & PEM)").format(url=url)
-                        ERROR.log(_("AIA_PARSE"), f"{msg}: {pem_err}")
-                    return None
+            return self._parse_certificate(response.content, url)
 
         except requests.exceptions.RequestException as e:
             if self.debug:
-                # We use WARNING here because it's an expected failure in restricted networks
                 WARNING.log(_("AIA_FAILED"), f"{_('Connection failed')}: {url} ({e})")
-        except Exception as e:
-            if self.debug:
-                ERROR.log(_("AIA_ERROR"), f"{_('Unexpected error')}: {str(e)}")
-
         return None
 
-    def find_ocsp_urls(self, cert: x509.Certificate) -> List[str]:
-        """Parses AIA extension for OCSP responder URIs."""
-        urls = []
+    def _parse_certificate(self, data: bytes, url: str) -> Optional[x509.Certificate]:
+        """Tries to load certificate data as DER, then PEM."""
         try:
-            aia = cert.extensions.get_extension_for_oid(ExtensionOID.AUTHORITY_INFORMATION_ACCESS)
-            for desc in aia.value:
-                if desc.access_method == AuthorityInformationAccessOID.OCSP:
-                    uri = desc.access_location.value
-                    if isinstance(uri, str) and uri.startswith("http"):
-                        urls.append(uri)
-        except x509.ExtensionNotFound:
-            pass
-        return urls
+            return x509.load_der_x509_certificate(data)
+        except Exception:
+            try:
+                return x509.load_pem_x509_certificate(data)
+            except Exception:
+                if self.debug:
+                    ERROR.log(_("AIA_PARSE"), _("Failed to parse certificate from {url}").format(url=url))
+                return None
 
-    def check_ocsp_status(self, cert: x509.Certificate, issuer: x509.Certificate) -> str:
+    def check_ocsp_status(self, cert: x509.Certificate, issuer: x509.Certificate, provided_urls: Optional[List[str]] = None) -> str:
         """
         Queries OCSP responders in parallel for certificate status.
         Returns: One of ['GOOD', 'REVOKED', 'UNKNOWN', 'ERROR'].
@@ -268,7 +192,7 @@ class NetworkResolver:
         if not self.online:
             return "UNKNOWN"
 
-        urls = self.find_ocsp_urls(cert)
+        urls = provided_urls if provided_urls else self.find_ocsp_urls(cert)
         if not urls:
             return self.check_crl_status(cert)
 
@@ -307,62 +231,10 @@ class NetworkResolver:
                             msg = f"{_('OCSP thread error')}: {e}"
                             WARNING.log(_("OCSP_THREAD"), msg)
 
-        if final_status == "GOOD":
-            return "GOOD"
+        if final_status in ["GOOD", "REVOKED"]:
+            return final_status
 
         return self.check_crl_status(cert)
-
-    def _fetch_single_ocsp(self, url: str, request_der: bytes) -> str:
-        """Helper method for a single OCSP call within a thread."""
-        if not self._can_resolve(url):
-            return "ERROR"
-
-        try:
-            if self.debug:
-                msg = _("Checking: {url}").format(url=url)
-                INFO.log(_("OCSP_CHECK"), msg)
-
-            ocsp_headers = self.headers.copy()
-            ocsp_headers['Content-Type'] = 'application/ocsp-request'
-
-            response = requests.post(
-                url,
-                data=request_der,
-                headers=ocsp_headers,
-                timeout=(1.0, self.timeout)
-            )
-            response.raise_for_status()
-
-            ocsp_resp = ocsp.load_der_ocsp_response(response.content)
-
-            if ocsp_resp.response_status != ocsp.OCSPResponseStatus.SUCCESSFUL:
-                return "ERROR"
-
-            cert_status = ocsp_resp.certificate_status
-            if cert_status == ocsp.OCSPCertStatus.GOOD:
-                return "GOOD"
-            elif cert_status == ocsp.OCSPCertStatus.REVOKED:
-                return "REVOKED"
-
-        except Exception as e:
-            if self.debug:
-                WARNING.log(_("OCSP_FAILED"), f"{_('OCSP request failed')} {url}: {e}")
-
-        return "ERROR"
-
-    def find_crl_urls(self, cert: x509.Certificate) -> List[str]:
-        """Parses CRL Distribution Points (CDP) from certificate extensions."""
-        urls = []
-        try:
-            crl_dp = cert.extensions.get_extension_for_oid(x509.ExtensionOID.CRL_DISTRIBUTION_POINTS)
-            for dp in crl_dp.value:
-                for fullName in dp.full_name:
-                    uri = fullName.value
-                    if isinstance(uri, str) and uri.startswith("http"):
-                        urls.append(uri)
-        except x509.ExtensionNotFound:
-            pass
-        return urls
 
     def check_crl_status(self, cert: x509.Certificate) -> str:
         """
@@ -403,6 +275,183 @@ class NetworkResolver:
 
         return final_status
 
+    def _get_aki_hex(self, cert: x509.Certificate) -> Optional[str]:
+        """Extracts Authority Key Identifier as hex string."""
+        try:
+            aki_ext = cert.extensions.get_extension_for_oid(ExtensionOID.AUTHORITY_KEY_IDENTIFIER)
+            if aki_ext.value.key_identifier:
+                return aki_ext.value.key_identifier.hex()
+        except x509.ExtensionNotFound:
+            pass
+        return None
+
+    def _get_fingerprint(self, cert: x509.Certificate) -> str:
+        """Helper to get SHA256 fingerprint."""
+        return hashlib.sha256(cert.public_bytes(serialization.Encoding.DER)).hexdigest()
+
+    def _can_resolve(self, url: str) -> bool:
+        """
+        Validates DNS resolution for a URL to avoid OS-level timeout hangs.
+
+        Returns:
+            True if hostname resolves, False otherwise.
+        """
+        try:
+            hostname = urlparse(url).hostname
+            if not hostname:
+                return False
+            socket.gethostbyname(hostname)
+            return True
+        except (socket.gaierror, Exception):
+            if self.debug and self.verbosity >= 3:
+                WARNING.log(_("DNS"), f"{_('Could not resolve host')}: {hostname}")
+            return False
+
+    def find_ocsp_urls(self, cert: x509.Certificate) -> List[str]:
+        """Parses AIA extension for OCSP responder URIs."""
+        urls = []
+        try:
+            aia = cert.extensions.get_extension_for_oid(ExtensionOID.AUTHORITY_INFORMATION_ACCESS)
+            for desc in aia.value:
+                if desc.access_method == AuthorityInformationAccessOID.OCSP:
+                    uri = desc.access_location.value
+                    if isinstance(uri, str) and uri.startswith("http"):
+                        urls.append(uri)
+        except x509.ExtensionNotFound:
+            pass
+        return urls
+
+    def find_crl_urls(self, cert: x509.Certificate) -> List[str]:
+        """Parses CRL Distribution Points (CDP) from certificate extensions."""
+        urls = []
+        try:
+            crl_dp = cert.extensions.get_extension_for_oid(x509.ExtensionOID.CRL_DISTRIBUTION_POINTS)
+            for dp in crl_dp.value:
+                for fullName in dp.full_name:
+                    uri = fullName.value
+                    if isinstance(uri, str) and uri.startswith("http"):
+                        urls.append(uri)
+        except x509.ExtensionNotFound:
+            pass
+        return urls
+
+    def _get_from_aia_cache(self, aki: str) -> List[x509.Certificate]:
+        found_certs = []
+        aki_dir = self.aia_cache / aki
+
+        if not aki_dir.exists() or not aki_dir.is_dir():
+            return []
+
+        try:
+            for cert_file in aki_dir.glob("*.der"):
+                if not self._is_cache_fresh(cert_file, self.aia_cache_ttl_days * 24):
+                    continue
+
+                cert = self._load_cert_file(cert_file)
+                if cert:
+                    expiry = self._get_expiry(cert)
+                    if expiry >= datetime.now(timezone.utc):
+                        found_certs.append(cert)
+
+            return found_certs
+
+        except Exception as e:
+            if self.debug:
+                ERROR.log(_("Cache"), f"{_('Error reading cache')}: {e}")
+            return []
+
+    def _load_cert_file(self, path: Path) -> Optional[x509.Certificate]:
+        """Helper to load a DER certificate from disk."""
+        try:
+            with open(path, "rb") as f:
+                return x509.load_der_x509_certificate(f.read(), default_backend())
+        except Exception as e:
+            if self.debug:
+                ERROR.log(_("CACHE_LOAD"), f"{_('Failed to load cached cert')} {path.name}: {e}")
+            return None
+
+    def _is_cache_fresh(self, cache_path: Path, ttl_hours: float) -> bool:
+        """Checks if a cache file is newer than the allowed TTL in hours."""
+        if not cache_path.exists():
+            return False
+
+        file_age_hours = (time.time() - os.path.getmtime(cache_path)) / 3600
+        return file_age_hours <= ttl_hours
+
+    def _get_expiry(self, cert: x509.Certificate) -> datetime:
+        """Helper for cross-version cryptography compatibility for cert expiry."""
+        if hasattr(cert, 'not_valid_after_utc'):
+            return cert.not_valid_after_utc
+        return cert.not_valid_after.replace(tzinfo=timezone.utc)
+
+    def _save_to_aia_cache(self, aki: str, cert: x509.Certificate) -> None:
+        """
+        Saves a certificate to the AIA cache using atomic writes to prevent corruption.
+        """
+        try:
+            aki_dir = self.aia_cache / aki
+            aki_dir.mkdir(parents=True, exist_ok=True)
+            fp = self._get_fingerprint(cert)
+            final_path = aki_dir / f"{fp}.der"
+
+            with tempfile.NamedTemporaryFile(dir=aki_dir, delete=False, suffix=".tmp") as tmp_file:
+                tmp_file.write(cert.public_bytes(serialization.Encoding.DER))
+                temp_path = tmp_file.name
+
+            try:
+                os.replace(temp_path, final_path)
+            except Exception:
+                if os.path.exists(temp_path):
+                    os.unlink(temp_path)
+                raise
+
+        except Exception as e:
+            if self.debug:
+                ERROR.log(_("CACHE"), f"{_('Could not save certificate to cache')}: {e}")
+
+    def _fetch_single_ocsp(self, url: str, request_der: bytes) -> str:
+        """Helper method for a single OCSP call within a thread."""
+        if not self._can_resolve(url):
+            return "DNS_ERROR"
+
+        try:
+            if self.debug:
+                msg = _("Checking: {url}").format(url=url)
+                INFO.log(_("OCSP_CHECK"), msg)
+
+            ocsp_headers = self.headers.copy()
+            ocsp_headers['Content-Type'] = 'application/ocsp-request'
+
+            response = requests.post(
+                url,
+                data=request_der,
+                headers=ocsp_headers,
+                timeout=(1.0, self.timeout)
+            )
+            response.raise_for_status()
+
+            ocsp_resp = ocsp.load_der_ocsp_response(response.content)
+
+            if ocsp_resp.response_status != ocsp.OCSPResponseStatus.SUCCESSFUL:
+                return "UNSUCCESSFUL"
+
+            cert_status = ocsp_resp.certificate_status
+            if cert_status == ocsp.OCSPCertStatus.GOOD:
+                return "GOOD"
+            elif cert_status == ocsp.OCSPCertStatus.REVOKED:
+                return "REVOKED"
+            elif cert_status == ocsp.OCSPCertStatus.UNKNOWN:
+                return "UNKNOWN"
+
+        except requests.exceptions.Timeout:
+            return "TIMEOUT"
+        except Exception as e:
+            if self.debug:
+                WARNING.log(_("OCSP_FAILED"), f"{_('OCSP request failed')} {url}: {e}")
+            return "CONNECTION_ERROR"
+
+        return "ERROR"
+
     def _process_single_crl(self, url: str, cert: x509.Certificate) -> str:
         """Helper method to download, cache, and inspect a single CRL."""
         try:
@@ -414,9 +463,9 @@ class NetworkResolver:
                 if self._is_cache_fresh(cache_path, self.ocsp_cache_ttl_hours):
                     with open(cache_path, "rb") as f:
                         temp_crl = x509.load_der_x509_crl(f.read(), default_backend())
-                        next_upd = self._get_next_update(temp_crl)
+                        next_update = self._get_next_update(temp_crl)
 
-                        if next_upd > datetime.now(timezone.utc):
+                        if next_update > datetime.now(timezone.utc):
                             if self.debug:
                                 msg = _("Using cached CRL for")
                                 INFO.log(_("CRL_CACHE"), f"{msg}: {urlparse(url).hostname}", label=_("CACHE"))
@@ -475,90 +524,8 @@ class NetworkResolver:
             if self.debug:
                 WARNING.log(_("CRL_CACHE"), f"{_('Could not save CRL to cache')}: {e}")
 
-    def _is_cache_fresh(self, cache_path: Path, ttl_hours: float) -> bool:
-        """Checks if a cache file is newer than the allowed TTL in hours."""
-        if not cache_path.exists():
-            return False
-
-        file_age_hours = (time.time() - os.path.getmtime(cache_path)) / 3600
-        return file_age_hours <= ttl_hours
-
-    def _get_from_aia_cache(self, aki: str) -> Optional[x509.Certificate]:
-        """Loads a certificate from the AIA cache if fresh (< 10 days)."""
-        cache_path = self.aia_cache / f"{aki}.der"
-
-        if not self._is_cache_fresh(cache_path, self.aia_cache_ttl_days * 24):
-            if cache_path.exists() and self.debug:
-                AIA_LOG.log(f"{_('AKI')}: {aki[:8]}", _("Cache expired based on TTL, refreshing..."))
-            return None
-
-        try:
-            with open(cache_path, "rb") as f:
-                cert = x509.load_der_x509_certificate(f.read(), default_backend())
-                expiry = self._get_expiry(cert)
-                if expiry < datetime.now(timezone.utc):
-                    if self.debug:
-                        WARNING.log(_("Cache"), f"{_('Cached certificate expired on')}: {expiry}")
-                    return None
-
-                return cert
-
-        except Exception as e:
-            if self.debug:
-                ERROR.log(_("Cache"), f"{_('Error reading cache')}: {e}")
-            return None
-
     def _get_next_update(self, crl: x509.CertificateRevocationList) -> datetime:
         """Helper for cross-version cryptography compatibility for CRL next_update."""
         if hasattr(crl, 'next_update_utc'):
             return crl.next_update_utc
         return crl.next_update.replace(tzinfo=timezone.utc)
-
-    def _get_expiry(self, cert: x509.Certificate) -> datetime:
-        """Helper for cross-version cryptography compatibility for cert expiry."""
-        if hasattr(cert, 'not_valid_after_utc'):
-            return cert.not_valid_after_utc
-        return cert.not_valid_after.replace(tzinfo=timezone.utc)
-
-    def _can_resolve(self, url: str) -> bool:
-        """
-        Validates DNS resolution for a URL to avoid OS-level timeout hangs.
-
-        Returns:
-            True if hostname resolves, False otherwise.
-        """
-        try:
-            hostname = urlparse(url).hostname
-            if not hostname:
-                return False
-            socket.gethostbyname(hostname)
-            return True
-        except (socket.gaierror, Exception):
-            if self.debug and self.verbosity >= 3:
-                WARNING.log(_("DNS"), f"{_('Could not resolve host')}: {hostname}")
-            return False
-
-    def _save_to_aia_cache(self, aki: str, cert: x509.Certificate) -> None:
-        """
-        Saves a certificate to the AIA cache using atomic writes to prevent corruption.
-        """
-        try:
-            aki_dir = self.aia_cache / aki
-            aki_dir.mkdir(parents=True, exist_ok=True)
-            fp = self._get_fp(cert)
-            final_path = aki_dir / f"{fp}.der"
-
-            with tempfile.NamedTemporaryFile(dir=aki_dir, delete=False, suffix=".tmp") as tmp_file:
-                tmp_file.write(cert.public_bytes(serialization.Encoding.DER))
-                temp_path = tmp_file.name
-
-            try:
-                os.replace(temp_path, final_path)
-            except Exception:
-                if os.path.exists(temp_path):
-                    os.unlink(temp_path)
-                raise
-
-        except Exception as e:
-            if self.debug:
-                ERROR.log(_("CACHE"), f"{_('Could not save certificate to cache')}: {e}")

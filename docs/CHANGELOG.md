@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.1.7] - 2026-05-07 (Stable)
+
+### 🚀 Highlights
+*   **Deduplication in Visualization**: The `TextRenderer` and `GraphvizRenderer` now feature a mechanism to prevent duplicate certificates in complex or cross-signed trust paths. This ensures a much cleaner tree structure without redundant branches.
+*   **Optimized Sorting Logic**: Certificates in the output are now consistently sorted by their expiry date. This prioritizes the most relevant and longest-lived certificates at the top of the hierarchy.
+
+### Added
+*   **Project Metadata**: Added official support for ReadTheDocs (`.readthedocs.yaml`) and an expanded `MANIFEST.in` to ensure complete distribution of translation files and documentation on PyPI.
+*   **SARIF Enhancements**: Updated the `SarifRenderer` to better handle system certificates and unique fingerprints, improving integration with security pipelines such as GitHub Code Scanning.
+
+### Fixed
+*   **Rendering Consistency**: Resolved a bug where the `_rendered_fingerprints` cache was not cleared between different truststore groups, which previously caused certificates to be missing from subsequent groups in a single scan.
+*   **Pydantic Compatibility**: Refined the `model_rebuild()` logic in `models.py` to better handle recursive self-references within certificate objects for modern Pydantic environments.
+
+### Changed
+*   **Code Maintenance**: Unified license headers (LGPL-3.0) and author attributions across all core modules.
+*   **CLI Feedback**: Improved error handling and logging in `cli.py` for scenarios where input providers fail to locate certificates, providing better diagnostic information in debug mode.
+
 ## [v1.1.6] - 2026-05-04 (Stable)
 
 ### 🚀 Highlights

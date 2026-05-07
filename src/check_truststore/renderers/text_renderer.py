@@ -93,7 +93,7 @@ class TextRenderer(BaseRenderer):
 
             # Extract attributes safely
             audit = n.get_audit_status()
-            raw_name = getattr(n, "common_name", _("Unknown"))
+            raw_name = getattr(n, "display_name", _("Unknown"))
             is_system_cert = getattr(n, "is_system_cert", False)
             is_aia_cert = getattr(n, "is_aia_cert", False)
             is_collision = getattr(n, "is_collision", False)

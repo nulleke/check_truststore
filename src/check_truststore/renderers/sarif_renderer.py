@@ -26,11 +26,9 @@ class SarifRenderer(BaseRenderer):
         try:
             groups = tree_data if isinstance(tree_data, list) else [tree_data]
             results = []
+            processed_fingerprints = set()
 
             for group in groups:
-                if hasattr(self, "_rendered_fingerprints"):
-                    self._rendered_fingerprints.clear()
-
                 for cert in self._get_sorted_nodes(getattr(group, "chain", [])):
                     if self._should_skip(cert):
                         continue
@@ -38,10 +36,17 @@ class SarifRenderer(BaseRenderer):
                     if getattr(cert, "is_system_cert", False):
                         continue
 
+                    fingerprint = getattr(cert, "sha256_fingerprint", getattr(cert, "serial_number", None))
+                    if fingerprint in processed_fingerprints:
+                        continue
+
                     audit = cert.get_audit_status()
 
                     if audit["code"] == 0:
                         continue
+
+                    if fingerprint:
+                        processed_fingerprints.add(fingerprint)
 
                     results.append(self._create_result(cert, audit))
 

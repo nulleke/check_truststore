@@ -70,10 +70,8 @@ class TrustStoreAnalyzer:
             builder = TrustChainBuilder(repository=self.repo, **self.options)
             current_pool = self._resolve_targets(group_config.targets)
 
-            resolver = None
-            if self.online:
-                from .discovery import NetworkResolver
-                resolver = NetworkResolver(**self.options)
+            from .discovery import NetworkResolver
+            resolver = NetworkResolver(**self.options)
 
             tree_data = builder.build(
                 current_pool,
