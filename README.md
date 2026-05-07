@@ -140,7 +140,7 @@ You can run the full compatibility suite locally using Podman to ensure your cha
 * **cryptography**: For X.509 parsing (compatible with legacy and UTC-aware versions).
 * **PyYAML**: For configuration management.
 * **pydantic** (Optional): v2.0+ for enhanced schema validation. The tool automatically detects and adapts to the available version.
-* **jinja2** (Optional): For templating `yaml` hte yaml input provider.
+* **jinja2** (Optional): For templating `yaml` the yaml input provider.
 
 ## 🔍 Advanced Logic & Visual Indicators
 The tool uses **SKI/AKI (Subject/Authority Key Identifier)** to build a cryptographically accurate tree. It uniquely identifies certificates using their Subject Key Identifier (SKI). If the SKI extension is missing, it falls back to a deterministic hash of the public key, ensuring consistent identification (labeled as **ID**) across all views.
