@@ -88,6 +88,8 @@ class TrustChainBuilder:
 
         ski = self._get_extension(cert, x509.ExtensionOID.SUBJECT_KEY_IDENTIFIER)
         cn = self._get_common_name(cert)
+        subject_sn = self._get_subject_serial(cert)
+
         if ski:
             cert_id = ski
         else:
@@ -96,6 +98,12 @@ class TrustChainBuilder:
                 format=serialization.PublicFormat.SubjectPublicKeyInfo
             )
             cert_id = hashlib.sha256(public_key_bytes).hexdigest()
+
+        if not cn:
+            if subject_sn:
+                cn = f"{_('Serial')}: {subject_sn}"
+            else:
+                cn = f"{_('Unknown')} ({cert_id[:8]})"
 
         aki = self._get_extension(cert, x509.ExtensionOID.AUTHORITY_KEY_IDENTIFIER)
         is_root = (cert.subject == cert.issuer)
@@ -142,8 +150,22 @@ class TrustChainBuilder:
         )
         display_file_name = "" if is_system_cert else path.name
 
+        aia_issuers = self._get_extension(cert, x509.ExtensionOID.AUTHORITY_INFORMATION_ACCESS, "issuers") or []
+        ocsp_urls = self._get_extension(cert, x509.ExtensionOID.AUTHORITY_INFORMATION_ACCESS, "ocsp") or []
+
+        pk = cert.public_key()
+        pk_info = {"algorithm": "unknown", "bits": 0}
+        if hasattr(pk, "key_size"):
+            pk_info["bits"] = pk.key_size
+            pk_type = type(pk).__name__.lower()
+            if "rsa" in pk_type:
+                pk_info["algorithm"] = "rsa"
+            elif "ec" in pk_type:
+                pk_info["algorithm"] = "ec"
+
         cert_obj = Certificate(
             commonName=cn,
+            subjectSerial=subject_sn,
             serialNumber=formatted_serial,
             certId=cert_id,
             ski=ski,
@@ -159,6 +181,11 @@ class TrustChainBuilder:
             isAiaCert=is_aia_cert,
             isRoot=(cert.subject == cert.issuer),
             sanNames=sans,
+            aiaCaIssuers=aia_issuers,
+            aiaOcspUrls=ocsp_urls,
+            publicKeyInfo=pk_info,
+            signatureAlgorithm=cert.signature_algorithm_oid._name if hasattr(cert, "signature_algorithm_oid") else None,
+            ocspStatus=item.get("ocsp_status", "UNKNOWN"),
         )
 
         if is_blacklisted:
@@ -469,7 +496,7 @@ class TrustChainBuilder:
                 cert_info.signature_valid = not any(f.code == "SIG_INVALID" for f in findings)
 
                 if resolver and not is_root and cert_info.signature_valid:
-                    status = resolver.check_ocsp_status(raw_cert, issuer_raw)
+                    status = resolver.check_ocsp_status(raw_cert, issuer_raw, provided_urls=cert_info.aia_ocsp_urls)
                     cert_info.ocsp_status = status
 
             # Inherit 'invalidity' from parents (Chain of trust)
@@ -504,6 +531,7 @@ class TrustChainBuilder:
                 child_skis,
                 key=lambda x: (
                     self.cert_data[x].common_name,
+                    self.cert_data[x].subject_serial or "",
                     str(self.cert_data[x].expiry_date),
                     self.cert_data[x].sha256_hash,
                 ),
@@ -572,9 +600,27 @@ class TrustChainBuilder:
     def _get_common_name(self, cert) -> str:
         try:
             names = cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
-            return names[0].value if names else _("Unknown")
+            if names:
+                return names[0].value
+            orgs = cert.subject.get_attributes_for_oid(x509.NameOID.ORGANIZATION_NAME)
+            if orgs:
+                return orgs[0].value
+            return ""
         except Exception:
-            return _("Unknown")
+            return ""
+
+    def _get_subject_serial(self, cert: x509.Certificate) -> Optional[str]:
+        try:
+            from cryptography.x509.oid import NameOID
+            serials = cert.subject.get_attributes_for_oid(NameOID.SERIAL_NUMBER)
+            if serials:
+                return serials[0].value
+
+            org_ids = cert.subject.get_attributes_for_oid(x509.ObjectIdentifier("2.5.4.97"))
+            if org_ids:
+                return org_ids[0].value
+        except Exception:
+            return None
 
     def _get_serial_number(self, cert: x509.Certificate) -> str:
         s = format(cert.serial_number, "X")
@@ -583,7 +629,7 @@ class TrustChainBuilder:
         return ":".join(s[i : i + 2] for i in range(0, len(s), 2))
 
     def _get_extension(
-        self, cert: x509.Certificate, oid: x509.ObjectIdentifier
+        self, cert: x509.Certificate, oid: x509.ObjectIdentifier, sub_type: Optional[str] = None
     ) -> Optional[Union[str, List[str]]]:
         """Extracts and formats specific X509 extensions like SKI, AKI, or SAN."""
         present_oids = [e.oid for e in cert.extensions]
@@ -611,6 +657,15 @@ class TrustChainBuilder:
                     if isinstance(name, x509.DNSName)
                 ]
 
+            if oid == x509.ExtensionOID.AUTHORITY_INFORMATION_ACCESS:
+                from cryptography.x509.oid import AuthorityInformationAccessOID
+                if sub_type == "issuers":
+                    return [ad.access_location.value for ad in ext.value
+                            if ad.access_method == AuthorityInformationAccessOID.CA_ISSUERS]
+                if sub_type == "ocsp":
+                    return [ad.access_location.value for ad in ext.value
+                            if ad.access_method == AuthorityInformationAccessOID.OCSP]
+
         except Exception:
             if oid == x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME:
                 return []
@@ -626,38 +681,45 @@ class TrustChainBuilder:
         depth = 0
         while depth < max_depth:
             current_skis = set(self.cert_data.keys())
+            processed_in_round = set()
 
-            missing_akis: Dict[str, x509.Certificate] = {}
-            for cert_id, parents in self.parents_map.items():
-                for p_aki in parents:
-                    if p_aki != ORPHAN_NODE_ID and p_aki not in current_skis:
-                        if p_aki not in missing_akis:
-                            missing_akis[p_aki] = self.raw_certs[cert_id]
+            missing_issuers_map: Dict[str, Certificate] = {}
+            for cert_id, cert_obj in self.cert_data.items():
+                aki = self.parent_map.get(cert_id)
 
-            if not missing_akis:
+                if aki and aki != ORPHAN_NODE_ID and aki not in current_skis:
+                    if cert_obj.aia_ca_issuers:
+                        missing_issuers_map[cert_id] = cert_obj
+
+            if not missing_issuers_map:
                 break
 
             found_new_in_this_round = False
 
-            for aki, child_cert in missing_akis.items():
-                new_issuers: List[x509.Certificate] = resolver.resolve_all_issuers(child_cert)
+            for cert_id, cert_obj in missing_issuers_map.items():
+                new_issuers: List[x509.Certificate] = resolver.resolve_via_aia_urls(
+                    cert_obj.aia_ca_issuers,
+                    child_cert=self.raw_certs.get(cert_id)
+                )
 
                 for new_x509 in new_issuers:
                     c_hash = hashlib.sha256(
                         new_x509.public_bytes(serialization.Encoding.DER)
                     ).hexdigest()
 
-                    if c_hash in self.repo.seen_hashes:
+                    if c_hash in self.repo.seen_hashes or c_hash in processed_in_round:
                         continue
 
                     meta = {
                         "cert": new_x509,
-                        "path": Path(f"AIA-Discovery-{aki[:8]}"),
+                        "path": Path(f"AIA-Discovery-{cert_obj.cert_id[:8]}"),
                         "hash": c_hash,
                         "is_system_cert": False,
                         "is_aia_cert": True,
                     }
+
                     self._process_metadata(meta)
+                    processed_in_round.add(c_hash)
                     found_new_in_this_round = True
 
                     if self.debug:
