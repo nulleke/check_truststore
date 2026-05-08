@@ -7,42 +7,43 @@
 A tool for system administrators and security engineers to audit certificate truststores. This utility transforms flat certificate directories into logical hierarchies, making it easy to spot broken chains or expiring certificates.
 
 ## ⚡ Quick Start (TL;DR)
-**Audit your truststores in seconds:**
-1. **Install:** `pip install check-truststore`
-2. **Run Ad-hoc:** `check_truststore /path/to/certs/`
-3. **Visualize:** `check_truststore /path/to/certs/ --format text -s -O -vvv`
+**Audit your truststores in seconds**:
+1. **Install**: `pip install check-truststore`
+2. **Run Ad-hoc**: `check_truststore /path/to/certs/`
+3. **Visualize**: `check_truststore /path/to/certs/ --format text -s -O -vvv`
 
-*Supports **PEM**, **DER**, and **PKCS#7**. Works on Windows, macOS, and Linux.*
+*Supports **PEM**, **DER**, and **PKCS#7**. Works on macOS, and Linux. Windows in development*
 
 ## ✨ Features
 
-* **Chain Visualization:** Automatically builds a tree structure of your certificate hierarchy.
-* **Format Support:** 
-    * **X.509 Certificates:** Full support for individual certificates in **PEM encoding**.
-    * **PKCS#7 Bundels:** Support for `.p7b` and `.p7c` containers. The tool automatically extracts all certificates from the bundle for analysis.
-* **Multi-Format Output:** 
-    * **Human-Centric:** Text trees with status icons.
-    * **Machine-Readable:** Structured JSON and SARIF for security pipelines.
-    * **Monitoring:** Specialized **Status API** for integration with dashboards like Zabbix or Grafana.
-    * **Visual Graph:** Generates **GraphViz-compatible DOT files** to visualize complex PKI topologies.
-* **Dynamic Health Monitoring:** Visual status indicators (✅ Valid, ⏳ Expiring Soon, ❌ Invalid). The "Expiring Soon" alert is fully configurable via a custom threshold (default is 30 days).
-* **AIA Discovery & Chain Repair:** Automatically identifies and fetches missing intermediate or root issuers via the network to complete broken chains.
-* **Collision Intelligence:** Detects "Name Collisions" (👯) where different certificates share the same Common Name but have different cryptographic identities.
-* **Dual-Core Architecture:** Specifically optimized for **Pydantic v2** with a built-in **Zero-Dependency Fallback** for standard Python. This ensures full functionality on everything from legacy RHEL/CentOS systems to the latest Python 3.14 environments.
-* **Expiration Alerts:** Highlights certificates expiring within a 30-day threshold.
-* **Internationalization:** Ready for translation via `gettext`.
-* **🔐 Signature Verification:** Beyond just mapping IDs, the tool cryptographically verifies signatures (RSA/ECDSA) between certificates in the chain.
-    * 🔒 **Locked:** Signature is valid and verified.
-    * 💥 **Broken:** Signature verification failed.
-    * ❓ **Unknown:** Issuer certificate missing, cannot verify.
-* **Multi-Source Input Engine:** Flexible data ingestion supporting various automated workflows:
-    * **Structured Environments:** Parse complex truststore definitions using **YAML** or **JSON** configuration files.
-    * **Network Scan Integration:** Directly ingest **Nmap XML** output to audit certificates discovered during network discovery.
-    * **Ad-hoc Scanning:** Recursively scan directories for certificates. Supports **X.509 (PEM)** and **PKCS#7 (.p7b, .p7c)** containers.
-    * **Stream Processing:** Supports piped input (stdin) for JSON, XML, or raw PEM data, allowing seamless integration into shell pipelines.
-    * **Single File Audit:** Analyze individual certificate files with automatic system truststore resolution for quick validation.
+* **Chain Visualization**: Automatically builds a tree structure of your certificate hierarchy.
+* **Format Support**: 
+    * **X.509 Certificates**: Full support for individual certificates in **PEM encoding**.
+    * **PKCS#7 Bundles**: Support for `.p7b` and `.p7c` containers. The tool automatically extracts all certificates from the bundle for analysis.
+* **Multi-Format Output**: 
+    * **Human-Centric**: Text trees with status icons.
+    * **Machine-Readable**: Structured JSON and SARIF for security pipelines.
+    * **Monitoring**: Specialized **Status API** for integration with dashboards like Zabbix or Grafana.
+    * **Visual Graph**: Generates **GraphViz-compatible DOT files** to visualize complex PKI topologies.
+* **Dynamic Health Monitoring**: Visual status indicators (✅ Valid, ⏳ Expiring Soon, ❌ Invalid). The "Expiring Soon" alert is fully configurable via a custom threshold (default is 30 days).
+* **AIA Discovery & Chain Repair**: Automatically identifies and fetches missing intermediate or root issuers via the network to complete broken chains.
+* **Collision Intelligence**: Detects "Name Collisions" (👯) where different certificates share the same Common Name but have different cryptographic identities.
+* **Dual-Core Architecture**: Specifically optimized for **Pydantic v2** with a built-in **Zero-Dependency Fallback** for standard Python. This ensures full functionality on everything from legacy RHEL/CentOS systems to the latest Python 3.14 environments.
+* **Expiration Alerts**: Highlights certificates expiring within a 30-day threshold.
+* **Internationalization**: Ready for translation via `gettext`.
+* **🔐 Signature Verification**: Beyond just mapping IDs, the tool cryptographically verifies signatures (RSA/ECDSA) between certificates in the chain.
+    * 🔒 **Locked**: Signature is valid and verified.
+    * 💥 **Broken**: Signature verification failed.
+    * ❓ **Unknown**: Issuer certificate missing, cannot verify.
+* **Multi-Source Input Engine**: Flexible data ingestion supporting various automated workflows:
+    * **Structured Environments**: Parse complex truststore definitions using **YAML** or **JSON** configuration files.
+    * **Network Scan Integration**: Directly ingest **Nmap XML** output to audit certificates discovered during network discovery.
+    * **Ad-hoc Scanning**: Recursively scan directories for certificates. Supports **X.509 (PEM)** and **PKCS#7 (.p7b, .p7c)** containers.
+    * **Stream Processing**: Supports piped input (stdin) for JSON, XML, or raw PEM data, allowing seamless integration into shell pipelines.
+    * **Single File Audit**: Analyze individual certificate files with automatic system truststore resolution for quick validation.
 * **RFC 5280 Compliant Path Building**: Uses AKI/SKI stringing instead of unreliable Subject/Issuer name matching.
 * **Cryptographic Chain Integrity**: Full support for signature verification across RSA and ECDSA algorithms.
+* **📦 Chain Bundling**: Automatically generates a complete PKCS#7 (`.p7b`) bundle for each analyzed group, including missing intermediates discovered via AIA.
 
 ## 🛠 Installation & Setup
 The tool now follows a standard Python project structure and can be installed as an editable package.
@@ -56,6 +57,20 @@ cd check_truststore
 pip install -e ".[all]"
 
 # The command 'check_truststore' is now available in your PATH (within your venv)
+```
+
+### 🐳 Running via Docker/Podman
+
+If you prefer not to install Python locally, you can use the provided `Dockerfile` to run the analyzer in an isolated environment:
+```bash
+# Build the image
+podman build -t truststore-analyzer .
+
+# Run an audit on a local directory and export bundles
+podman run --rm \
+  -v ./my-certs:/app/certs:Z \
+  -v ./my-output:/app/output_bundles:Z \
+  truststore-analyzer /app/certs/ --export-bundles --online
 ```
 
 ## 📂 Input Strategies
@@ -94,7 +109,7 @@ truststores:
 ```
 
 ### File-Based Input
-deal for a surgical status check of specific certificate files. This mode provides a flat report focused on the validity of individual assets mentioned in your input list.
+Ideal for a surgical status check of specific certificate files. This mode provides a flat report focused on the validity of individual assets mentioned in your input list.
 
 * **Use case**: Monitoring specific application-level certificates.
 * **Behavior**: Each file is validated independently or as part of its own small chain.
@@ -113,21 +128,11 @@ The **XML Provider** allows for seamless integration with network scanning workf
 * **Virtual Path Mapping**: Findings are automatically grouped using a virtual directory structure: `nmap/<ip>/<port>`.
 * **PEM Sanitization**: Automatically fixes XML-escaped characters and standardizes delimiters (e.g., handling `TRUSTED CERTIFICATE` headers).
 
-#### Usage: Piping Nmap to the Analyzer
-You can pipe Nmap's XML output directly into the analyzer using the `--format xml` input flag and the special `-` (stdin) source.
-
-```bash
-nmap -p 443 --script ssl-cert www.example.com -oX - | check_truststore - --format text
-```
-
-## Overview
-This tool parses certificate files (CRTs) defined in a central YAML configuration, verifies their validity and expiration dates, and reconstructs the issuer/subject hierarchy. It supports output in both human-readable text trees and machine-readable JSON.
-
 ## 🧪 Reliability & CI/CD
 This project is rigorously tested via **GitLab CI** across a full matrix of Python versions. 
-* **Compatibility Matrix:** Automated tests run on every version from 3.6 to 3.14.
-* **Fallback Validation:** We explicitly test a "No-Pydantic" environment to guarantee that the core logic remains 100% functional even when third-party validation libraries are missing.
-* **Logic Verification:** All date-based logic is validated against current 2026 standards.
+* **Compatibility Matrix**: Automated tests run on every version from 3.6 to 3.14.
+* **Fallback Validation**: We explicitly test a "No-Pydantic" environment to guarantee that the core logic remains 100% functional even when third-party validation libraries are missing.
+* **Logic Verification**: All date-based logic is validated against current 2026 standards.
 
 ### Local Validation
 You can run the full compatibility suite locally using Podman to ensure your changes work across all supported Python versions:
@@ -136,12 +141,12 @@ You can run the full compatibility suite locally using Podman to ensure your cha
 ```
 
 ## 📦 Requirements
-* **Python 3.6+** (Fully tested from 3.6 up to 3.14)
+* **Python 3.6+**: (Fully tested from 3.6 up to 3.14)
 * **cryptography**: For X.509 parsing (compatible with legacy and UTC-aware versions).
-* **reuests**: For AIA Discovery and fetching missing intermediate certificates.
+* **requests**: For AIA Discovery and fetching missing intermediate certificates.
 * **PyYAML**: For configuration management.
-* **pydantic** (Optional): v2.0+ for enhanced schema validation. The tool automatically detects and adapts to the available version.
-* **jinja2** (Optional): Required for using Jinja2-templating within YAML configuration files.
+* **pydantic**: (Optional): v2.0+ for enhanced schema validation. The tool automatically detects and adapts to the available version.
+* **jinja2**: (Optional): Required for using Jinja2-templating within YAML configuration files.
 
 ## 🔍 Advanced Logic & Visual Indicators
 The tool uses **SKI/AKI (Subject/Authority Key Identifier)** to build a cryptographically accurate tree. It uniquely identifies certificates using their Subject Key Identifier (SKI). If the SKI extension is missing, it falls back to a deterministic hash of the public key, ensuring consistent identification (labeled as **ID**) across all views.
@@ -151,27 +156,19 @@ The tool uses the following icons to provide a quick overview of certificate hea
 
 | Icon | Status | Description |
 | :--- | :--- | :--- |
-| ✅ | **OK** | Valid and trusted. |
-| ⏳ | **WARNING** | Expiring soon (within the defined threshold). |
-| ❌ | **ERROR** | Expired, not yet valid, or structurally invalid. |
-| 🔒 | **LOCKED** | Signature verified and cryptographically valid. |
-| 💥 | **BROKEN** | Signature verification failed (security alert). |
-| ❓ | **UNKNOWN** | Missing issuer; signature could not be verified. |
-| 👯 | **COLLISION** | Name collision detected (same Common Name, different ID). |
-| 💻 | **SYSTEM** | Certificate was loaded from the OS truststore. |
+| **✅** | **OK** | Valid and trusted. |
+| **⏳** | **WARNING** | Expiring soon (within the defined threshold). |
+| **❌** | **ERROR** | Expired, not yet valid, or structurally invalid. |
+| **🔒** | **LOCKED** | Signature verified and cryptographically valid. |
+| **💥** | **BROKEN** | Signature verification failed (security alert). |
+| **❓** | **UNKNOWN** | Missing issuer; signature could not be verified. |
+| **👯** | **COLLISION** | Name collision detected (same Common Name, different ID). |
+| **💻** | **SYSTEM** | Certificate was loaded from the OS truststore. |
 
 ## 🧠 Core Logic & Identity Strategy
 * **Smart Deduplication**: To keep reports clean and efficient, the tool uses a dual-layer filtering process. First, it calculates a **SHA-256 fingerprint** for every file. If the exact same certificate (identical binary content) is found in multiple paths, it is processed only once. This prevents redundant entries and circular references in the tree.
-* **Persistent Identity (ID)**: The tool uniquely identifies certificates using their **Subject Key Identifier (SKI)**.
-    * If the official SKI extension is present, it is used as the primary identifier.
-    * If the extension is missing (common in legacy or custom test-certs), the tool generates a **deterministic SHA-256 hash** of the public key.
-    * **Result:** You get a consistent `(ID: abcdef12)` label across both the table and the hierarchy, allowing you to trace issuer/subject relationships with cryptographic certainty.
 * **Name Collisions [👯]**: Even with ID tracking, name collisions occur (e.g., two different CAs using the same Common Name). The tool detects these based on differing Public Key IDs and flags them. This ensures you can distinguish between them even if they appear identical in the hierarchy.
 * **`EXTERNAL_OR_MISSING_ISSUER` [❓]**: A virtual node for certificates whose issuer (Root or Intermediate) was not found in the provided source directories or the system truststore. The debug log will specify the exact **AKI (Authority Key Identifier)** needed to complete the chain.
-
-### 📜 Technical Foundation (RFC 5280)
-
-The **TrustStore Analyzer** is built upon the standards defined in **RFC 5280** (Internet X.509 Public Key Infrastructure Certificate and Certificate Revocation List (CRL) Profile). It implements the formal path validation logic required to establish trust in a digital identity.
 
 ### 🏗️ Path Construction & Validation
 
@@ -191,44 +188,57 @@ Unlike simpler tools that rely on filenames or filesystem paths, this analyzer p
 ## 🛡️ System Truststore Integration
 By default, the tool only analyzes the certificates explicitly defined in your YAML configuration. However, to verify if your local chain is ultimately trusted by the operating system, you can enable system integration.
 
-* **Default:** Disabled.
-* **Behavior:** When enabled, the tool scans common system paths (e.g., `/etc/ssl/certs/ca-certificates.crt` on Linux, the Keychain on macOS, or the Windows Certificate Store) to resolve missing root issuers.
+* **Default**: Disabled.
+* **Behavior**: When enabled, the tool scans common system paths (e.g., `/etc/ssl/certs/ca-certificates.crt` on Linux, the Keychain on macOS, or the Windows Certificate Store) to resolve missing root issuers.
 
-## Usage
-The analyzer supports two types of input sources. It automatically detects the source type based on the path provided.
+## 🛠 Usage
 
-### Directory Scan (Ad-hoc)
-Point the tool to a directory to scan for all common certificate files (`.crt`, `.pem`, `.cer`, `.der`, `p7b`, `p7c`).
+The analyzer is highly flexible, automatically detecting the appropriate **Input Provider** based on the path or stream content provided.
 
-```bash
-./check_truststore files/certificates/prod/trust/
-```
+### Automatic Detection (Files & Directories)
+Simply provide a path to a file or directory. The engine will select the correct provider:
 
-### YAML Configuration (Structured)
-Use a YAML file to define specific truststores and environments.
+* **YAML/JSON**: For structured truststore definitions (supports Jinja2 templating for yaml).
+* **Directories**: Recursively scans for `.pem`, `.crt`, `.der`, or `.p7b` files and groups them by folder.
+* **Individual Files**: Analyzes a single certificate chain or PKCS#7 bundle.
 
 ```bash
-# Basic tree view
-./check_truststore vars/prod/stores.yml --format text
+# Analyze a local directory of certificates
+check_truststore ./my-certs/
 
-# Combine local certificates with the system truststore for full chain validation
-./check_truststore vars/prod/stores.yml --format text --system
-
-# Run with full debug output and system truststore enabled
-./check_truststore vars/prod/stores.yml --format text --debug --system
-
-# Custom expiration check (e.g., alert if certificates expire within 90 days)
-./check_truststore vars/prod/stores.yml --format text --threshold 90
-
-# Export to JSON for integration with other monitoring tools
-./check_truststore vars/prod/stores.yml --format json > audit_report.json
-
-# Export to simple JSON for file status monitoring
-./check_truststore vars/prod/stores.yml --format status
-
-# Export to simple JSON for file status monitoring with json input
-./check_truststore config.json --format status
+# Use a YAML configuration with environment variables
+check_truststore vars/prd/stores.yml --env prd
 ```
+
+### Live Network Analysis (Nmap Integration)
+Thanks to the `XmlInputProvider`, you can pipe network scan results directly into the analyzer. The tool extracts certificates from the Nmap XML output and reconstructs the full chain via **AIA**.
+
+```bash
+# Scan multiple domains and validate the full chain live
+nmap -p 443 --script ssl-cert example.com next.example.com -oX - | check_truststore - -s -O
+```
+
+### System Truststores
+Using the `--system` flag (powered by `SystemInputProvider`), you can audit the certificates built into your operating system:
+
+* **Linux/macOS**: Scans standard system CA bundles (e.g., `/etc/ssl/certs/ca-certificates.crt`).
+* **Windows**: Accesses the Certificate Store (ROOT/CA). (In development)
+
+```bash
+# Compare your local certs against the system trusted roots
+check_truststore my-certs/ --system
+```
+
+### 📥 Supported Input Providers
+
+| Provider | Trigger | Description |
+| :--- | :--- | :--- |
+| **YAML** | `.yml` | Configuration-driven input with Jinja2 and environment variable support. |
+| **JSON** | `.json` | Configuration-driven input from `json`. |
+| **XML (Nmap)** | `.xml` or `stdin` | Specifically optimized for Nmap `-oX` output; extracts PEM data from XML elements. |
+| **Directory** | Folder path | Scans the filesystem and groups certificates based on directory structure. |
+| **File(s)** | `.pem`, `.crt`, `.p7b` | Processes individual files or raw PEM/PKCS#7 data from stdin. |
+| **System** | `--system` | Provides access to the native OS root certificate stores. |
 
 ## 📊 Output Examples
 The tool provides different views of your truststore health depending on your needs.
@@ -308,7 +318,7 @@ When using `--format status`, the tool generates a deep-inspection JSON object. 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `metadata.version` | `string` | The version of the TrustStore Analyzer engine. |
-| `metadata.engine` | ` string` | The engine API version ` |
+| `metadata.engine` | `string` | The engine API version |
 | `metadata.scanDate` | `string` | Timestamp of the scan in ISO-8601 (Zulu) format. |
 | `metadata.exitCode` | `int` | Global result code (0-7). The highest severity found in the scan. |
 | `groups[].groupName` | `string` | The name of the truststore environment defined in your configuration. |
@@ -330,7 +340,7 @@ When using `--format status`, the tool generates a deep-inspection JSON object. 
 ```json
 {
   "metadata": {
-    "version": "1.1.6",
+    "version": "1.2.0",
     "engine": "1.1.2",
     "scanDate": "2026-05-02T11:51:52Z",
     "exitCode": 0
@@ -379,12 +389,12 @@ When using the `--format status` output, each certificate is assigned a numeric 
 | **1** | `WARNING` | Certificate is valid but expires within the defined threshold or violates minor policies. |
 | **2** | `EXPIRED` | At least one certificate in the chain has passed its `notAfter` date. |
 | **3** | `INCOMPLETE` | The chain is broken; an issuer was not found locally, in system store, or via AIA. |
-| **4** | `INVALID` | **Critical:** Signature verification failure (`SIG_ERR`) or CA-constraint violation. |
-| **5** | `REVOKED` | **Critical:** Certificate has been explicitly revoked via OCSP or CRL check. |
+| **4** | `INVALID` | **Critical**: Signature verification failure (`SIG_ERR`) or CA-constraint violation. |
+| **5** | `REVOKED` | **Critical**: Certificate has been explicitly revoked via OCSP or CRL check. |
 | **6** | `INPUT_ERR` | File access issues, I/O errors, or unparseable certificate structures. |
 | **7** | `FATAL` | An unexpected application error, network timeout, or crash occurred. |
 
-> **Note on Thresholds:** The transition from `OK` (0) to `WARNING` (1) is triggered when a certificate is within the `N`-day window defined by the `--threshold` argument.
+> **Note on Thresholds**: The transition from `OK` (0) to `WARNING` (1) is triggered when a certificate is within the `N`-day window defined by the `--threshold` argument.
 
 ### Text-Based Hierarchy (Human Readable)
 The tree view combines multiple layers of intelligence: identity validation, date checking, and cryptographic verification.
@@ -506,7 +516,7 @@ The following map demonstrates how the analyzer handles cross-signed intermediat
 To generate a DOT file and convert it to an image (requires Graphviz installation):
 ```bash
 # 1. Generate the DOT output
-./check_truststore vars/prod/stores.yml --format dot > topology.dot
+check_truststore vars/prod/stores.yml --format dot > topology.dot
 
 # 2. Convert to PNG using the 'dot' command
 dot -Tpng topology.dot -o topology.png
@@ -521,7 +531,7 @@ The tool displays signature status (🔒) and network discovery (🌐) for repai
 🔵 INFO         │      │ Configuration loaded           │ Processing 11 certificate paths
 🔵 INFO         │ 🌐   │ AIA Discovery                  │ Fetching: http://ca.example.com/cert.crt
 ✅ OK           │ 🔒   │ Root CA                        │ 2043-10-10 09:43
-✅ OK           │ 🔒🛡️ │ www.example.com]               |  2043-10-10 09:43
+✅ OK           │ 🔒🛡️ │ www.example.com                |  2043-10-10 09:43
 ```
 
 #### 🔄 Cycle Detection (Circular References)
@@ -573,12 +583,12 @@ The tool checks the current system time against the certificate's validity windo
 
 ## 🌐 Internationalization (i18n)
 The tool supports multiple languages via standard `gettext` locales.
-* **Language Selection:** The tool respects the `LANG` environment variable.
-* **Scope:** Only human-readable outputs (Debug logs and Text trees) are translated. Machine-to-machine outputs (JSON and Status formats) remain in technical English for stability.
+* **Language Selection**: The tool respects the `LANG` environment variable.
+* **Scope**: Only human-readable outputs (Debug logs and Text trees) are translated. Machine-to-machine outputs (JSON and Status formats) remain in technical English for stability.
 
 ```bash
 # Run in Dutch
-LANG=nl_NL.UTF-8 ./check_truststore vars/prod/stores.yml -d
+LANG=nl_NL.UTF-8 check_truststore vars/prod/stores.yml -d
 ```
 
 To update or add translations, use the provided utility script:
@@ -599,4 +609,4 @@ This program is free software: you can redistribute it and/or modify it under th
 This project is licensed under the **LGPL-3.0-or-later** - see the [LICENSE](LICENSE) file for details.
 
 ---
-**Status:** Version: 1.1.7 | Stable | **Logic validated for current system date:** May 7, 2026
+**Status**: Version: 1.2.0 | Stable | **Logic validated for current system date**: May 8, 2026

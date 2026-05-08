@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-07 14:21+0200\n"
+"POT-Creation-Date: 2026-05-08 11:07+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,70 +17,48 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/check_truststore/engine/repository.py:64
+#: src/check_truststore/engine/repository.py:78
 msgid "Invalid DER structure"
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:82
+#: src/check_truststore/engine/repository.py:96
 #, python-brace-format
 msgid "Maximum certificate limit ({limit}) reached."
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:94
+#: src/check_truststore/engine/repository.py:108
 msgid "Skipping duplicate certificate (already loaded)"
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:95
+#: src/check_truststore/engine/repository.py:109
 msgid "DUPLICATE"
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:110
+#: src/check_truststore/engine/repository.py:125
 msgid "Invalid certificate structure"
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:117
+#: src/check_truststore/engine/repository.py:132
 msgid "PKCS7-container"
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:127
+#: src/check_truststore/engine/repository.py:142
 msgid "Legacy cryptography detected, falling back."
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:130
+#: src/check_truststore/engine/repository.py:145
 #, python-brace-format
 msgid "Failed to parse PKCS7: {error}"
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:137
+#: src/check_truststore/engine/repository.py:152
 #, python-brace-format
 msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:164
+#: src/check_truststore/engine/repository.py:180
 #, python-brace-format
 msgid "File too large ({size:.1f}MB)"
-msgstr ""
-
-#: src/check_truststore/engine/orchestrator.py:63
-msgid "SystemProvider"
-msgstr ""
-
-#: src/check_truststore/engine/orchestrator.py:63
-#, python-brace-format
-msgid "Could not load system truststore: {error}"
-msgstr ""
-
-#: src/check_truststore/engine/orchestrator.py:67
-msgid "Processing Group"
-msgstr ""
-
-#: src/check_truststore/engine/orchestrator.py:123
-#, python-brace-format
-msgid "{used} of the {total} system certificates used"
-msgstr ""
-
-#: src/check_truststore/engine/orchestrator.py:127
-msgid "System usage"
 msgstr ""
 
 #: src/check_truststore/engine/policy.py:96
@@ -214,62 +192,62 @@ msgid ""
 "Path length constraint exceeded. Issuer allows max {limit} intermediate(s)."
 msgstr ""
 
-#: src/check_truststore/engine/builder.py:104
+#: src/check_truststore/engine/builder.py:106
 msgid "Serial"
 msgstr ""
 
-#: src/check_truststore/engine/builder.py:106
+#: src/check_truststore/engine/builder.py:108
 #: src/check_truststore/renderers/text_renderer.py:96
 msgid "Unknown"
 msgstr ""
 
-#: src/check_truststore/engine/builder.py:195
+#: src/check_truststore/engine/builder.py:197
 msgid ""
 "This certificate is explicitly untrusted by the Operating System "
 "(Blacklisted)."
 msgstr ""
 
-#: src/check_truststore/engine/builder.py:225
+#: src/check_truststore/engine/builder.py:227
 #, python-brace-format
 msgid "Broken circular chain at {ski_id}"
 msgstr ""
 
-#: src/check_truststore/engine/builder.py:226
+#: src/check_truststore/engine/builder.py:228
 msgid "CYCLE_BREAKER"
 msgstr ""
 
-#: src/check_truststore/engine/builder.py:329
+#: src/check_truststore/engine/builder.py:331
 msgid "SIG_ERR"
 msgstr ""
 
-#: src/check_truststore/engine/builder.py:332
+#: src/check_truststore/engine/builder.py:334
 msgid "REVOKED"
 msgstr ""
 
-#: src/check_truststore/engine/builder.py:335 src/check_truststore/cli.py:110
+#: src/check_truststore/engine/builder.py:337 src/check_truststore/cli.py:110
 msgid "INVALID"
 msgstr ""
 
-#: src/check_truststore/engine/builder.py:378
+#: src/check_truststore/engine/builder.py:380
 #, python-brace-format
 msgid "Missing issuer for: {name}"
 msgstr ""
 
-#: src/check_truststore/engine/builder.py:381
+#: src/check_truststore/engine/builder.py:383
 msgid "UNTRUSTED"
 msgstr ""
 
-#: src/check_truststore/engine/builder.py:520
+#: src/check_truststore/engine/builder.py:522
 msgid ""
 "The chain is untrusted because an upstream issuer is blacklisted by the OS."
 msgstr ""
 
-#: src/check_truststore/engine/builder.py:727
+#: src/check_truststore/engine/builder.py:729
 #, python-brace-format
 msgid "AIA: {name}"
 msgstr ""
 
-#: src/check_truststore/engine/builder.py:728
+#: src/check_truststore/engine/builder.py:730
 msgid "Successfully discovered issuer via AIA"
 msgstr ""
 
@@ -453,6 +431,48 @@ msgstr ""
 
 #: src/check_truststore/engine/discovery.py:525
 msgid "Could not save CRL to cache"
+msgstr ""
+
+#: src/check_truststore/engine/orchestrator.py:65
+msgid "SystemProvider"
+msgstr ""
+
+#: src/check_truststore/engine/orchestrator.py:65
+#, python-brace-format
+msgid "Could not load system truststore: {error}"
+msgstr ""
+
+#: src/check_truststore/engine/orchestrator.py:69
+msgid "Processing Group"
+msgstr ""
+
+#: src/check_truststore/engine/orchestrator.py:139
+#: src/check_truststore/engine/orchestrator.py:151
+#: src/check_truststore/engine/orchestrator.py:157
+msgid "Export"
+msgstr ""
+
+#: src/check_truststore/engine/orchestrator.py:139
+msgid "Using PEM sequence fallback for legacy environment"
+msgstr ""
+
+#: src/check_truststore/engine/orchestrator.py:151
+#, python-brace-format
+msgid "Bundle saved to {path}"
+msgstr ""
+
+#: src/check_truststore/engine/orchestrator.py:157
+#, python-brace-format
+msgid "Failed to create bundle: {error}"
+msgstr ""
+
+#: src/check_truststore/engine/orchestrator.py:186
+#, python-brace-format
+msgid "{used} of the {total} system certificates used"
+msgstr ""
+
+#: src/check_truststore/engine/orchestrator.py:190
+msgid "System usage"
 msgstr ""
 
 #: src/check_truststore/providers/json_provider.py:76
@@ -650,34 +670,46 @@ msgstr ""
 msgid "Show debug info"
 msgstr ""
 
-#: src/check_truststore/cli.py:213
+#: src/check_truststore/cli.py:196
+msgid "Export Options"
+msgstr ""
+
+#: src/check_truststore/cli.py:202
+msgid "Export a complete PKCS#7 (.p7b) bundle for each analyzed group"
+msgstr ""
+
+#: src/check_truststore/cli.py:209
+msgid "Directory where bundles will be saved (default: output_bundles)"
+msgstr ""
+
+#: src/check_truststore/cli.py:228
 msgid "Parameter '-o' is unknown"
 msgstr ""
 
-#: src/check_truststore/cli.py:214
+#: src/check_truststore/cli.py:229
 msgid "Did you mean '-O' (uppercase) for online discovery?"
 msgstr ""
 
-#: src/check_truststore/cli.py:223
+#: src/check_truststore/cli.py:238
 msgid "Stdin requested via '-' but no data piped."
 msgstr ""
 
-#: src/check_truststore/cli.py:242
+#: src/check_truststore/cli.py:257
 msgid "No certificates found via this provider."
 msgstr ""
 
-#: src/check_truststore/cli.py:244
+#: src/check_truststore/cli.py:259
 msgid "Could not determine provider for this input."
 msgstr ""
 
-#: src/check_truststore/cli.py:247
+#: src/check_truststore/cli.py:262
 msgid "No certificates found to display."
 msgstr ""
 
-#: src/check_truststore/cli.py:272
+#: src/check_truststore/cli.py:287
 msgid "Analysis interrupted by user"
 msgstr ""
 
-#: src/check_truststore/cli.py:275
+#: src/check_truststore/cli.py:290
 msgid "An unexpected error occurred"
 msgstr ""

@@ -80,8 +80,10 @@ class TrustChainBuilder:
     def _process_metadata(self, item: Dict[str, Any]):
         """Extracts X509 fields and prepares the internal mapping for chain building."""
         cert = item["cert"]
-        path = item["path"]
         c_hash = item["hash"]
+        if hasattr(self.repo, "_register_cert"):
+            self.repo._register_cert(cert, c_hash)
+        path = item["path"]
         is_system_cert = item.get("is_system_cert", False)
         is_blacklisted = item.get("is_blacklisted", False)
         is_aia_cert = item.get("is_aia_cert", False)

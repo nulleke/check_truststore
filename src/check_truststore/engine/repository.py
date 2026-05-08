@@ -32,7 +32,20 @@ class CertificateRepository:
         self.verbosity = kwargs.get('verbosity', 0)
         self.force = kwargs.get('force', False)
         self.seen_hashes: Set[str] = set()
+        self._certs_by_hash: Dict[str, x509.Certificate] = {}
         self.total_scanned_count: int = 0
+
+    def _register_cert(self, cert: x509.Certificate, c_hash: str):
+        """Internal helper to index the binary object."""
+        self.seen_hashes.add(c_hash)
+        self._certs_by_hash[c_hash] = cert
+
+    def get_cert_by_hash(self, sha256_hash: str) -> Optional[x509.Certificate]:
+        """
+        Retrieves the binary X.509 object from the repository.
+        Used by the orchestrator for bundle exports.
+        """
+        return self._certs_by_hash.get(sha256_hash)
 
     def _get_cert_hash(self, cert: x509.Certificate) -> str:
         """Helper to get a consistent SHA256 hash from an x509 object."""
@@ -50,6 +63,7 @@ class CertificateRepository:
                 return []
 
             self.seen_hashes.add(c_hash)
+            self._register_cert(cert, c_hash)
             self.total_scanned_count += 1
 
             return [{
@@ -97,6 +111,7 @@ class CertificateRepository:
                     continue
 
                 self.seen_hashes.add(c_hash)
+                self._register_cert(cert, c_hash)
                 new_certs.append({
                     "cert": cert,
                     "path": source_path or Path("stdin"),
@@ -115,6 +130,7 @@ class CertificateRepository:
         """Extracts certificates from a PKCS#7 container."""
         new_certs = []
         source_name = source_path.name if source_path else _("PKCS7-container")
+        pkcs7_certs = []
 
         try:
             from cryptography.hazmat.primitives.serialization import pkcs7
@@ -142,6 +158,7 @@ class CertificateRepository:
                 continue
 
             self.seen_hashes.add(c_hash)
+            self._register_cert(cert, c_hash)
             new_certs.append({
                 "cert": cert,
                 "path": source_path or Path("pkcs7-container"),
@@ -178,4 +195,5 @@ class CertificateRepository:
 
     def clear_cache(self):
         self.seen_hashes.clear()
+        self._certs_by_hash.clear()
         self.total_scanned_count = 0
