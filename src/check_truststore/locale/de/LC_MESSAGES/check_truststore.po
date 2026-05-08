@@ -5,9 +5,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: 1.1.7\n"
+"Project-Id-Version: check_truststore 1.2.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-07 14:21+0200\n"
+"POT-Creation-Date: 2026-05-08 11:07+0200\n"
 "PO-Revision-Date: 2026-05-07 14:25+0200\n"
 "Last-Translator: Serge van Thillo\n"
 "Language-Team: German\n"
@@ -17,80 +17,62 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/check_truststore/engine/repository.py:64
+#: src/check_truststore/engine/repository.py:78
 msgid "Invalid DER structure"
 msgstr "Ungültige DER-Struktur"
 
-#: src/check_truststore/engine/repository.py:82
+#: src/check_truststore/engine/repository.py:96
 #, python-brace-format
 msgid "Maximum certificate limit ({limit}) reached."
 msgstr "Maximales Zertifikatslimit ({limit}) erreicht."
 
-#: src/check_truststore/engine/repository.py:94
+#: src/check_truststore/engine/repository.py:108
 msgid "Skipping duplicate certificate (already loaded)"
 msgstr "Überspringe doppeltes Zertifikat (bereits geladen)"
 
-#: src/check_truststore/engine/repository.py:95
+#: src/check_truststore/engine/repository.py:109
 msgid "DUPLICATE"
 msgstr "DUPLIKAT"
 
-#: src/check_truststore/engine/repository.py:110
+#: src/check_truststore/engine/repository.py:125
 msgid "Invalid certificate structure"
 msgstr "Ungültige Zertifikatsstruktur"
 
-#: src/check_truststore/engine/repository.py:117
+#: src/check_truststore/engine/repository.py:132
 msgid "PKCS7-container"
 msgstr "PKCS7-Container"
 
-#: src/check_truststore/engine/repository.py:127
+#: src/check_truststore/engine/repository.py:142
 msgid "Legacy cryptography detected, falling back."
 msgstr "Veraltete Kryptografie erkannt, weiche auf Fallback-Modus aus."
 
-#: src/check_truststore/engine/repository.py:130
+#: src/check_truststore/engine/repository.py:145
 #, python-brace-format
 msgid "Failed to parse PKCS7: {error}"
 msgstr "PKCS7-Parsing fehlgeschlagen: {error}"
 
-#: src/check_truststore/engine/repository.py:137
+#: src/check_truststore/engine/repository.py:152
 #, python-brace-format
 msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
 msgstr "Maximales Zertifikatslimit ({limit}) erreicht. Scan wird beendet."
 
-#: src/check_truststore/engine/repository.py:164
+#: src/check_truststore/engine/repository.py:180
 #, python-brace-format
 msgid "File too large ({size:.1f}MB)"
 msgstr "Datei zu groß ({size:.1f}MB)"
 
-#: src/check_truststore/engine/orchestrator.py:63
-msgid "SystemProvider"
-msgstr "SystemProvider"
-
-#: src/check_truststore/engine/orchestrator.py:63
-#, python-brace-format
-msgid "Could not load system truststore: {error}"
-msgstr "System-Truststore konnte nicht geladen werden: {error}"
-
-#: src/check_truststore/engine/orchestrator.py:67
-msgid "Processing Group"
-msgstr "Verarbeite Gruppe"
-
-#: src/check_truststore/engine/orchestrator.py:123
-#, python-brace-format
-msgid "{used} of the {total} system certificates used"
-msgstr "{used} von {total} Systemzertifikaten verwendet"
-
-#: src/check_truststore/engine/orchestrator.py:127
-msgid "System usage"
-msgstr "Systemnutzung"
-
 #: src/check_truststore/engine/policy.py:96
 msgid "The cryptographic signature is invalid or could not be verified."
-msgstr "Die kryptografische Signatur ist ungültig oder konnte nicht verifiziert werden."
+msgstr ""
+"Die kryptografische Signatur ist ungültig oder konnte nicht verifiziert "
+"werden."
 
 #: src/check_truststore/engine/policy.py:105
 #, python-brace-format
 msgid "Issuer '{issuer}' is not a CA or lacks keyCertSign usage."
-msgstr "Aussteller '{issuer}' ist keine CA oder verfügt nicht über die 'keyCertSign'-Berechtigung."
+msgstr ""
+"Aussteller '{issuer}' ist keine CA oder verfügt nicht über die 'keyCertSign'-"
+"Berechtigung."
 
 #: src/check_truststore/engine/policy.py:117
 msgid ""
@@ -124,7 +106,9 @@ msgstr ""
 
 #: src/check_truststore/engine/policy.py:266
 msgid "Certificate uses SHA-1 signature algorithm which is no longer trusted."
-msgstr "Zertifikat verwendet SHA-1-Signaturalgorithmus, der nicht mehr vertrauenswürdig ist."
+msgstr ""
+"Zertifikat verwendet SHA-1-Signaturalgorithmus, der nicht mehr "
+"vertrauenswürdig ist."
 
 #: src/check_truststore/engine/policy.py:286
 msgid "End-entity certificate lacks Extended Key Usage extension."
@@ -134,19 +118,21 @@ msgstr "Endentitätszertifikat fehlt die Erweiterung 'Extended Key Usage'."
 msgid ""
 "Certificate contains 'Any Extended Key Usage', which is overly permissive."
 msgstr ""
-"Zertifikat enthält 'Any Extended Key Usage', was zu weitreichende Rechte gewährt."
+"Zertifikat enthält 'Any Extended Key Usage', was zu weitreichende Rechte "
+"gewährt."
 
 #: src/check_truststore/engine/policy.py:308
 msgid ""
 "Certificate allows both Server Auth and Code Signing. Functional separation "
 "is recommended."
 msgstr ""
-"Zertifikat erlaubt sowohl Server-Auth als auch Code-Signing. Funktionale Trennung "
-"wird empfohlen."
+"Zertifikat erlaubt sowohl Server-Auth als auch Code-Signing. Funktionale "
+"Trennung wird empfohlen."
 
 #: src/check_truststore/engine/policy.py:325
 msgid "Could not parse Extended Key Usage extension data."
-msgstr "Daten der Erweiterung 'Extended Key Usage' konnten nicht analysiert werden."
+msgstr ""
+"Daten der Erweiterung 'Extended Key Usage' konnten nicht analysiert werden."
 
 #: src/check_truststore/engine/policy.py:343
 msgid "Server Authentication"
@@ -194,7 +180,8 @@ msgstr "Unbekannt ({oid})"
 msgid ""
 "Certificate validity period ({duration_days} days) exceeds the 398-day limit."
 msgstr ""
-"Gültigkeitsdauer des Zertifikats ({duration_days} Tage) überschreitet das 398-Tage-Limit."
+"Gültigkeitsdauer des Zertifikats ({duration_days} Tage) überschreitet das "
+"398-Tage-Limit."
 
 #: src/check_truststore/engine/policy.py:422
 #, python-brace-format
@@ -207,11 +194,14 @@ msgid ""
 "SAN contains a non-FQDN '{name}', which is disallowed for public "
 "certificates."
 msgstr ""
-"SAN enthält Nicht-FQDN '{name}', was für öffentliche Zertifikate unzulässig ist."
+"SAN enthält Nicht-FQDN '{name}', was für öffentliche Zertifikate unzulässig "
+"ist."
 
 #: src/check_truststore/engine/policy.py:439
 msgid "Certificate lacks a SAN extension. Relying solely on CN is deprecated."
-msgstr "Dem Zertifikat fehlt eine SAN-Erweiterung. Die alleinige Verwendung des CN ist veraltet."
+msgstr ""
+"Dem Zertifikat fehlt eine SAN-Erweiterung. Die alleinige Verwendung des CN "
+"ist veraltet."
 
 #: src/check_truststore/engine/policy.py:461
 msgid ""
@@ -226,18 +216,19 @@ msgstr ""
 msgid ""
 "Path length constraint exceeded. Issuer allows max {limit} intermediate(s)."
 msgstr ""
-"Pfadlängenbeschränkung überschritten. Aussteller erlaubt maximal {limit} Zwischenzertifikat(e)."
+"Pfadlängenbeschränkung überschritten. Aussteller erlaubt maximal {limit} "
+"Zwischenzertifikat(e)."
 
-#: src/check_truststore/engine/builder.py:104
+#: src/check_truststore/engine/builder.py:106
 msgid "Serial"
 msgstr "Seriennummer"
 
-#: src/check_truststore/engine/builder.py:106
+#: src/check_truststore/engine/builder.py:108
 #: src/check_truststore/renderers/text_renderer.py:96
 msgid "Unknown"
 msgstr "Unbekannt"
 
-#: src/check_truststore/engine/builder.py:195
+#: src/check_truststore/engine/builder.py:197
 msgid ""
 "This certificate is explicitly untrusted by the Operating System "
 "(Blacklisted)."
@@ -245,48 +236,49 @@ msgstr ""
 "Diesem Zertifikat wird vom Betriebssystem explizit nicht vertraut "
 "(Sperrliste)."
 
-#: src/check_truststore/engine/builder.py:225
+#: src/check_truststore/engine/builder.py:227
 #, python-brace-format
 msgid "Broken circular chain at {ski_id}"
 msgstr "Zirkuläre Kette bei {ski_id} unterbrochen"
 
-#: src/check_truststore/engine/builder.py:226
+#: src/check_truststore/engine/builder.py:228
 msgid "CYCLE_BREAKER"
 msgstr "KREISLAUF_UNTERBRECHER"
 
-#: src/check_truststore/engine/builder.py:329
+#: src/check_truststore/engine/builder.py:331
 msgid "SIG_ERR"
 msgstr "SIG_FEHLER"
 
-#: src/check_truststore/engine/builder.py:332
+#: src/check_truststore/engine/builder.py:334
 msgid "REVOKED"
 msgstr "WIDERRUFEN"
 
-#: src/check_truststore/engine/builder.py:335 src/check_truststore/cli.py:110
+#: src/check_truststore/engine/builder.py:337 src/check_truststore/cli.py:110
 msgid "INVALID"
 msgstr "UNGÜLTIG"
 
-#: src/check_truststore/engine/builder.py:378
+#: src/check_truststore/engine/builder.py:380
 #, python-brace-format
 msgid "Missing issuer for: {name}"
 msgstr "Fehlender Aussteller für: {name}"
 
-#: src/check_truststore/engine/builder.py:381
+#: src/check_truststore/engine/builder.py:383
 msgid "UNTRUSTED"
 msgstr "NICHT VERTRAUENSWÜRDIG"
 
-#: src/check_truststore/engine/builder.py:520
+#: src/check_truststore/engine/builder.py:522
 msgid ""
 "The chain is untrusted because an upstream issuer is blacklisted by the OS."
 msgstr ""
-"Die Kette ist nicht vertrauenswürdig, da ein übergeordneter Aussteller vom OS gesperrt wurde."
+"Die Kette ist nicht vertrauenswürdig, da ein übergeordneter Aussteller vom "
+"OS gesperrt wurde."
 
-#: src/check_truststore/engine/builder.py:727
+#: src/check_truststore/engine/builder.py:729
 #, python-brace-format
 msgid "AIA: {name}"
 msgstr "AIA: {name}"
 
-#: src/check_truststore/engine/builder.py:728
+#: src/check_truststore/engine/builder.py:730
 msgid "Successfully discovered issuer via AIA"
 msgstr "Aussteller erfolgreich über AIA gefunden"
 
@@ -472,6 +464,48 @@ msgstr "CRL-Prüfung fehlgeschlagen"
 msgid "Could not save CRL to cache"
 msgstr "CRL konnte nicht im Cache gespeichert werden"
 
+#: src/check_truststore/engine/orchestrator.py:65
+msgid "SystemProvider"
+msgstr "SystemProvider"
+
+#: src/check_truststore/engine/orchestrator.py:65
+#, python-brace-format
+msgid "Could not load system truststore: {error}"
+msgstr "System-Truststore konnte nicht geladen werden: {error}"
+
+#: src/check_truststore/engine/orchestrator.py:69
+msgid "Processing Group"
+msgstr "Verarbeite Gruppe"
+
+#: src/check_truststore/engine/orchestrator.py:139
+#: src/check_truststore/engine/orchestrator.py:151
+#: src/check_truststore/engine/orchestrator.py:157
+msgid "Export"
+msgstr "Export"
+
+#: src/check_truststore/engine/orchestrator.py:139
+msgid "Using PEM sequence fallback for legacy environment"
+msgstr "PEM-Sequenz-Fallback wird für Legacy-Umgebungen verwendet"
+
+#: src/check_truststore/engine/orchestrator.py:151
+#, python-brace-format
+msgid "Bundle saved to {path}"
+msgstr "Bundle unter {path} gespeichert"
+
+#: src/check_truststore/engine/orchestrator.py:157
+#, python-brace-format
+msgid "Failed to create bundle: {error}"
+msgstr "Bundle-Erstellung fehlgeschlagen: {error}"
+
+#: src/check_truststore/engine/orchestrator.py:186
+#, python-brace-format
+msgid "{used} of the {total} system certificates used"
+msgstr "{used} von {total} Systemzertifikaten verwendet"
+
+#: src/check_truststore/engine/orchestrator.py:190
+msgid "System usage"
+msgstr "Systemnutzung"
+
 #: src/check_truststore/providers/json_provider.py:76
 msgid "Unknown JSON format or malformed structure."
 msgstr "Unbekanntes JSON-Format oder fehlerhafte Struktur."
@@ -607,7 +641,8 @@ msgstr "ELTERNTEIL_KEINE_CA"
 
 #: src/check_truststore/cli.py:118
 msgid "Analyze certificate truststores and visualize the chain hierarchy."
-msgstr "Zertifikats-Truststores analysieren und die Kettenhierarchie visualisieren."
+msgstr ""
+"Zertifikats-Truststores analysieren und die Kettenhierarchie visualisieren."
 
 #: src/check_truststore/cli.py:120
 msgid "Compatible with Python 3.6+"
@@ -639,7 +674,8 @@ msgstr "Lokalen Cache umgehen und Download von AIA/CRL/OCSP-Daten erzwingen"
 
 #: src/check_truststore/cli.py:157
 msgid "Override safety limits (max file size and certificate count)"
-msgstr "Sicherheitslimits überschreiben (max. Dateigröße und Zertifikatsanzahl)"
+msgstr ""
+"Sicherheitslimits überschreiben (max. Dateigröße und Zertifikatsanzahl)"
 
 #: src/check_truststore/cli.py:160
 msgid "Analysis Settings"
@@ -663,40 +699,56 @@ msgstr "Ausgabeformat"
 
 #: src/check_truststore/cli.py:188
 msgid "Increase output verbosity (e.g., -v for SANs, -vv for policy findings)"
-msgstr "Ausführlichkeit erhöhen (z. B. -v für SANs, -vv für Richtlinienergebnisse)"
+msgstr ""
+"Ausführlichkeit erhöhen (z. B. -v für SANs, -vv für Richtlinienergebnisse)"
 
 #: src/check_truststore/cli.py:194
 msgid "Show debug info"
 msgstr "Debug-Informationen anzeigen"
 
-#: src/check_truststore/cli.py:213
+#: src/check_truststore/cli.py:196
+msgid "Export Options"
+msgstr "Exportoptionen"
+
+#: src/check_truststore/cli.py:202
+msgid "Export a complete PKCS#7 (.p7b) bundle for each analyzed group"
+msgstr ""
+"Exportieren Sie een vollständiges PKCS#7 (.p7b) Bundle für jede analysierte "
+"Gruppe"
+
+#: src/check_truststore/cli.py:209
+msgid "Directory where bundles will be saved (default: output_bundles)"
+msgstr ""
+"Verzeichnis, in dem Bundles gespeichert werden (Standard: output_bundles)"
+
+#: src/check_truststore/cli.py:228
 msgid "Parameter '-o' is unknown"
 msgstr "Parameter '-o' ist unbekannt"
 
-#: src/check_truststore/cli.py:214
+#: src/check_truststore/cli.py:229
 msgid "Did you mean '-O' (uppercase) for online discovery?"
 msgstr "Meinten Sie '-O' (Großbuchstabe) für die Online-Ermittlung?"
 
-#: src/check_truststore/cli.py:223
+#: src/check_truststore/cli.py:238
 msgid "Stdin requested via '-' but no data piped."
 msgstr "Stdin via '-' angefordert, aber keine Daten übergeben."
 
-#: src/check_truststore/cli.py:242
+#: src/check_truststore/cli.py:257
 msgid "No certificates found via this provider."
 msgstr "Keine Zertifikate über diesen Provider gefunden."
 
-#: src/check_truststore/cli.py:244
+#: src/check_truststore/cli.py:259
 msgid "Could not determine provider for this input."
 msgstr "Provider für diesen Eingang konnte nicht bestimmt werden."
 
-#: src/check_truststore/cli.py:247
+#: src/check_truststore/cli.py:262
 msgid "No certificates found to display."
 msgstr "Keine anzuzeigenden Zertifikate gefunden."
 
-#: src/check_truststore/cli.py:272
+#: src/check_truststore/cli.py:287
 msgid "Analysis interrupted by user"
 msgstr "Analyse durch Benutzer unterbrochen"
 
-#: src/check_truststore/cli.py:275
+#: src/check_truststore/cli.py:290
 msgid "An unexpected error occurred"
 msgstr "Ein unerwarteter Fehler ist aufgetreten"

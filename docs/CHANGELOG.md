@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v1.1.7] - 2026-05-07 (Stable)
+## [v1.2.0] - 2026-05-07 (Stable)
 
 ### 🚀 Highlights
 *   **Deduplication in Visualization**: The `TextRenderer` and `GraphvizRenderer` now feature a mechanism to prevent duplicate certificates in complex or cross-signed trust paths. This ensures a much cleaner tree structure without redundant branches.
@@ -50,7 +50,7 @@ All notable changes to this project will be documented in this file.
 *   **Automation**: Full GitLab CI/CD pipeline for multi-version Python testing (3.6 to 3.14).
 *   **Localization**: Improved `gettext` integration with automated `.mo` compilation in the build process.
 
-## [1.1.3] - 2026-05-02 (In Progress)
+## [1.1.3] - 2026-05-02 (Stable)
 
 ### Added
 *   **Defensive Coding Measures**: Implemented global safety limits to prevent resource exhaustion (CPU/Memory).

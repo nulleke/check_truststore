@@ -193,6 +193,21 @@ def main() -> None:
             default=False,
             help=_("Show debug info")
         )
+        export_group = parser.add_argument_group(_("Export Options"))
+        export_group.add_argument(
+            "--export-bundles",
+            action="store_true",
+            default=False,
+            dest="export_bundles",
+            help=_("Export a complete PKCS#7 (.p7b) bundle for each analyzed group"),
+        )
+        export_group.add_argument(
+            "--export-dir",
+            type=str,
+            default="output_bundles",
+            dest="export_dir",
+            help=_("Directory where bundles will be saved (default: output_bundles)"),
+        )
 
         parser.add_argument(
             "--mock",

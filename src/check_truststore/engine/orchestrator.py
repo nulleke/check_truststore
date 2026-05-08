@@ -13,7 +13,7 @@ from pathlib import Path
 from .repository import CertificateRepository
 from .models import Certificate, CertificateGroup
 from .builder import TrustChainBuilder
-from .logging import _, INFO
+from .logging import _, INFO, ERROR
 
 
 class TrustStoreAnalyzer:
@@ -32,6 +32,8 @@ class TrustStoreAnalyzer:
         self.include_system: bool = kwargs.get("system", False)
         self.online: bool = kwargs.get("online", False)
         self.max_depth: int = kwargs.get("max_depth", 4)
+        self.export_bundles = kwargs.get("export_bundles", False)
+        self.export_dir = kwargs.get("export_dir", "output_bundles")
         self.groups: List[Any] = groups
 
     def analyze(self) -> List[CertificateGroup]:
@@ -89,10 +91,71 @@ class TrustStoreAnalyzer:
             group_obj.finalize()
             analysis_results.append(group_obj)
 
+            if self.export_bundles:
+                self.export_bundle(group_obj, self.export_dir)
+
             if self.include_system and self.debug:
                 self._log_system_usage(group_config.name, group_obj.tree, system_hashes)
 
         return analysis_results
+
+    def export_bundle(self, group: CertificateGroup, output_dir: str) -> Optional[Path]:
+        """
+        Universal PKCS#7 export compatible with RHEL 8 (Python 3.6) and Fedora 43.
+        """
+        try:
+            from cryptography.hazmat.primitives.serialization import pkcs7
+            from cryptography.hazmat.primitives import serialization
+
+            raw_certs = [self.repo.get_cert_by_hash(c.sha256_hash) for c in group.chain]
+            raw_certs = [c for c in raw_certs if c is not None]
+
+            if not raw_certs:
+                return None
+
+            p7_data = None
+
+            if hasattr(pkcs7, "serialize_certificates"):
+                try:
+                    p7_data = pkcs7.serialize_certificates(raw_certs, serialization.Encoding.PEM)
+                except Exception:
+                    pass
+
+            if not p7_data and hasattr(pkcs7, "PKCS7SignatureBuilder"):
+                try:
+                    builder = pkcs7.PKCS7SignatureBuilder()
+                    for c in raw_certs:
+                        builder = builder.add_certificate(c)
+
+                    if hasattr(builder, "serialize"):
+                        p7_data = builder.serialize(serialization.Encoding.PEM)
+                    elif hasattr(builder, "finish"):
+                        p7_data = builder.finish(serialization.Encoding.PEM)
+                except Exception:
+                    pass
+
+            if not p7_data:
+                if self.debug:
+                    INFO.log(_("Export"), _("Using PEM sequence fallback for legacy environment"))
+                p7_data = b"".join([c.public_bytes(serialization.Encoding.PEM) for c in raw_certs])
+
+            out_path = Path(output_dir)
+            out_path.mkdir(parents=True, exist_ok=True)
+            safe_name = group.group_name.replace(".", "_").replace(" ", "_")
+            file_path = out_path / f"{safe_name}_bundle.p7b"
+
+            with open(file_path, "wb") as f:
+                f.write(p7_data)
+
+            if self.debug:
+                INFO.log(f"[{group.group_name}] " + _("Export"), _("Bundle saved to {path}").format(path=file_path))
+
+            return file_path
+
+        except Exception as e:
+            if self.debug:
+                ERROR.log(_("Export"), _("Failed to create bundle: {error}").format(error=str(e)))
+            return None
 
     def _log_system_usage(self, group_name: str, tree: List[Certificate], system_hashes: Set[str]) -> None:
         """
