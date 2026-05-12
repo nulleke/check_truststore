@@ -8,13 +8,13 @@ It acts as a central registry for certificates discovered by various providers.
 """
 
 import re
-import hashlib
-from typing import Any, Optional, List, Dict, Set
+from typing import Any, Optional, List, Dict
 from pathlib import Path
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
 from .logging import _, WARNING, ERROR
+from .models import Certificate
 
 
 MAX_CERTS_PER_RUN = 1000
@@ -31,25 +31,28 @@ class CertificateRepository:
         self.debug = kwargs.get('debug', False)
         self.verbosity = kwargs.get('verbosity', 0)
         self.force = kwargs.get('force', False)
-        self.seen_hashes: Set[str] = set()
-        self._certs_by_hash: Dict[str, x509.Certificate] = {}
+        self._certs_by_fingerprint: Dict[str, x509.Certificate] = {}
         self.total_scanned_count: int = 0
 
-    def _register_cert(self, cert: x509.Certificate, c_hash: str):
-        """Internal helper to index the binary object."""
-        self.seen_hashes.add(c_hash)
-        self._certs_by_hash[c_hash] = cert
+    def __contains__(self, fingerprint: str) -> bool:
+        return fingerprint in self._certs_by_fingerprint
 
-    def get_cert_by_hash(self, sha256_hash: str) -> Optional[x509.Certificate]:
+    def _register_cert(self, cert: x509.Certificate, fingerprint: str):
+        """Internal helper to index the binary object."""
+        self._certs_by_fingerprint[fingerprint] = cert
+
+    def get_cert_by_fingerprint(self, fingerprint: str) -> Optional[x509.Certificate]:
         """
         Retrieves the binary X.509 object from the repository.
         Used by the orchestrator for bundle exports.
         """
-        return self._certs_by_hash.get(sha256_hash)
+        return self._certs_by_fingerprint.get(fingerprint)
 
-    def _get_cert_hash(self, cert: x509.Certificate) -> str:
+    def _get_cert_fingerprint(self, cert: x509.Certificate) -> str:
         """Helper to get a consistent SHA256 hash from an x509 object."""
-        return hashlib.sha256(cert.public_bytes(serialization.Encoding.DER)).hexdigest()
+        return Certificate.calculate_fingerprint(
+            cert.public_bytes(serialization.Encoding.DER)
+        )
 
     def add_der_data(self, content: bytes, source_path: Optional[Path] = None, is_system: bool = False) -> List[Dict[str, Any]]:
         """
@@ -57,19 +60,18 @@ class CertificateRepository:
         """
         try:
             cert = x509.load_der_x509_certificate(content, default_backend())
-            c_hash = self._get_cert_hash(cert)
+            c_fp = self._get_cert_fingerprint(cert)
 
-            if c_hash in self.seen_hashes:
+            if c_fp in self._certs_by_fingerprint:
                 return []
 
-            self.seen_hashes.add(c_hash)
-            self._register_cert(cert, c_hash)
+            self._register_cert(cert, c_fp)
             self.total_scanned_count += 1
 
             return [{
                 "cert": cert,
                 "path": source_path or Path("raw-data"),
-                "hash": c_hash,
+                "hash": c_fp,
                 "is_system_cert": is_system,
             }]
         except Exception as e:
@@ -99,9 +101,9 @@ class CertificateRepository:
             try:
                 pem_block = raw_block.replace(b"TRUSTED ", b"")
                 cert = x509.load_pem_x509_certificate(pem_block, default_backend())
-                c_hash = self._get_cert_hash(cert)
+                c_fp = self._get_cert_fingerprint(cert)
 
-                if c_hash in self.seen_hashes:
+                if c_fp in self._certs_by_fingerprint:
                     if self.debug and not is_system and source_path:
                         WARNING.log(
                             source_path.name,
@@ -110,12 +112,11 @@ class CertificateRepository:
                         )
                     continue
 
-                self.seen_hashes.add(c_hash)
-                self._register_cert(cert, c_hash)
+                self._register_cert(cert, c_fp)
                 new_certs.append({
                     "cert": cert,
                     "path": source_path or Path("stdin"),
-                    "hash": c_hash,
+                    "hash": c_fp,
                     "is_system_cert": is_system,
                 })
 
@@ -153,16 +154,15 @@ class CertificateRepository:
                     WARNING.log(source_name, _("Maximum certificate limit ({limit}) reached. Stopping scan.").format(limit=MAX_CERTS_PER_RUN))
                 break
 
-            c_hash = self._get_cert_hash(cert)
-            if c_hash in self.seen_hashes:
+            c_fp = self._get_cert_fingerprint(cert)
+            if c_fp in self._certs_by_fingerprint:
                 continue
 
-            self.seen_hashes.add(c_hash)
-            self._register_cert(cert, c_hash)
+            self._register_cert(cert, c_fp)
             new_certs.append({
                 "cert": cert,
                 "path": source_path or Path("pkcs7-container"),
-                "hash": c_hash,
+                "hash": c_fp,
                 "is_system_cert": is_system,
             })
         return new_certs
@@ -194,6 +194,5 @@ class CertificateRepository:
         return collected_certs
 
     def clear_cache(self):
-        self.seen_hashes.clear()
-        self._certs_by_hash.clear()
+        self._certs_by_fingerprint.clear()
         self.total_scanned_count = 0

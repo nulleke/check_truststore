@@ -101,7 +101,7 @@ class StatusRenderer(BaseRenderer):
                         cert_entry["fileName"] = f_name
 
                     if getattr(cert, "is_system_cert", False):
-                        c_hash = getattr(cert, "sha256_hash", cert_entry["commonName"])
+                        c_hash = getattr(cert, "fingerprint", cert_entry["commonName"])
                         if c_hash not in system_certs_global:
                             system_certs_global[c_hash] = cert_entry
                     else:

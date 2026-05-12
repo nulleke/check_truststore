@@ -119,7 +119,8 @@ class XmlInputProvider(BaseInputProvider):
                             if temp_certs:
                                 groups.append(TrustStoreGroup(
                                     name=f"Nmap: {display_name}:{port_id}",
-                                    targets=temp_certs
+                                    targets=temp_certs,
+                                    target_hostname=display_name,
                                 ))
         return groups
 

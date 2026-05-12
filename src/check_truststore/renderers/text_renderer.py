@@ -41,6 +41,7 @@ class TextRenderer(BaseRenderer):
         _("SIG_INVALID")
         _("NO_TRUST")
         _("UNTRUSTED_CHAIN")
+        _("CHAIN_BROKEN")
         self.now = datetime.now(timezone.utc)
 
         output = ["", _("Certificate Hierarchy:")]
@@ -113,7 +114,10 @@ class TextRenderer(BaseRenderer):
                 if audit["code"] == 0:
                     icons.append(Icons.VALID)
                 elif audit["code"] == 1:
-                    icons.append(Icons.WARNING)
+                    if audit["label"] == "EXPIRING":
+                        icons.append(Icons.EXPIRING)
+                    else:
+                        icons.append(Icons.WARNING)
                 else:
                     icons.append(Icons.EXPIRED)
 
@@ -173,7 +177,6 @@ class TextRenderer(BaseRenderer):
                         san_display = f"({_('ALT')}: {', '.join(extra_sans)})"
 
             # Date formatting
-
             date_str = ""
             if expiry and not is_special_placeholder:
                 ds = (
@@ -200,7 +203,7 @@ class TextRenderer(BaseRenderer):
                     f_connector = "└── " if is_last_finding else "├── "
                     f_icon = "[!]" if f.level == "ERROR" else "[i]"
                     try:
-                        translated_msg = _(f.message).format(**(f.params or {}))
+                        translated_msg = _(f.raw_message).format(**(f.params or {}))
                     except (KeyError, ValueError):
                         translated_msg = _(f.message)
                     lines.append(f"{base_indent}{f_connector}{f_icon} {translated_msg} ({f.code})")

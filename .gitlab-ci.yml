@@ -26,7 +26,7 @@ test_full_compatibility:
       if [ "$PYTHON_VERSION" == "3.6" ]; then
         echo ">>> Environment: Legacy (3.6)"
         python3 -m pip install --quiet --upgrade "pip<22.0"
-        pip install cryptography PyYAML requests
+        pip install "cryptography<3.5" PyYAML requests
       else
         echo ">>> Environment: Modern ($PYTHON_VERSION)"
         python3 -m pip install --quiet --upgrade pip

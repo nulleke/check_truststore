@@ -9,7 +9,6 @@ from typing import List, Optional, Any, Dict
 from datetime import timezone
 from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import rsa, ec, padding as rsa_padding
-from cryptography.hazmat.primitives import hashes
 from cryptography.x509.oid import ExtensionOID, ExtendedKeyUsageOID
 from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
 
@@ -20,7 +19,7 @@ class PolicyFinding:
     """
     Represents a specific policy violation or security warning.
     """
-    def __init__(self, level: str, code: str, message: str, params: Optional[Dict[str, Any]] = None, code_int: int = 4):
+    def __init__(self, level: str, code: str, message: str, label: str, params: Optional[Dict[str, Any]] = None, code_int: int = 4):
         """
         Initializes a policy finding.
 
@@ -30,11 +29,17 @@ class PolicyFinding:
             message: Human-readable description of the issue.
             params: Optional metadata for dynamic message formatting.
         """
-        self.level = level
+        self.level = level.upper()
         self.code = code
-        self.message = message
-        self.params = params or {}
         self.code_int = code_int
+        self.label = label
+        self.params = params or {}
+        self.raw_message = message
+
+        try:
+            self.message = message.format(**self.params) if self.params else message
+        except (KeyError, ValueError):
+            self.message = message
 
     def model_dump(self):
         """
@@ -42,10 +47,11 @@ class PolicyFinding:
         suitable for JSON serialization or API responses.
         """
         return {
-            "level": self.level,
             "code": self.code,
-            "message": self.message,
             "code_int": self.code_int,
+            "message": self.message,
+            "level": self.level,
+            "label": self.label,
             "params": self.params
         }
 
@@ -64,7 +70,7 @@ class PolicyEngine:
         self.debug = kwargs.get('debug', False)
         self.internal_tlds = {'.lan', '.local', '.internal', '.home.arpa', '.node'}
 
-    def validate(self, cert: x509.Certificate, issuer: Optional[x509.Certificate] = None, path_depth: Optional[int] = None) -> List[PolicyFinding]:
+    def validate(self, cert: x509.Certificate, issuer: Optional[x509.Certificate] = None, path_depth: Optional[int] = None, target_hostname: Optional[str] = None) -> List[PolicyFinding]:
         """
         Performs a comprehensive suite of security checks on a certificate.
 
@@ -75,7 +81,7 @@ class PolicyEngine:
         Returns:
             A list of PolicyFinding objects representing discovered issues.
         """
-        findings = []
+        findings: List[PolicyFinding] = []
 
         # Independent Cryptographic Checks
         findings.extend(self._check_key_strength(cert))
@@ -89,39 +95,53 @@ class PolicyEngine:
 
         # Link Validation (Requires Issuer)
         if issuer:
+            issuer_cn_attribs = issuer.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+            issuer_display_name = issuer_cn_attribs[0].value if issuer_cn_attribs else issuer.subject.rfc4514_string()
+
             # Check cryptographic signature
             if not self.verify_signature(cert, issuer):
                 findings.append(PolicyFinding(
-                    "ERROR", "SIG_INVALID",
-                    N_("The cryptographic signature is invalid or could not be verified."),
+                    level="ERROR",
+                    code="SIG_INVALID",
+                    label="POLICY_VIOLATION",
+                    message=N_("The cryptographic signature from issuer '{issuer}' is invalid or could not be verified."),
+                    params={"issuer": issuer_display_name},
                     code_int=4
                 ))
 
             # Check if issuer is actually allowed to sign (BasicConstraints)
             if not self.is_ca(issuer):
-                issuer_name = issuer.subject.rfc4514_string()
                 findings.append(PolicyFinding(
-                    "ERROR", "PARENT_NOT_A_CA",
-                    N_("Issuer '{issuer}' is not a CA or lacks keyCertSign usage."),
-                    params={"issuer": issuer_name},
+                    level="ERROR",
+                    code="PARENT_NOT_A_CA",
+                    label="POLICY_VIOLATION",
+                    message=N_("Issuer '{issuer}' is not a CA or lacks keyCertSign usage."),
+                    params={"issuer": issuer_display_name},
                     code_int=4
                 ))
 
             if path_depth is not None:
                 findings.extend(self._check_path_limit(cert, issuer, path_depth))
 
-        elif not cert.subject == cert.issuer:
+        elif not self.is_root_ca(cert):
+            issuer_cn_attribs = cert.issuer.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+            issuer_display_name = issuer_cn_attribs[0].value if issuer_cn_attribs else cert.issuer.rfc4514_string()
+
             findings.append(PolicyFinding(
                 level="ERROR",
                 code="NO_TRUST",
-                message=N_("The certificate issuer could not be found in the truststore, making this chain untrusted."),
+                label="UNTRUSTED",
+                message=N_("The issuer '{issuer}' could not be found in the truststore, making this chain untrusted."),
+                params={"issuer": issuer_display_name},
                 code_int=3
             ))
 
         if hasattr(cert, 'ocsp_status') and cert.ocsp_status == "REVOKED":
             findings.append(PolicyFinding(
-                "ERROR", "REVOKED_IN_CHAIN",
-                N_("This certificate is untrusted because it or an issuer in its chain has been revoked."),
+                level="ERROR",
+                code="REVOKED_IN_CHAIN",
+                label="REVOKED",
+                message=N_("This certificate is untrusted because it or an issuer in its chain has been revoked."),
                 code_int=5
             ))
 
@@ -130,6 +150,10 @@ class PolicyEngine:
 
         # Check presence of crl for non root certificates
         findings.extend(self._check_crl_presence(cert))
+
+        # Check if hostname matches the certificate commonName
+        if target_hostname:
+            findings.extend(self._check_hostname_match(cert, target_hostname))
 
         return findings
 
@@ -201,6 +225,41 @@ class PolicyEngine:
 
         return True
 
+    def is_root_ca(self, cert: x509.Certificate) -> bool:
+        """
+        Checks if a certificate is a valid Root CA.
+        A Root CA must be self-signed (by Name and Key) AND have CA permissions.
+        """
+        if not self.is_ca(cert):
+            return False
+
+        is_self_signed_name = cert.subject == cert.issuer
+        if not is_self_signed_name:
+            return False
+
+        try:
+            present_oids = [ext.oid for ext in cert.extensions]
+
+            ski_val = None
+            if ExtensionOID.SUBJECT_KEY_IDENTIFIER in present_oids:
+                ski_val = cert.extensions.get_extension_for_oid(
+                    ExtensionOID.SUBJECT_KEY_IDENTIFIER
+                ).value.digest
+
+            aki_val = None
+            if ExtensionOID.AUTHORITY_KEY_IDENTIFIER in present_oids:
+                aki_val = cert.extensions.get_extension_for_oid(
+                    ExtensionOID.AUTHORITY_KEY_IDENTIFIER
+                ).value.key_identifier
+
+            if ski_val and aki_val:
+                return ski_val == aki_val
+
+        except Exception:
+            return True
+
+        return True
+
     def _is_internal_domain(self, cert: x509.Certificate) -> bool:
         """
         Detects if a certificate is intended for internal/private use.
@@ -233,22 +292,26 @@ class PolicyEngine:
         """
         Evaluates the public key size/type against minimum security requirements.
         """
-        findings = []
+        findings: List[PolicyFinding] = []
         pub_key = cert.public_key()
 
         if isinstance(pub_key, rsa.RSAPublicKey):
             if pub_key.key_size < self.min_rsa_bits:
                 findings.append(PolicyFinding(
-                    "ERROR", "WEAK_RSA",
-                    N_("RSA key size ({bits} bits) is below the minimum required {min_bits} bits."),
+                    level="ERROR",
+                    code="WEAK_RSA",
+                    label="INSECURE",
+                    message=N_("RSA key size ({bits} bits) is below the minimum required {min_bits} bits."),
                     params={"bits": pub_key.key_size, "min_bits": self.min_rsa_bits},
                     code_int=4
                 ))
         elif isinstance(pub_key, ec.EllipticCurvePublicKey):
             if pub_key.key_size < self.min_ecdsa_bits:
                 findings.append(PolicyFinding(
-                    "ERROR", "WEAK_ECC",
-                    N_("ECC key size ({bits} bits) is below the minimum required {min_bits} bits."),
+                    level="ERROR",
+                    code="WEAK_ECC",
+                    label="INSECURE",
+                    message=N_("ECC key size ({bits} bits) is below the minimum required {min_bits} bits."),
                     params={"bits": pub_key.key_size, "min_bits": self.min_ecdsa_bits},
                     code_int=4
                 ))
@@ -257,16 +320,46 @@ class PolicyEngine:
     def _check_signature_algorithm(self, cert: x509.Certificate) -> List[PolicyFinding]:
         """
         Checks if the certificate uses secure hashing algorithms for its signature.
+        Handles deprecated hashes (SHA1/MD5) and cases where the algorithm is
+        unsupported or unknown by the underlying system.
         """
-        findings = []
-        # SHA-1 check
-        if isinstance(cert.signature_hash_algorithm, hashes.SHA1):
+        findings: List[PolicyFinding] = []
+
+        try:
+            algo = cert.signature_hash_algorithm
+        except (UnsupportedAlgorithm, Exception):
             findings.append(PolicyFinding(
-                "ERROR", "DEPRECATED_HASH",
-                N_("Certificate uses SHA-1 signature algorithm which is no longer trusted."),
-                params={"algo": "SHA-1"},
+                level="ERROR",
+                code="UNKNOWN_HASH",
+                label="INSECURE",
+                message=N_("The signature algorithm is unknown or unsupported by the system."),
                 code_int=4
             ))
+            return findings
+
+        if algo is None:
+            pub_key = cert.public_key()
+            if isinstance(pub_key, (rsa.RSAPublicKey, ec.EllipticCurvePublicKey)):
+                findings.append(PolicyFinding(
+                    level="ERROR",
+                    code="MISSING_HASH",
+                    label="INSECURE",
+                    message=N_("Certificate is missing a hashing algorithm for its signature."),
+                    code_int=4
+                ))
+            return findings
+
+        algo_name = algo.name.lower()
+        if algo_name in ['sha1', 'md5', 'md2', 'md4']:
+            findings.append(PolicyFinding(
+                level="ERROR",
+                code="DEPRECATED_HASH",
+                label="INSECURE",
+                message=N_("Certificate uses a deprecated hash algorithm ({name})."),
+                params={"name": algo_name.upper()},
+                code_int=4
+            ))
+
         return findings
 
     def _check_eku_compliance(self, cert: x509.Certificate) -> List[PolicyFinding]:
@@ -274,7 +367,7 @@ class PolicyEngine:
         Analyzes Extended Key Usage (EKU) to ensure the certificate is
         purposed correctly and not over-privileged.
         """
-        findings = []
+        findings: List[PolicyFinding] = []
         present_oids = [ext.oid for ext in cert.extensions]
 
         if ExtensionOID.EXTENDED_KEY_USAGE not in present_oids:
@@ -282,8 +375,10 @@ class PolicyEngine:
             # We flag it as INFO/WARNING if missing on end-entity certs.
             if not self.is_ca(cert):
                 findings.append(PolicyFinding(
-                    "INFO", "MISSING_EKU",
-                    N_("End-entity certificate lacks Extended Key Usage extension."),
+                    level="INFO",
+                    code="MISSING_EKU",
+                    label="POLICY_VIOLATION",
+                    message=N_("End-entity certificate lacks Extended Key Usage extension."),
                     code_int=1
                 ))
             return findings
@@ -295,8 +390,10 @@ class PolicyEngine:
             # Check for 'Any Extended Key Usage' (Security Risk)
             if "2.5.29.37.0" in usages:
                 findings.append(PolicyFinding(
-                    "WARNING", "ANY_EKU_PRESENT",
-                    N_("Certificate contains 'Any Extended Key Usage', which is overly permissive."),
+                    level="WARNING",
+                    code="ANY_EKU_PRESENT",
+                    label="POLICY_VIOLATION",
+                    message=N_("Certificate contains 'Any Extended Key Usage', which is overly permissive."),
                     code_int=2
                 ))
 
@@ -304,8 +401,10 @@ class PolicyEngine:
             if ExtendedKeyUsageOID.SERVER_AUTH.dotted_string in usages and \
                ExtendedKeyUsageOID.CODE_SIGNING.dotted_string in usages:
                 findings.append(PolicyFinding(
-                    "WARNING", "EKU_OVERPRIVILEGED",
-                    N_("Certificate allows both Server Auth and Code Signing. Functional separation is recommended."),
+                    level="WARNING",
+                    code="EKU_OVERPRIVILEGED",
+                    label="POLICY_VIOLATION",
+                    message=N_("Certificate allows both Server Auth and Code Signing. Functional separation is recommended."),
                     code_int=2
                 ))
 
@@ -313,16 +412,20 @@ class PolicyEngine:
             readable_usages = self._get_eku(cert)
             if readable_usages:
                 findings.append(PolicyFinding(
-                    "INFO", "EKU_PURPOSE",
-                    f"Certificate purpose: {', '.join(readable_usages)}",
+                    level="INFO",
+                    code="EKU_PURPOSE",
+                    label="POLICY_VIOLATION",
+                    message=f"Certificate purpose: {', '.join(readable_usages)}",
                     params={"usages": readable_usages},
-                    code_int=1
+                    code_int=0
                 ))
 
         except Exception:
             findings.append(PolicyFinding(
-                "ERROR", "EKU_PARSE_ERROR",
-                N_("Could not parse Extended Key Usage extension data."),
+                level="ERROR",
+                code="EKU_PARSE_ERROR",
+                label="POLICY_VIOLATION",
+                message=N_("Could not parse Extended Key Usage extension data."),
                 code_int=4
             ))
 
@@ -360,36 +463,32 @@ class PolicyEngine:
 
     def _check_validity_period(self, cert: x509.Certificate) -> List[PolicyFinding]:
         """
-        Check if the certificate validity period exceeds the industry standard of 398 days.
-        Ref: CAB Forum BR 6.3.2
+        Checks if the certificate validity exceeds industry standards (e.g., 398 days).
+        Internal domains are treated with lower severity.
         """
-        findings = []
+        findings: List[PolicyFinding] = []
 
-        # Calculate the duration
         not_before = (
-            cert.not_valid_before_utc
-            if hasattr(cert, "not_valid_after_utc")
+            cert.not_valid_before_utc if hasattr(cert, "not_valid_before_utc")
             else cert.not_valid_before.replace(tzinfo=timezone.utc)
         )
         not_after = (
-            cert.not_valid_after_utc
-            if hasattr(cert, "not_valid_after_utc")
+            cert.not_valid_after_utc if hasattr(cert, "not_valid_after_utc")
             else cert.not_valid_after.replace(tzinfo=timezone.utc)
         )
+
         duration = not_after - not_before
+        is_internal = self._is_internal_domain(cert)
 
-        if not self.is_ca(cert):
-            if duration.days > 398:
-                is_internal = self._is_internal_domain(cert)
-                level = "INFO" if is_internal else "WARNING"
-                findings.append(PolicyFinding(
-                    level=level,
-                    code="LONG_VALIDITY",
-                    message=N_("Certificate validity period ({duration_days} days) exceeds the 398-day limit."),
-                    params={"duration_days": duration.days, "status_code": 1},
-                    code_int=1
-                ))
-
+        if not self.is_ca(cert) and duration.days > 398:
+            findings.append(PolicyFinding(
+                level="INFO" if is_internal else "WARNING",
+                code="LONG_VALIDITY",
+                label="POLICY_VIOLATION",
+                message=N_("Validity period ({days} days) exceeds the 398-day limit."),
+                params={"days": duration.days},
+                code_int=0 if is_internal else 1
+            ))
         return findings
 
     def _check_rfc6125_compliance(self, cert: x509.Certificate) -> List[PolicyFinding]:
@@ -397,7 +496,7 @@ class PolicyEngine:
         Verifies compliance with RFC 6125: If the SAN extension is present,
         the Common Name (CN) must also be included within the SAN list.
         """
-        findings = []
+        findings: List[PolicyFinding] = []
         is_internal = self._is_internal_domain(cert)
 
         if self.is_ca(cert):
@@ -418,8 +517,10 @@ class PolicyEngine:
 
             if cn_value not in all_san_values:
                 findings.append(PolicyFinding(
-                    "WARNING", "RFC6125_MISMATCH",
-                    N_("Common Name '{cn}' is missing from Subject Alternative Names (SAN)."),
+                    level="WARNING",
+                    code="RFC6125_MISMATCH",
+                    label="POLICY_VIOLATION",
+                    message=N_("Common Name '{cn}' is missing from Subject Alternative Names (SAN)."),
                     params={"cn": cn_value},
                     code_int=2
                 ))
@@ -428,15 +529,19 @@ class PolicyEngine:
                     if "." not in name:
                         level = "INFO" if is_internal else "WARNING"
                         findings.append(PolicyFinding(
-                            level, "NON_FQDN_SAN",
-                            N_("SAN contains a non-FQDN '{name}', which is disallowed for public certificates."),
+                            level=level,
+                            code="NON_FQDN_SAN",
+                            label="POLICY_VIOLATION",
+                            message=N_("SAN contains a non-FQDN '{name}', which is disallowed for public certificates."),
                             params={"name": name},
                             code_int=0 if is_internal else 2
                         ))
         else:
             findings.append(PolicyFinding(
-                "WARNING", "MISSING_SAN",
-                N_("Certificate lacks a SAN extension. Relying solely on CN is deprecated."),
+                level="WARNING",
+                code="MISSING_SAN",
+                label="POLICY_VIOLATION",
+                message=N_("Certificate lacks a SAN extension. Relying solely on CN is deprecated."),
                 code_int=2
             ))
 
@@ -447,18 +552,20 @@ class PolicyEngine:
         Checks for CRL Distribution Points (CDP).
         Warnings are suppressed for Root certificates (self-signed).
         """
-        findings = []
-        is_root = cert.subject == cert.issuer
+        findings: List[PolicyFinding] = []
+        is_root = self.is_root_ca(cert)
         is_internal = self._is_internal_domain(cert)
 
-        if not self.is_ca(cert):
+        if not is_root:
             present_oids = [ext.oid for ext in cert.extensions]
             if ExtensionOID.CRL_DISTRIBUTION_POINTS not in present_oids:
                 if not is_root:
                     level = "INFO" if is_internal else "WARNING"
                     findings.append(PolicyFinding(
-                        level, "CRL_MISSING",
-                        N_("Certificate lacks CRL Distribution Points (CDP). Revocation checking may be limited."),
+                        level=level,
+                        code="CRL_MISSING",
+                        label="POLICY_VIOLATION",
+                        message=N_("Certificate lacks CRL Distribution Points (CDP). Revocation checking may be limited."),
                         code_int=0 if is_internal else 2
                     ))
         return findings
@@ -469,7 +576,7 @@ class PolicyEngine:
         The pathLenConstraint specifies the maximum number of non-self-issued
         intermediate certificates that may follow this certificate in a valid chain.
         """
-        findings = []
+        findings: List[PolicyFinding] = []
 
         if not self.is_ca(cert):
             return findings
@@ -481,10 +588,69 @@ class PolicyEngine:
             path_len = bc.value.path_length
             if path_len is not None and (depth - 1) > path_len:
                 findings.append(PolicyFinding(
-                    "ERROR", "PATH_LEN_EXCEEDED",
-                    N_("Path length constraint exceeded. Issuer allows max {limit} intermediate(s)."),
+                    level="ERROR",
+                    code="PATH_LEN_EXCEEDED",
+                    label="POLICY_VIOLATION",
+                    message=N_("Path length constraint exceeded. Issuer allows max {limit} intermediate(s)."),
                     params={"limit": bc.value.path_length, "actual_depth": depth - 1},
                     code_int=4
                 ))
 
         return findings
+
+    def _check_hostname_match(self, cert: x509.Certificate, target_host: str) -> List[PolicyFinding]:
+        findings: List[PolicyFinding] = []
+        target_host = target_host.lower()
+        matched = False
+
+        try:
+            san = cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+            dns_names = [name.lower() for name in san.value.get_values_for_type(x509.DNSName)]
+        except Exception:
+            dns_names = []
+
+        for pattern in dns_names:
+            if self._dns_name_match(pattern, target_host):
+                matched = True
+                break
+
+        if not matched:
+            findings.append(PolicyFinding(
+                level="ERROR",
+                code="HOSTNAME_MISMATCH",
+                label="INVALID",
+                message=N_("Hostname mismatch: Certificate is valid for '{names}', but you connected to '{target}'."),
+                params={"names": ", ".join(dns_names), "target": target_host},
+                code_int=4
+            ))
+        return findings
+
+    def _dns_name_match(self, pattern: str, hostname: str) -> bool:
+        """
+        Professional RFC 6125 Wildcard Matcher.
+        Reference: RFC 6125 Section 6.4.3
+        """
+        pattern = pattern.lower()
+        hostname = hostname.lower()
+
+        if pattern == hostname:
+            return True
+
+        if '*' not in pattern:
+            return False
+
+        parts = pattern.split('.')
+        if parts[0] != '*' or len(parts) < 3:
+            return False
+
+        if len(parts) < 3:
+            return False
+
+        remainder = ".".join(parts[1:])
+        if not hostname.endswith("." + remainder):
+            return False
+
+        hostname_remainder_len = len(hostname) - len(remainder) - 1
+        hostname_left_label = hostname[:hostname_remainder_len]
+
+        return "." not in hostname_left_label

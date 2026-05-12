@@ -120,6 +120,7 @@ class Icons:
 
     VALID = "\U00002705"  # ✅ (White Heavy Check Mark)
     EXPIRED = "\U0000274c"  # ❌ (Cross Mark)
+    EXPIRING = "\U000023f3"  # ⏳
     WARNING = "\U00002757"  # ❗ (Warning Sign)
     LOCKED = "\U0001f512"  # 🔒 (Locked)
     BROKEN = "\U0001f4a5"  # 💥 (Broken Chain)

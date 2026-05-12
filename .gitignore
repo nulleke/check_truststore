@@ -33,4 +33,6 @@ vars/tst/
 vars/acc/
 vars/prd/
 
+output_bundles/
+
 check_truststore.py

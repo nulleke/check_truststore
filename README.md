@@ -243,7 +243,7 @@ check_truststore my-certs/ --system
 ## 📊 Output Examples
 The tool provides different views of your truststore health depending on your needs.
 
-### JSON based output (Default)
+### JSON based output
 The default JSON output provides a clean hierarchy grouped by source.
 
 ```json
@@ -340,7 +340,7 @@ When using `--format status`, the tool generates a deep-inspection JSON object. 
 ```json
 {
   "metadata": {
-    "version": "1.2.0",
+    "version": "1.2.1",
     "engine": "1.1.2",
     "scanDate": "2026-05-02T11:51:52Z",
     "exitCode": 0
@@ -396,7 +396,7 @@ When using the `--format status` output, each certificate is assigned a numeric 
 
 > **Note on Thresholds**: The transition from `OK` (0) to `WARNING` (1) is triggered when a certificate is within the `N`-day window defined by the `--threshold` argument.
 
-### Text-Based Hierarchy (Human Readable)
+### Text-Based Hierarchy (Human Readable) (Default)
 The tree view combines multiple layers of intelligence: identity validation, date checking, and cryptographic verification.
 
 ```text
@@ -609,4 +609,4 @@ This program is free software: you can redistribute it and/or modify it under th
 This project is licensed under the **LGPL-3.0-or-later** - see the [LICENSE](LICENSE) file for details.
 
 ---
-**Status**: Version: 1.2.0 | Stable | **Logic validated for current system date**: May 8, 2026
+**Status**: Version: 1.2.1 | Stable | **Logic validated for current system date**: May 8, 2026
