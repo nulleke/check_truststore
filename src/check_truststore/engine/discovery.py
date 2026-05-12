@@ -30,6 +30,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from typing import Optional, List, Set
 from .logging import INFO, WARNING, ERROR, _
+from .models import Certificate
 
 
 class NetworkResolver:
@@ -186,7 +187,7 @@ class NetworkResolver:
         Queries OCSP responders in parallel for certificate status.
         Returns: One of ['GOOD', 'REVOKED', 'UNKNOWN', 'ERROR'].
         """
-        if cert.subject == cert.issuer:
+        if self._is_effectively_root(cert):
             return "GOOD"
 
         if not self.online:
@@ -242,7 +243,7 @@ class NetworkResolver:
         Returns: One of ['GOOD', 'REVOKED', 'UNKNOWN', 'ERROR'].
         """
         # A Root certificate is self-signed; revocation is handled by trust store management, not CRLs.
-        is_root = (cert.subject == cert.issuer)
+        is_root = self._is_effectively_root(cert)
 
         if is_root:
             return "GOOD"
@@ -287,7 +288,7 @@ class NetworkResolver:
 
     def _get_fingerprint(self, cert: x509.Certificate) -> str:
         """Helper to get SHA256 fingerprint."""
-        return hashlib.sha256(cert.public_bytes(serialization.Encoding.DER)).hexdigest()
+        return Certificate.calculate_fingerprint(cert.public_bytes(serialization.Encoding.DER))
 
     def _can_resolve(self, url: str) -> bool:
         """
@@ -529,3 +530,28 @@ class NetworkResolver:
         if hasattr(crl, 'next_update_utc'):
             return crl.next_update_utc
         return crl.next_update.replace(tzinfo=timezone.utc)
+
+    def _is_effectively_root(self, cert: x509.Certificate) -> bool:
+        """Internal helper to determine if a cert is a self-signed Root CA."""
+        try:
+            bc = cert.extensions.get_extension_for_oid(ExtensionOID.BASIC_CONSTRAINTS)
+            if not bc.value.ca:
+                return False
+        except x509.ExtensionNotFound:
+            return False
+
+        if cert.subject != cert.issuer:
+            return False
+
+        aki = self._get_aki_hex(cert)
+        ski = None
+        try:
+            ski_ext = cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_KEY_IDENTIFIER)
+            ski = ski_ext.value.digest.hex()
+        except x509.ExtensionNotFound:
+            pass
+
+        if aki and ski:
+            return aki == ski
+
+        return True

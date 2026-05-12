@@ -19,28 +19,11 @@ except ImportError:
     PYDANTIC_AVAILABLE = False
 
 from .logging import Icons
+from .policy import PolicyFinding
 
 ORPHAN_NODE_ID = "EXTERNAL_OR_MISSING_ISSUER"
 CYCLE_NODE_ID = "CIRCULAR_REFERENCE"
 
-class Finding:
-    """
-    Represents a specific policy violation or observation.
-    Standardized for SARIF, JSON, and UI output.
-    """
-    def __init__(self, code: str, message: str, level: str = "ERROR", code_int: int = 4):
-        self.code = code
-        self.code_int = code_int
-        self.message = message
-        self.level = level
-
-    def model_dump(self) -> Dict[str, Any]:
-        return {
-            "code": self.code,
-            "code_int": self.code_int,
-            "message": self.message,
-            "level": self.level
-        }
 class _BaseUniversal:
     """
     Shared logic for both Pydantic and non-Pydantic implementations.
@@ -72,55 +55,70 @@ class _BaseUniversal:
     def get_audit_status(self) -> Dict[str, Any]:
         """
         Single Source of Truth to determine the status of a certificate.
+
+        This implementation filters findings by their severity level.
+        Informational levels ('note' or 'info') are stored but ignored
+        when calculating the final audit state to prevent false positives.
         """
-        v_err = getattr(self, "validation_error", "") or ""
-        cn = getattr(self, "common_name", "")
 
-        if cn in [ORPHAN_NODE_ID, CYCLE_NODE_ID] or "CHAIN_INCOMPLETE" in v_err or "MISSING_ISSUER" in v_err:
-            return {"code": 3, "label": "INCOMPLETE", "message": "Trust chain is incomplete.", "level": "error"}
-
-        if "CHAIN_EXPIRED" in v_err:
-            return {"code": 2, "label": "EXPIRED", "message": "Trust chain is broken due to expired parent.", "level": "error"}
+        # Critical Security & Integrity (Hard Errors)
+        # These represent immediate trust failures.
+        if getattr(self, "ocsp_status", "UNKNOWN") == "REVOKED":
+            return {"code": 5, "label": "REVOKED", "message": "Certificate is revoked.", "level": "error"}
 
         if getattr(self, "is_blacklisted", False):
             return {"code": 5, "label": "OS_BLACKLISTED", "message": "Explicitly untrusted by the OS.", "level": "error"}
 
-        findings = getattr(self, "findings", [])
-        if findings:
-            critical = sorted([f for f in findings if f.level == "ERROR"], key=lambda x: x.code_int, reverse=True)
-            if critical:
-                f = critical[0]
-                return {"code": f.code_int, "label": f.code, "message": f.message, "level": "error"}
-
         if getattr(self, "signature_valid", None) is False:
-            return {"code": 4, "label": "SIG_ERR", "message": "Signature verification failed.", "level": "error"}
+            return {"code": 4, "label": "SIG_INVALID", "message": "Cryptographic signature is invalid.", "level": "error"}
 
+        chain_warning = False
+
+        for parent in getattr(self, "parents", []):
+            p_audit = parent.get_audit_status()
+            if p_audit["level"] == "error":
+                return {
+                    "code": 3,
+                    "label": "CHAIN_BROKEN",
+                    "message": "Trust chain broken by parent.",
+                    "level": "error"
+                }
+
+            if p_audit["level"] == "warning" and "EXPIRING" in p_audit["label"]:
+                 chain_warning = f"Trust chain warning: Parent '{parent.common_name}' is expiring soon."
+
+        # Temporal Validation (Self-Expired)
         now = datetime.now(timezone.utc)
         expiry = getattr(self, "expiry_date", None)
 
         if isinstance(expiry, datetime) and expiry < now:
             return {"code": 2, "label": "EXPIRED", "message": "Certificate has expired.", "level": "error"}
 
-        if getattr(self, "ocsp_status", "UNKNOWN") == "REVOKED":
-            return {"code": 5, "label": "REVOKED", "message": "Certificate is revoked.", "level": "error"}
+        # Policy Findings (Filtered by Severity Level)
+        # Only findings marked as 'error' or 'warning' will impact the status.
+        # 'note' and 'info' findings (e.g., CRL_MISSING) are recorded but skipped here.
+        findings = getattr(self, "findings", [])
+        serious_findings = [f for f in findings if f.level.lower() in ("error", "warning")]
 
-        if getattr(self, "is_expiring_soon", False):
-            return {"code": 1, "label": "EXPIRING", "message": "Certificate is expiring soon.", "level": "warning"}
+        if serious_findings:
+            # Sort findings to ensure the most critical one (highest code_int) defines the status.
+            critical = sorted(serious_findings, key=lambda x: x.code_int, reverse=True)[0]
 
-        if getattr(self, "is_system_cert", False):
-            return {"code": 0, "label": "SYSTEM", "message": "System trust store certificate.", "level": "note"}
+            if critical.level.lower() == "error":
+                return {"code": critical.code_int, "label": "INVALID", "message": critical.message, "level": "error"}
 
-        if getattr(self, "is_aia_cert", False):
-            return {"code": 0, "label": "AIA", "message": "Fetched via Authority Information Access.", "level": "note"}
+            is_time_issue = any(k in critical.code for k in ["EXPIRING", "VALIDITY", "NOT_BEFORE"])
+            res_label = "EXPIRING" if is_time_issue else "WARNING"
 
-        pk_info = getattr(self, "public_key_info", {})
-        if pk_info.get("algorithm") == "rsa" and pk_info.get("bits", 4096) < 2048:
-            return {"code": 4, "label": "WEAK_KEY", "message": "RSA key size below 2048 bits.", "level": "error"}
+            return {"code": critical.code_int, "label": res_label, "message": critical.message, "level": "warning"}
 
-        sig_alg = getattr(self, "signature_algorithm", "")
-        if sig_alg and "sha1" in sig_alg.lower():
-            return {"code": 4, "label": "WEAK_SIG", "message": "SHA-1 is deprecated.", "level": "error"}
+        # Low-Priority Warnings (Expiring Soon)
+        # Only checked if no higher-priority errors or policy warnings exist.
+        if getattr(self, "is_expiring_soon", False) or chain_warning:
+            msg = "Certificate is expiring soon" if not chain_warning else chain_warning
+            return {"code": 1, "label": "EXPIRING", "message": msg, "level": "warning"}
 
+        # Default State (Healthy)
         return {"code": 0, "label": "VALID", "message": "Valid", "level": "note"}
 
     @property
@@ -135,18 +133,67 @@ class _BaseUniversal:
 
     @property
     def status_label(self) -> str:
+        """Returns the human-readable status label (e.g., VALID, EXPIRED)."""
         return self.get_audit_status()["label"]
 
     @property
     def display_name(self) -> str:
         """
-        Geeft de naam terug inclusief het subject-serienummer indien aanwezig.
+        Returns the common name including the subject serial number if present.
         """
         cn = getattr(self, "common_name", "Unknown")
         sn = getattr(self, "subject_serial", None)
         if sn:
             return f"{cn} (S/N: {sn})"
         return cn
+
+    @staticmethod
+    def calculate_fingerprint(raw_der: bytes) -> str:
+        """
+        Static utility to calculate a consistent unique identifier for a certificate.
+        Currently uses SHA-256 hex digest of the raw DER encoded data.
+
+        Args:
+            raw_der: The raw bytes of the X.509 certificate.
+        Returns:
+            A hex string representation of the fingerprint.
+        """
+        import hashlib
+        return hashlib.sha256(raw_der).hexdigest()
+
+    @property
+    def fingerprint(self) -> str:
+        """
+        Abstracted property to retrieve a unique identifier for this node.
+        Prioritizes the cryptographic SHA-256 hash, but falls back to
+        the internal 'cert_id' for virtual nodes (e.g., orphans, cycles).
+
+        This allows the rest of the engine to interact with nodes without
+        worrying if they are real certificates or virtual placeholders.
+        """
+        fp = getattr(self, "sha256_hash", None)
+        if fp:
+            return fp
+
+        return getattr(self, "cert_id", "unknown-fingerprint")
+
+    def to_ansible(self) -> Dict[str, Any]:
+        """
+        Helper to export the model in a format compatible with Ansible fact structures.
+        """
+        data = self.model_dump()
+
+        data.update({
+            "ansible_audit_label": self.status_label,
+            "failed": self.get_audit_status()["level"] == "error",
+            "icon": self.signature_icon,
+            "display_name": self.display_name
+        })
+
+        if isinstance(data.get("expiryDate"), datetime):
+            data["expiryDate"] = data["expiryDate"].isoformat()
+
+        return data
 
 
 if PYDANTIC_AVAILABLE:
@@ -233,7 +280,7 @@ if PYDANTIC_AVAILABLE:
         validation_error: Optional[str] = Field(None, exclude=True)
         signature_algorithm: Optional[str] = Field(None, alias="signatureAlgorithm", exclude=True)
 
-        findings: List[Any] = Field(default_factory=list, exclude=False)
+        findings: List[PolicyFinding] = Field(default_factory=list, exclude=False)
 
         aia_ca_issuers: List[str] = Field(default_factory=list, alias="aiaCaIssuers", exclude=True)
         aia_ocsp_urls: List[str] = Field(default_factory=list, alias="aiaOcspUrls", exclude=True)
@@ -267,9 +314,13 @@ if PYDANTIC_AVAILABLE:
             if child.sha256_hash not in child_hashes:
                 self.children.append(child)
 
+        def add_finding(self, finding: PolicyFinding):
+            self.findings.append(finding)
+
         def model_dump(self, **kwargs):
             """Custom dump logic to ensure recursive sorting of children."""
             d = super().model_dump(by_alias=True, **kwargs)
+            d["fingerprint"] = self.fingerprint
             d["subjectSerial"] = self.subject_serial
             d["isBlacklisted"] = self.is_blacklisted
             d["isSystemCert"] = self.is_system_cert
@@ -299,9 +350,6 @@ if PYDANTIC_AVAILABLE:
                 d["children"] = []
 
             return d
-
-        def add_finding(self, finding):
-            self.findings.append(finding)
 
 else:
 
@@ -424,10 +472,14 @@ else:
             if getattr(child, "sha256_hash", "") not in child_hashes:
                 self.children.append(child)
 
+        def add_finding(self, finding: PolicyFinding):
+            self.findings.append(finding)
+
         def model_dump(self, **kwargs):
             """Manual serialization to Dict for JSON output."""
             res = {
                 "commonName": getattr(self, "common_name", "UNKNOWN"),
+                "fingerprint": self.fingerprint,
                 "subjectSerial": getattr(self, "subject_serial", None),
                 "serialNumber": getattr(self, "serial_number", "UNKNOWN"),
                 "isValid": getattr(self, "is_valid", False),
@@ -467,9 +519,6 @@ else:
             else:
                 res["children"] = []
             return res
-
-        def add_finding(self, finding):
-            self.findings.append(finding)
 
 # Rebuild models for Pydantic to handle recursive self-references ("Certificate")
 if PYDANTIC_AVAILABLE:

@@ -9,6 +9,7 @@ trust store groups and generate finalized analysis models.
 """
 
 from typing import Any, Optional, List, Dict, Union, Set
+from cryptography.hazmat.primitives import serialization
 from pathlib import Path
 from .repository import CertificateRepository
 from .models import Certificate, CertificateGroup
@@ -41,7 +42,7 @@ class TrustStoreAnalyzer:
         Executes the analysis pipeline for all configured groups.
         """
         analysis_results: List[CertificateGroup] = []
-        system_hashes: Set[str] = set()
+        system_fingerprints: Set[str] = set()
         system_pool: List[Dict[str, Any]] = []
         blacklist_pool: List[Dict[str, Any]] = []
 
@@ -58,7 +59,7 @@ class TrustStoreAnalyzer:
                     else:
                         system_pool.extend(resolved_sys)
                         for item in resolved_sys:
-                            system_hashes.add(item["hash"])
+                            system_fingerprints.add(item["hash"])
             except Exception as e:
                 if self.debug:
                     from .logging import WARNING
@@ -69,11 +70,17 @@ class TrustStoreAnalyzer:
                 INFO.log(_("Processing Group"), group_config.name)
 
             self.repo.clear_cache()
-            builder = TrustChainBuilder(repository=self.repo, **self.options)
+
+            current_options = self.options.copy()
+            target_host = getattr(group_config, 'target_hostname', None)
+            if target_host:
+                current_options['target_hostname'] = target_host
+
+            builder = TrustChainBuilder(repository=self.repo, **current_options)
             current_pool = self._resolve_targets(group_config.targets)
 
             from .discovery import NetworkResolver
-            resolver = NetworkResolver(**self.options)
+            resolver = NetworkResolver(**current_options)
 
             tree_data = builder.build(
                 current_pool,
@@ -95,7 +102,7 @@ class TrustStoreAnalyzer:
                 self.export_bundle(group_obj, self.export_dir)
 
             if self.include_system and self.debug:
-                self._log_system_usage(group_config.name, group_obj.tree, system_hashes)
+                self._log_system_usage(group_config.name, group_obj.tree, system_fingerprints)
 
         return analysis_results
 
@@ -105,9 +112,8 @@ class TrustStoreAnalyzer:
         """
         try:
             from cryptography.hazmat.primitives.serialization import pkcs7
-            from cryptography.hazmat.primitives import serialization
 
-            raw_certs = [self.repo.get_cert_by_hash(c.sha256_hash) for c in group.chain]
+            raw_certs = [self.repo.get_cert_by_fingerprint(c.fingerprint) for c in group.chain]
             raw_certs = [c for c in raw_certs if c is not None]
 
             if not raw_certs:
@@ -157,7 +163,7 @@ class TrustStoreAnalyzer:
                 ERROR.log(_("Export"), _("Failed to create bundle: {error}").format(error=str(e)))
             return None
 
-    def _log_system_usage(self, group_name: str, tree: List[Certificate], system_hashes: Set[str]) -> None:
+    def _log_system_usage(self, group_name: str, tree: List[Certificate], system_fingerprints: Set[str]) -> None:
         """
         Calculates and logs how many certificates in the final tree
         originated from the system truststore.
@@ -168,7 +174,7 @@ class TrustStoreAnalyzer:
         def traverse(nodes: List[Certificate]) -> None:
             nonlocal used_system_certs
             for node in nodes:
-                h = getattr(node, 'sha256_hash', None)
+                h = node.fingerprint
                 if not h or h in seen_hashes:
                     continue
                 seen_hashes.add(h)
@@ -181,7 +187,7 @@ class TrustStoreAnalyzer:
 
         traverse(tree)
 
-        total_system = len(system_hashes)
+        total_system = len(system_fingerprints)
 
         message = _("{used} of the {total} system certificates used").format(
             used=used_system_certs,
@@ -200,6 +206,8 @@ class TrustStoreAnalyzer:
             elif isinstance(t, bytes):
                 resolved.extend(self.repo.add_der_data(t, is_system=is_system))
             elif isinstance(t, dict) and "cert" in t:
-                self.repo.seen_hashes.add(t["hash"])
+                c_hash = Certificate.calculate_fingerprint(t["cert"].public_bytes(serialization.Encoding.DER))
+                self.repo._register_cert(t["cert"], c_hash)
+                t["hash"] = c_hash
                 resolved.append(t)
         return resolved

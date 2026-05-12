@@ -177,7 +177,7 @@ def main() -> None:
             "-f",
             "--format",
             choices=["json", "text", "status", "sarif", "dot"],
-            default="json",
+            default="text",
             help=_("Output format"),
         )
         output_group.add_argument(

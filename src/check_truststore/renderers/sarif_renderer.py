@@ -36,7 +36,7 @@ class SarifRenderer(BaseRenderer):
                     if getattr(cert, "is_system_cert", False):
                         continue
 
-                    fingerprint = getattr(cert, "sha256_fingerprint", getattr(cert, "serial_number", None))
+                    fingerprint = getattr(cert, "fingerprint", getattr(cert, "serial_number", None))
                     if fingerprint in processed_fingerprints:
                         continue
 
@@ -79,6 +79,7 @@ class SarifRenderer(BaseRenderer):
         """
         rule_id = f"TSA-{audit['code']:03d}"
         file_path = getattr(cert, "file_name", "unknown_location")
+        fp = getattr(cert, "fingerprint", "")
         common_name = getattr(cert, "common_name", "Unknown")
 
         params = audit.get("params", {}).copy()
@@ -109,6 +110,9 @@ class SarifRenderer(BaseRenderer):
                     }
                 }
             ],
+            "fingerprints": {
+                "sha256_certificate": fp
+            },
             "properties": {
                 "commonName": common_name,
                 "serialNumber": getattr(cert, "serial_number", ""),

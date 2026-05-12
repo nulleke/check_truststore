@@ -5,9 +5,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: check_truststore 1.2.0\n"
+"Project-Id-Version: check_truststore 1.2.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-08 11:07+0200\n"
+"POT-Creation-Date: 2026-05-12 17:00+0200\n"
 "PO-Revision-Date: 2026-04-13 11:08+0200\n"
 "Last-Translator: Serge van Thillo <nulleke76@gmail.com>\n"
 "Language-Team: Dutch <vertaling@vrijschrift.org>\n"
@@ -17,69 +17,255 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/check_truststore/engine/repository.py:78
-msgid "Invalid DER structure"
-msgstr "Ongeldige DER structuur"
+#: src/check_truststore/engine/orchestrator.py:66
+msgid "SystemProvider"
+msgstr "Systeem-provider"
 
-#: src/check_truststore/engine/repository.py:96
+#: src/check_truststore/engine/orchestrator.py:66
 #, python-brace-format
-msgid "Maximum certificate limit ({limit}) reached."
-msgstr "Maximale certificaatlimiet ({limit}) bereikt."
+msgid "Could not load system truststore: {error}"
+msgstr "Kon systeem-truststore niet laden: {error}"
 
-#: src/check_truststore/engine/repository.py:108
-msgid "Skipping duplicate certificate (already loaded)"
-msgstr "Duplicaat certificaat overgeslagen (reeds geladen)"
+#: src/check_truststore/engine/orchestrator.py:70
+msgid "Processing Group"
+msgstr "Groep verwerken"
 
-#: src/check_truststore/engine/repository.py:109
-msgid "DUPLICATE"
-msgstr "DUPLICAAT"
+#: src/check_truststore/engine/orchestrator.py:145
+#: src/check_truststore/engine/orchestrator.py:157
+#: src/check_truststore/engine/orchestrator.py:163
+msgid "Export"
+msgstr "Export"
 
-#: src/check_truststore/engine/repository.py:125
-msgid "Invalid certificate structure"
-msgstr "Ongeldige certificaat structuur"
+#: src/check_truststore/engine/orchestrator.py:145
+msgid "Using PEM sequence fallback for legacy environment"
+msgstr "PEM-reeks fallback wordt gebruikt voor legacy omgeving"
 
-#: src/check_truststore/engine/repository.py:132
-msgid "PKCS7-container"
-msgstr "PKCS7-container"
-
-#: src/check_truststore/engine/repository.py:142
-msgid "Legacy cryptography detected, falling back."
-msgstr "Verouderde cryptografie gedetecteerd, fallback wordt uitgevoerd."
-
-#: src/check_truststore/engine/repository.py:145
+#: src/check_truststore/engine/orchestrator.py:157
 #, python-brace-format
-msgid "Failed to parse PKCS7: {error}"
-msgstr "Parsen van PKCS7 mislukt: {error}"
+msgid "Bundle saved to {path}"
+msgstr "Bundel opgeslagen in {path}"
 
-#: src/check_truststore/engine/repository.py:152
+#: src/check_truststore/engine/orchestrator.py:163
 #, python-brace-format
-msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
-msgstr "Maximale certificaatlimiet ({limit}) bereikt. Scan wordt gestopt."
+msgid "Failed to create bundle: {error}"
+msgstr "Niet gelukt om een bundel te maken: {error}"
 
-#: src/check_truststore/engine/repository.py:180
+# python-brace-format
+#: src/check_truststore/engine/orchestrator.py:192
 #, python-brace-format
-msgid "File too large ({size:.1f}MB)"
-msgstr "Bestand te groot ({size:.1f}MB)."
+msgid "{used} of the {total} system certificates used"
+msgstr "{used} van de {total} systeem-certificaten gebruikt"
 
-#: src/check_truststore/engine/policy.py:96
-msgid "The cryptographic signature is invalid or could not be verified."
+#: src/check_truststore/engine/orchestrator.py:196
+msgid "System usage"
+msgstr "Systeemgebruik"
+
+#: src/check_truststore/engine/discovery.py:92
+#: src/check_truststore/engine/discovery.py:111
+#: src/check_truststore/engine/discovery.py:411
+#: src/check_truststore/engine/discovery.py:472
+msgid "CACHE"
+msgstr "CACHE"
+
+#: src/check_truststore/engine/discovery.py:92
+msgid "Could not create cache directory"
+msgstr "Kon cache-directory niet aanmaken"
+
+#: src/check_truststore/engine/discovery.py:111
+msgid "AIA_CACHE"
+msgstr "AIA_CACHE"
+
+#: src/check_truststore/engine/discovery.py:111
+#, python-brace-format
+msgid "Cache hit for AKI {aki}, skipping network."
+msgstr "Cache-hit voor AKI {aki}, netwerkbezoek overgeslagen."
+
+#: src/check_truststore/engine/discovery.py:116
+#: src/check_truststore/engine/discovery.py:155
+msgid "AIA_FETCH"
+msgstr "AIA_OPHALEN"
+
+#: src/check_truststore/engine/discovery.py:116
+msgid "Bypassing cache due to --no-cache flag"
+msgstr "Cache wordt omzeild vanwege de --no-cache vlag"
+
+#: src/check_truststore/engine/discovery.py:116
+msgid "AUDIT"
+msgstr "AUDIT"
+
+#: src/check_truststore/engine/discovery.py:141
+msgid "AIA_THREAD"
+msgstr "AIA_THREAD"
+
+#: src/check_truststore/engine/discovery.py:141
+msgid "Thread error during discovery"
+msgstr "Thread-fout tijdens discovery-proces"
+
+#: src/check_truststore/engine/discovery.py:155
+msgid "Downloading"
+msgstr "Downloaden"
+
+#: src/check_truststore/engine/discovery.py:162
+msgid "AIA_SIZE"
+msgstr "AIA_GROOTTE"
+
+#: src/check_truststore/engine/discovery.py:162
+#, python-brace-format
+msgid "Certificate at {url} exceeds size limit."
+msgstr "Certificaat op {url} overschrijdt de maximale bestandsgrootte."
+
+#: src/check_truststore/engine/discovery.py:170
+msgid "AIA_FAILED"
+msgstr "AIA_MISLUKT"
+
+#: src/check_truststore/engine/discovery.py:170
+msgid "Connection failed"
+msgstr "Verbinding mislukt"
+
+#: src/check_truststore/engine/discovery.py:182
+msgid "AIA_PARSE"
+msgstr "AIA_PARSING"
+
+#: src/check_truststore/engine/discovery.py:182
+#, python-brace-format
+msgid "Failed to parse certificate from {url}"
+msgstr "Parsen van certificaat van {url} mislukt"
+
+#: src/check_truststore/engine/discovery.py:212
+msgid "OCSP_BUILD"
+msgstr "OCSP_OPBOUW"
+
+#: src/check_truststore/engine/discovery.py:232
+msgid "OCSP thread error"
+msgstr "Fout in OCSP-thread"
+
+#: src/check_truststore/engine/discovery.py:233
+msgid "OCSP_THREAD"
+msgstr "OCSP_THREAD"
+
+#: src/check_truststore/engine/discovery.py:254
+msgid "CRL_CHECK"
+msgstr "CRL_CONTROLE"
+
+#: src/check_truststore/engine/discovery.py:254
+msgid "No CRL endpoints found in certificate"
+msgstr "Geen CRL-eindpunten gevonden in certificaat"
+
+#: src/check_truststore/engine/discovery.py:274
+msgid "CRL thread error"
+msgstr "Fout in CRL-thread"
+
+#: src/check_truststore/engine/discovery.py:275
+msgid "CRL_THREAD"
+msgstr "CRL_THREAD"
+
+#: src/check_truststore/engine/discovery.py:308
+msgid "DNS"
+msgstr "DNS"
+
+#: src/check_truststore/engine/discovery.py:308
+msgid "Could not resolve host"
+msgstr "Hostnaam kon niet worden omgezet (DNS)"
+
+#: src/check_truststore/engine/discovery.py:361
+msgid "Cache"
+msgstr "Buffer (Cache)"
+
+#: src/check_truststore/engine/discovery.py:361
+msgid "Error reading cache"
+msgstr "Fout bij lezen van cache"
+
+#: src/check_truststore/engine/discovery.py:371
+msgid "CACHE_LOAD"
+msgstr "CACHE_LADEN"
+
+#: src/check_truststore/engine/discovery.py:371
+msgid "Failed to load cached cert"
+msgstr "Gecacht certificaat laden mislukt"
+
+#: src/check_truststore/engine/discovery.py:411
+msgid "Could not save certificate to cache"
+msgstr "Kon certificaat niet opslaan in cache"
+
+#: src/check_truststore/engine/discovery.py:420
+#, python-brace-format
+msgid "Checking: {url}"
+msgstr "Controleren: {url}"
+
+#: src/check_truststore/engine/discovery.py:421
+msgid "OCSP_CHECK"
+msgstr "OCSP_CONTROLE"
+
+#: src/check_truststore/engine/discovery.py:451
+msgid "OCSP_FAILED"
+msgstr "OCSP_MISLUKT"
+
+#: src/check_truststore/engine/discovery.py:451
+msgid "OCSP request failed"
+msgstr "OCSP-aanvraag mislukt"
+
+#: src/check_truststore/engine/discovery.py:471
+msgid "Using cached CRL for"
+msgstr "Gecachte CRL wordt gebruikt voor"
+
+#: src/check_truststore/engine/discovery.py:472
+#: src/check_truststore/engine/discovery.py:526
+msgid "CRL_CACHE"
+msgstr "CRL_CACHE"
+
+#: src/check_truststore/engine/discovery.py:483
+msgid "CRL_FETCH"
+msgstr "CRL_OPHALEN"
+
+#: src/check_truststore/engine/discovery.py:483
+msgid "Downloading CRL"
+msgstr "CRL Downloaden"
+
+#: src/check_truststore/engine/discovery.py:498
+#, python-brace-format
+msgid "Serial {serial_number} is REVOKED"
+msgstr "Serienummer {serial_number} is ingetrokken (REVOKED)"
+
+#: src/check_truststore/engine/discovery.py:499
+msgid "CRL_RESULT"
+msgstr "CRL_RESULTAAT"
+
+#: src/check_truststore/engine/discovery.py:507
+msgid "CRL_FAILED"
+msgstr "CRL_MISLUKT"
+
+#: src/check_truststore/engine/discovery.py:507
+msgid "Failed to check CRL"
+msgstr "CRL-controle mislukt"
+
+#: src/check_truststore/engine/discovery.py:526
+msgid "Could not save CRL to cache"
+msgstr "Kon CRL niet opslaan in cache"
+
+#: src/check_truststore/engine/policy.py:107
+#, python-brace-format
+msgid ""
+"The cryptographic signature from issuer '{issuer}' is invalid or could not "
+"be verified."
 msgstr ""
-"De cryptografische handtekening is ongeldig of kon niet worden geverifieerd."
+"De cryptografische handtekening van uitgever '{issuer}' is ongeldig of kon "
+"niet worden geverifieerd."
 
-#: src/check_truststore/engine/policy.py:105
+#: src/check_truststore/engine/policy.py:118
 #, python-brace-format
 msgid "Issuer '{issuer}' is not a CA or lacks keyCertSign usage."
 msgstr "Uitgever '{issuer}' is geen CA of mist de 'keyCertSign' rechten."
 
-#: src/check_truststore/engine/policy.py:117
+#: src/check_truststore/engine/policy.py:134
+#, python-brace-format
 msgid ""
-"The certificate issuer could not be found in the truststore, making this "
+"The issuer '{issuer}' could not be found in the truststore, making this "
 "chain untrusted."
 msgstr ""
-"De uitgever van het certificaat is niet gevonden in de truststore, waardoor "
-"deze keten niet wordt vertrouwd."
+"De uitgever '{issuer}' is niet gevonden in de truststore, waardoor deze "
+"keten niet wordt vertrouwd."
 
-#: src/check_truststore/engine/policy.py:124
+#: src/check_truststore/engine/policy.py:144
 msgid ""
 "This certificate is untrusted because it or an issuer in its chain has been "
 "revoked."
@@ -87,7 +273,7 @@ msgstr ""
 "Dit certificaat wordt niet vertrouwd omdat het certificaat zelf of een "
 "uitgever in de keten is ingetrokken (revoked)."
 
-#: src/check_truststore/engine/policy.py:243
+#: src/check_truststore/engine/policy.py:304
 #, python-brace-format
 msgid ""
 "RSA key size ({bits} bits) is below the minimum required {min_bits} bits."
@@ -95,7 +281,7 @@ msgstr ""
 "RSA-sleutelgrootte ({bits} bits) is kleiner dan de minimaal vereiste "
 "{min_bits} bits."
 
-#: src/check_truststore/engine/policy.py:251
+#: src/check_truststore/engine/policy.py:314
 #, python-brace-format
 msgid ""
 "ECC key size ({bits} bits) is below the minimum required {min_bits} bits."
@@ -103,22 +289,32 @@ msgstr ""
 "ECC-sleutelgrootte ({bits} bits) is kleiner dan de minimaal vereiste "
 "{min_bits} bits."
 
-#: src/check_truststore/engine/policy.py:266
-msgid "Certificate uses SHA-1 signature algorithm which is no longer trusted."
+#: src/check_truststore/engine/policy.py:335
+msgid "The signature algorithm is unknown or unsupported by the system."
 msgstr ""
-"Certificaat gebruikt het SHA-1 algoritme, dat niet langer wordt vertrouwd."
+"Het handtekening-algoritme is onbekend of wordt niet ondersteund door het "
+"systeem."
 
-#: src/check_truststore/engine/policy.py:286
+#: src/check_truststore/engine/policy.py:347
+msgid "Certificate is missing a hashing algorithm for its signature."
+msgstr "Het certificaat mist een hashing-algoritme voor de handtekening."
+
+#: src/check_truststore/engine/policy.py:358
+#, python-brace-format
+msgid "Certificate uses a deprecated hash algorithm ({name})."
+msgstr "Het certificaat gebruikt een verouderd hash-algoritme ({name})."
+
+#: src/check_truststore/engine/policy.py:381
 msgid "End-entity certificate lacks Extended Key Usage extension."
 msgstr "End-entity certificaat mist de 'Extended Key Usage' (EKU) extensie."
 
-#: src/check_truststore/engine/policy.py:299
+#: src/check_truststore/engine/policy.py:396
 msgid ""
 "Certificate contains 'Any Extended Key Usage', which is overly permissive."
 msgstr ""
 "Certificaat bevat 'Any Extended Key Usage', wat overmatig permissief is."
 
-#: src/check_truststore/engine/policy.py:308
+#: src/check_truststore/engine/policy.py:407
 msgid ""
 "Certificate allows both Server Auth and Code Signing. Functional separation "
 "is recommended."
@@ -126,64 +322,62 @@ msgstr ""
 "Certificaat staat zowel Server Auth als Code Signing toe. Functionele "
 "scheiding wordt aanbevolen."
 
-#: src/check_truststore/engine/policy.py:325
+#: src/check_truststore/engine/policy.py:428
 msgid "Could not parse Extended Key Usage extension data."
 msgstr "Kon de 'Extended Key Usage' data niet verwerken."
 
-#: src/check_truststore/engine/policy.py:343
+#: src/check_truststore/engine/policy.py:446
 msgid "Server Authentication"
 msgstr "Server Authenticatie"
 
-#: src/check_truststore/engine/policy.py:344
+#: src/check_truststore/engine/policy.py:447
 msgid "Client Authentication"
 msgstr "Client Authenticatie"
 
-#: src/check_truststore/engine/policy.py:345
+#: src/check_truststore/engine/policy.py:448
 msgid "Code Signing"
 msgstr "Code Ondertekening"
 
-#: src/check_truststore/engine/policy.py:346
+#: src/check_truststore/engine/policy.py:449
 msgid "Email Protection"
 msgstr "E-mailbeveiliging"
 
-#: src/check_truststore/engine/policy.py:347
+#: src/check_truststore/engine/policy.py:450
 msgid "Time Stamping"
 msgstr "Tijdstempeling"
 
-#: src/check_truststore/engine/policy.py:348
+#: src/check_truststore/engine/policy.py:451
 msgid "OCSP Signing"
 msgstr "OCSP Ondertekening"
 
-#: src/check_truststore/engine/policy.py:349
+#: src/check_truststore/engine/policy.py:452
 msgid "IPSec User"
 msgstr "IPSec Gebruiker"
 
-#: src/check_truststore/engine/policy.py:350
+#: src/check_truststore/engine/policy.py:453
 msgid "IPSec Intermediate"
 msgstr "IPSec Intermediate"
 
-#: src/check_truststore/engine/policy.py:351
+#: src/check_truststore/engine/policy.py:454
 msgid "IPSec Tunnel"
 msgstr "IPSec Tunnel"
 
-#: src/check_truststore/engine/policy.py:355
+#: src/check_truststore/engine/policy.py:458
 #, python-brace-format
 msgid "Unknown ({oid})"
 msgstr "Onbekend ({oid})"
 
-#: src/check_truststore/engine/policy.py:388
+#: src/check_truststore/engine/policy.py:488
 #, python-brace-format
-msgid ""
-"Certificate validity period ({duration_days} days) exceeds the 398-day limit."
-msgstr ""
-"Geldigheidsduur ({duration_days} dagen) overschrijdt de limiet van 398 dagen."
+msgid "Validity period ({days} days) exceeds the 398-day limit."
+msgstr "Geldigheidsduur ({days} dagen) overschrijdt de limiet van 398 dagen."
 
-#: src/check_truststore/engine/policy.py:422
+#: src/check_truststore/engine/policy.py:523
 #, python-brace-format
 msgid "Common Name '{cn}' is missing from Subject Alternative Names (SAN)."
 msgstr "Common Name '{cn}' ontbreekt in de Subject Alternative Names (SAN)."
 
-#: src/check_truststore/engine/policy.py:432
+#: src/check_truststore/engine/policy.py:535
 #, python-brace-format
 msgid ""
 "SAN contains a non-FQDN '{name}', which is disallowed for public "
@@ -192,12 +386,12 @@ msgstr ""
 "SAN bevat een niet-FQDN '{name}', wat niet is toegestaan voor publieke "
 "certificaten."
 
-#: src/check_truststore/engine/policy.py:439
+#: src/check_truststore/engine/policy.py:544
 msgid "Certificate lacks a SAN extension. Relying solely on CN is deprecated."
 msgstr ""
 "Certificaat mist een SAN-extensie. Vertrouwen op alleen de CN is verouderd."
 
-#: src/check_truststore/engine/policy.py:461
+#: src/check_truststore/engine/policy.py:568
 msgid ""
 "Certificate lacks CRL Distribution Points (CDP). Revocation checking may be "
 "limited."
@@ -205,7 +399,7 @@ msgstr ""
 "Certificaat mist CRL-distributiepunten (CDP). Intrekkingscontrole is "
 "mogelijk beperkt."
 
-#: src/check_truststore/engine/policy.py:485
+#: src/check_truststore/engine/policy.py:594
 #, python-brace-format
 msgid ""
 "Path length constraint exceeded. Issuer allows max {limit} intermediate(s)."
@@ -213,16 +407,69 @@ msgstr ""
 "Padlengte-beperking overschreden. Uitgever staat maximaal {limit} tussen-"
 "certificaten toe."
 
-#: src/check_truststore/engine/builder.py:106
+#: src/check_truststore/engine/policy.py:622
+#, python-brace-format
+msgid ""
+"Hostname mismatch: Certificate is valid for '{names}', but you connected to "
+"'{target}'."
+msgstr ""
+"Hostnaam-fout: Certificaat is geldig voor '{names}', maar u bent verbonden "
+"met '{target}'."
+
+#: src/check_truststore/engine/repository.py:80
+msgid "Invalid DER structure"
+msgstr "Ongeldige DER structuur"
+
+#: src/check_truststore/engine/repository.py:98
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached."
+msgstr "Maximale certificaatlimiet ({limit}) bereikt."
+
+#: src/check_truststore/engine/repository.py:110
+msgid "Skipping duplicate certificate (already loaded)"
+msgstr "Duplicaat certificaat overgeslagen (reeds geladen)"
+
+#: src/check_truststore/engine/repository.py:111
+msgid "DUPLICATE"
+msgstr "DUPLICAAT"
+
+#: src/check_truststore/engine/repository.py:126
+msgid "Invalid certificate structure"
+msgstr "Ongeldige certificaat structuur"
+
+#: src/check_truststore/engine/repository.py:133
+msgid "PKCS7-container"
+msgstr "PKCS7-container"
+
+#: src/check_truststore/engine/repository.py:144
+msgid "Legacy cryptography detected, falling back."
+msgstr "Verouderde cryptografie gedetecteerd, fallback wordt uitgevoerd."
+
+#: src/check_truststore/engine/repository.py:147
+#, python-brace-format
+msgid "Failed to parse PKCS7: {error}"
+msgstr "Parsen van PKCS7 mislukt: {error}"
+
+#: src/check_truststore/engine/repository.py:154
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
+msgstr "Maximale certificaatlimiet ({limit}) bereikt. Scan wordt gestopt."
+
+#: src/check_truststore/engine/repository.py:181
+#, python-brace-format
+msgid "File too large ({size:.1f}MB)"
+msgstr "Bestand te groot ({size:.1f}MB)."
+
+#: src/check_truststore/engine/builder.py:107
 msgid "Serial"
 msgstr "S/N"
 
-#: src/check_truststore/engine/builder.py:108
-#: src/check_truststore/renderers/text_renderer.py:96
+#: src/check_truststore/engine/builder.py:109
+#: src/check_truststore/renderers/text_renderer.py:97
 msgid "Unknown"
 msgstr "Onbekend"
 
-#: src/check_truststore/engine/builder.py:197
+#: src/check_truststore/engine/builder.py:210
 msgid ""
 "This certificate is explicitly untrusted by the Operating System "
 "(Blacklisted)."
@@ -230,276 +477,76 @@ msgstr ""
 "Dit certificaat wordt expliciet gewantrouwd door het besturingssysteem (op "
 "de zwarte lijst)."
 
-#: src/check_truststore/engine/builder.py:227
+#: src/check_truststore/engine/builder.py:220
 #, python-brace-format
-msgid "Broken circular chain at {ski_id}"
-msgstr "Circulaire keten verbroken bij {ski_id}"
+msgid "Certificate expires within {days} days."
+msgstr "Certificaat verloopt binnen {days} dagen."
 
-#: src/check_truststore/engine/builder.py:228
+#: src/check_truststore/engine/builder.py:240
+#, python-brace-format
+msgid "Circular chain detected: {path}"
+msgstr "Circulaire keten gedetecteerd: {path}"
+
+#: src/check_truststore/engine/builder.py:243
 msgid "CYCLE_BREAKER"
 msgstr "CYCLUS_BREKER"
 
-#: src/check_truststore/engine/builder.py:331
+#: src/check_truststore/engine/builder.py:347
 msgid "SIG_ERR"
 msgstr "SIG_FOUT"
 
-#: src/check_truststore/engine/builder.py:334
+#: src/check_truststore/engine/builder.py:350
 msgid "REVOKED"
 msgstr "INGETROKKEN"
 
-#: src/check_truststore/engine/builder.py:337 src/check_truststore/cli.py:110
+#: src/check_truststore/engine/builder.py:353 src/check_truststore/cli.py:110
 msgid "INVALID"
 msgstr "ONGELDIG"
 
-#: src/check_truststore/engine/builder.py:380
+#: src/check_truststore/engine/builder.py:396
 #, python-brace-format
 msgid "Missing issuer for: {name}"
 msgstr "Ontbrekende issuer voor: {name}"
 
-#: src/check_truststore/engine/builder.py:383
+#: src/check_truststore/engine/builder.py:399
 msgid "UNTRUSTED"
 msgstr "GEEN_TRUST"
 
-#: src/check_truststore/engine/builder.py:522
+#: src/check_truststore/engine/builder.py:499
+msgid "The certificate chain leads to an untrusted or missing root."
+msgstr ""
+"De certificaatketen leidt naar een niet-vertrouwde of ontbrekende root."
+
+#: src/check_truststore/engine/builder.py:541
+msgid "The certificate chain is incomplete due to a missing upstream issuer."
+msgstr ""
+"De certificaatketen is incompleet door een ontbrekende bovenliggende "
+"uitgever."
+
+#: src/check_truststore/engine/builder.py:551
 msgid ""
 "The chain is untrusted because an upstream issuer is blacklisted by the OS."
 msgstr ""
 "De keten wordt niet vertrouwd omdat een bovenliggende uitgever op de "
 "blacklist van het besturingssysteem staat."
 
-#: src/check_truststore/engine/builder.py:729
+#: src/check_truststore/engine/builder.py:758
 #, python-brace-format
 msgid "AIA: {name}"
 msgstr "AIA: {name}"
 
-#: src/check_truststore/engine/builder.py:730
+#: src/check_truststore/engine/builder.py:759
 msgid "Successfully discovered issuer via AIA"
 msgstr "Uitgever succesvol gevonden via AIA"
 
-#: src/check_truststore/engine/discovery.py:91
-#: src/check_truststore/engine/discovery.py:110
-#: src/check_truststore/engine/discovery.py:410
-#: src/check_truststore/engine/discovery.py:471
-msgid "CACHE"
-msgstr "CACHE"
+#: src/check_truststore/engine/builder.py:786
+msgid "The chain is broken; an issuer (Root or Intermediate) was not found."
+msgstr ""
+"De keten is verbroken; een uitgever (Root of Intermediate) is niet gevonden."
 
-#: src/check_truststore/engine/discovery.py:91
-msgid "Could not create cache directory"
-msgstr "Kon cache-directory niet aanmaken"
-
-#: src/check_truststore/engine/discovery.py:110
-msgid "AIA_CACHE"
-msgstr "AIA_CACHE"
-
-#: src/check_truststore/engine/discovery.py:110
-#, python-brace-format
-msgid "Cache hit for AKI {aki}, skipping network."
-msgstr "Cache-hit voor AKI {aki}, netwerkbezoek overgeslagen."
-
-#: src/check_truststore/engine/discovery.py:115
-#: src/check_truststore/engine/discovery.py:154
-msgid "AIA_FETCH"
-msgstr "AIA_OPHALEN"
-
-#: src/check_truststore/engine/discovery.py:115
-msgid "Bypassing cache due to --no-cache flag"
-msgstr "Cache wordt omzeild vanwege de --no-cache vlag"
-
-#: src/check_truststore/engine/discovery.py:115
-msgid "AUDIT"
-msgstr "AUDIT"
-
-#: src/check_truststore/engine/discovery.py:140
-msgid "AIA_THREAD"
-msgstr "AIA_THREAD"
-
-#: src/check_truststore/engine/discovery.py:140
-msgid "Thread error during discovery"
-msgstr "Thread-fout tijdens discovery-proces"
-
-#: src/check_truststore/engine/discovery.py:154
-msgid "Downloading"
-msgstr "Downloaden"
-
-#: src/check_truststore/engine/discovery.py:161
-msgid "AIA_SIZE"
-msgstr "AIA_GROOTTE"
-
-#: src/check_truststore/engine/discovery.py:161
-#, python-brace-format
-msgid "Certificate at {url} exceeds size limit."
-msgstr "Certificaat op {url} overschrijdt de maximale bestandsgrootte."
-
-#: src/check_truststore/engine/discovery.py:169
-msgid "AIA_FAILED"
-msgstr "AIA_MISLUKT"
-
-#: src/check_truststore/engine/discovery.py:169
-msgid "Connection failed"
-msgstr "Verbinding mislukt"
-
-#: src/check_truststore/engine/discovery.py:181
-msgid "AIA_PARSE"
-msgstr "AIA_PARSING"
-
-#: src/check_truststore/engine/discovery.py:181
-#, python-brace-format
-msgid "Failed to parse certificate from {url}"
-msgstr "Parsen van certificaat van {url} mislukt"
-
-#: src/check_truststore/engine/discovery.py:211
-msgid "OCSP_BUILD"
-msgstr "OCSP_OPBOUW"
-
-#: src/check_truststore/engine/discovery.py:231
-msgid "OCSP thread error"
-msgstr "Fout in OCSP-thread"
-
-#: src/check_truststore/engine/discovery.py:232
-msgid "OCSP_THREAD"
-msgstr "OCSP_THREAD"
-
-#: src/check_truststore/engine/discovery.py:253
-msgid "CRL_CHECK"
-msgstr "CRL_CONTROLE"
-
-#: src/check_truststore/engine/discovery.py:253
-msgid "No CRL endpoints found in certificate"
-msgstr "Geen CRL-eindpunten gevonden in certificaat"
-
-#: src/check_truststore/engine/discovery.py:273
-msgid "CRL thread error"
-msgstr "Fout in CRL-thread"
-
-#: src/check_truststore/engine/discovery.py:274
-msgid "CRL_THREAD"
-msgstr "CRL_THREAD"
-
-#: src/check_truststore/engine/discovery.py:307
-msgid "DNS"
-msgstr "DNS"
-
-#: src/check_truststore/engine/discovery.py:307
-msgid "Could not resolve host"
-msgstr "Hostnaam kon niet worden omgezet (DNS)"
-
-#: src/check_truststore/engine/discovery.py:360
-msgid "Cache"
-msgstr "Buffer (Cache)"
-
-#: src/check_truststore/engine/discovery.py:360
-msgid "Error reading cache"
-msgstr "Fout bij lezen van cache"
-
-#: src/check_truststore/engine/discovery.py:370
-msgid "CACHE_LOAD"
-msgstr "CACHE_LADEN"
-
-#: src/check_truststore/engine/discovery.py:370
-msgid "Failed to load cached cert"
-msgstr "Gecacht certificaat laden mislukt"
-
-#: src/check_truststore/engine/discovery.py:410
-msgid "Could not save certificate to cache"
-msgstr "Kon certificaat niet opslaan in cache"
-
-#: src/check_truststore/engine/discovery.py:419
-#, python-brace-format
-msgid "Checking: {url}"
-msgstr "Controleren: {url}"
-
-#: src/check_truststore/engine/discovery.py:420
-msgid "OCSP_CHECK"
-msgstr "OCSP_CONTROLE"
-
-#: src/check_truststore/engine/discovery.py:450
-msgid "OCSP_FAILED"
-msgstr "OCSP_MISLUKT"
-
-#: src/check_truststore/engine/discovery.py:450
-msgid "OCSP request failed"
-msgstr "OCSP-aanvraag mislukt"
-
-#: src/check_truststore/engine/discovery.py:470
-msgid "Using cached CRL for"
-msgstr "Gecachte CRL wordt gebruikt voor"
-
-#: src/check_truststore/engine/discovery.py:471
-#: src/check_truststore/engine/discovery.py:525
-msgid "CRL_CACHE"
-msgstr "CRL_CACHE"
-
-#: src/check_truststore/engine/discovery.py:482
-msgid "CRL_FETCH"
-msgstr "CRL_OPHALEN"
-
-#: src/check_truststore/engine/discovery.py:482
-msgid "Downloading CRL"
-msgstr "CRL Downloaden"
-
-#: src/check_truststore/engine/discovery.py:497
-#, python-brace-format
-msgid "Serial {serial_number} is REVOKED"
-msgstr "Serienummer {serial_number} is ingetrokken (REVOKED)"
-
-#: src/check_truststore/engine/discovery.py:498
-msgid "CRL_RESULT"
-msgstr "CRL_RESULTAAT"
-
-#: src/check_truststore/engine/discovery.py:506
-msgid "CRL_FAILED"
-msgstr "CRL_MISLUKT"
-
-#: src/check_truststore/engine/discovery.py:506
-msgid "Failed to check CRL"
-msgstr "CRL-controle mislukt"
-
-#: src/check_truststore/engine/discovery.py:525
-msgid "Could not save CRL to cache"
-msgstr "Kon CRL niet opslaan in cache"
-
-#: src/check_truststore/engine/orchestrator.py:65
-msgid "SystemProvider"
-msgstr "Systeem-provider"
-
-#: src/check_truststore/engine/orchestrator.py:65
-#, python-brace-format
-msgid "Could not load system truststore: {error}"
-msgstr "Kon systeem-truststore niet laden: {error}"
-
-#: src/check_truststore/engine/orchestrator.py:69
-msgid "Processing Group"
-msgstr "Groep verwerken"
-
-#: src/check_truststore/engine/orchestrator.py:139
-#: src/check_truststore/engine/orchestrator.py:151
-#: src/check_truststore/engine/orchestrator.py:157
-msgid "Export"
-msgstr "Export"
-
-#: src/check_truststore/engine/orchestrator.py:139
-msgid "Using PEM sequence fallback for legacy environment"
-msgstr "PEM-reeks fallback wordt gebruikt voor legacy omgeving"
-
-#: src/check_truststore/engine/orchestrator.py:151
-#, python-brace-format
-msgid "Bundle saved to {path}"
-msgstr "Bundel opgeslagen in {path}"
-
-#: src/check_truststore/engine/orchestrator.py:157
-#, python-brace-format
-msgid "Failed to create bundle: {error}"
-msgstr "Niet gelukt om een bundel te maken: {error}"
-
-# python-brace-format
-#: src/check_truststore/engine/orchestrator.py:186
-#, python-brace-format
-msgid "{used} of the {total} system certificates used"
-msgstr "{used} van de {total} systeem-certificaten gebruikt"
-
-#: src/check_truststore/engine/orchestrator.py:190
-msgid "System usage"
-msgstr "Systeemgebruik"
+#: src/check_truststore/engine/builder.py:795
+msgid "A circular certificate reference was detected."
+msgstr "Er is een circulaire certificaatverwijzing gedetecteerd."
 
 #: src/check_truststore/providers/json_provider.py:76
 msgid "Unknown JSON format or malformed structure."
@@ -568,33 +615,37 @@ msgstr "NIET_VERTROUWD"
 msgid "UNTRUSTED_CHAIN"
 msgstr "ONGELDIGE_KETEN"
 
-#: src/check_truststore/renderers/text_renderer.py:46
+#: src/check_truststore/renderers/text_renderer.py:44
+msgid "CHAIN_BROKEN"
+msgstr "KETEN_VERBROKEN"
+
+#: src/check_truststore/renderers/text_renderer.py:47
 msgid "Certificate Hierarchy:"
 msgstr "Certificaat Hiërarchie:"
 
-#: src/check_truststore/renderers/text_renderer.py:56
-#: src/check_truststore/renderers/text_renderer.py:59
+#: src/check_truststore/renderers/text_renderer.py:57
+#: src/check_truststore/renderers/text_renderer.py:60
 msgid "Unnamed Group"
 msgstr "Naamloze groep"
 
-#: src/check_truststore/renderers/text_renderer.py:67
+#: src/check_truststore/renderers/text_renderer.py:68
 msgid "(No certificates found)"
 msgstr "(Geen certificaten gevonden)"
 
-#: src/check_truststore/renderers/text_renderer.py:142
+#: src/check_truststore/renderers/text_renderer.py:146
 msgid "EXTERNAL ISSUER / MISSING ROOT"
 msgstr "EXTERNE UITGEVER / ONBEKENDE ROOT"
 
-#: src/check_truststore/renderers/text_renderer.py:144
+#: src/check_truststore/renderers/text_renderer.py:148
 msgid "CIRCULAR REFERENCE"
 msgstr "CIRCULAIRE VERWIJZING"
 
-#: src/check_truststore/renderers/text_renderer.py:160
+#: src/check_truststore/renderers/text_renderer.py:164
 msgid "Usage"
 msgstr "Gebruik"
 
-#: src/check_truststore/renderers/text_renderer.py:171
-#: src/check_truststore/renderers/text_renderer.py:173
+#: src/check_truststore/renderers/text_renderer.py:175
+#: src/check_truststore/renderers/text_renderer.py:177
 msgid "ALT"
 msgstr "ALT"
 
