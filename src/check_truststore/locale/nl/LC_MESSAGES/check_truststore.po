@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: check_truststore 1.2.1\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-12 17:00+0200\n"
+"POT-Creation-Date: 2026-05-12 18:52+0200\n"
 "PO-Revision-Date: 2026-04-13 11:08+0200\n"
 "Last-Translator: Serge van Thillo <nulleke76@gmail.com>\n"
 "Language-Team: Dutch <vertaling@vrijschrift.org>\n"
@@ -17,48 +17,93 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/check_truststore/engine/orchestrator.py:66
-msgid "SystemProvider"
-msgstr "Systeem-provider"
+#: src/check_truststore/engine/builder.py:107
+msgid "Serial"
+msgstr "S/N"
 
-#: src/check_truststore/engine/orchestrator.py:66
+#: src/check_truststore/engine/builder.py:109
+#: src/check_truststore/renderers/text_renderer.py:97
+msgid "Unknown"
+msgstr "Onbekend"
+
+#: src/check_truststore/engine/builder.py:210
+msgid ""
+"This certificate is explicitly untrusted by the Operating System "
+"(Blacklisted)."
+msgstr ""
+"Dit certificaat wordt expliciet gewantrouwd door het besturingssysteem (op "
+"de zwarte lijst)."
+
+#: src/check_truststore/engine/builder.py:220
 #, python-brace-format
-msgid "Could not load system truststore: {error}"
-msgstr "Kon systeem-truststore niet laden: {error}"
+msgid "Certificate expires within {days} days."
+msgstr "Certificaat verloopt binnen {days} dagen."
 
-#: src/check_truststore/engine/orchestrator.py:70
-msgid "Processing Group"
-msgstr "Groep verwerken"
-
-#: src/check_truststore/engine/orchestrator.py:145
-#: src/check_truststore/engine/orchestrator.py:157
-#: src/check_truststore/engine/orchestrator.py:163
-msgid "Export"
-msgstr "Export"
-
-#: src/check_truststore/engine/orchestrator.py:145
-msgid "Using PEM sequence fallback for legacy environment"
-msgstr "PEM-reeks fallback wordt gebruikt voor legacy omgeving"
-
-#: src/check_truststore/engine/orchestrator.py:157
+#: src/check_truststore/engine/builder.py:240
 #, python-brace-format
-msgid "Bundle saved to {path}"
-msgstr "Bundel opgeslagen in {path}"
+msgid "Circular chain detected: {path}"
+msgstr "Circulaire keten gedetecteerd: {path}"
 
-#: src/check_truststore/engine/orchestrator.py:163
+#: src/check_truststore/engine/builder.py:243
+msgid "CYCLE_BREAKER"
+msgstr "CYCLUS_BREKER"
+
+#: src/check_truststore/engine/builder.py:347
+msgid "SIG_ERR"
+msgstr "SIG_FOUT"
+
+#: src/check_truststore/engine/builder.py:350
+msgid "REVOKED"
+msgstr "INGETROKKEN"
+
+#: src/check_truststore/engine/builder.py:353 src/check_truststore/cli.py:111
+msgid "INVALID"
+msgstr "ONGELDIG"
+
+#: src/check_truststore/engine/builder.py:396
 #, python-brace-format
-msgid "Failed to create bundle: {error}"
-msgstr "Niet gelukt om een bundel te maken: {error}"
+msgid "Missing issuer for: {name}"
+msgstr "Ontbrekende issuer voor: {name}"
 
-# python-brace-format
-#: src/check_truststore/engine/orchestrator.py:192
+#: src/check_truststore/engine/builder.py:399
+msgid "UNTRUSTED"
+msgstr "GEEN_TRUST"
+
+#: src/check_truststore/engine/builder.py:499
+msgid "The certificate chain leads to an untrusted or missing root."
+msgstr ""
+"De certificaatketen leidt naar een niet-vertrouwde of ontbrekende root."
+
+#: src/check_truststore/engine/builder.py:541
+msgid "The certificate chain is incomplete due to a missing upstream issuer."
+msgstr ""
+"De certificaatketen is incompleet door een ontbrekende bovenliggende "
+"uitgever."
+
+#: src/check_truststore/engine/builder.py:551
+msgid ""
+"The chain is untrusted because an upstream issuer is blacklisted by the OS."
+msgstr ""
+"De keten wordt niet vertrouwd omdat een bovenliggende uitgever op de "
+"blacklist van het besturingssysteem staat."
+
+#: src/check_truststore/engine/builder.py:758
 #, python-brace-format
-msgid "{used} of the {total} system certificates used"
-msgstr "{used} van de {total} systeem-certificaten gebruikt"
+msgid "AIA: {name}"
+msgstr "AIA: {name}"
 
-#: src/check_truststore/engine/orchestrator.py:196
-msgid "System usage"
-msgstr "Systeemgebruik"
+#: src/check_truststore/engine/builder.py:759
+msgid "Successfully discovered issuer via AIA"
+msgstr "Uitgever succesvol gevonden via AIA"
+
+#: src/check_truststore/engine/builder.py:786
+msgid "The chain is broken; an issuer (Root or Intermediate) was not found."
+msgstr ""
+"De keten is verbroken; een uitgever (Root of Intermediate) is niet gevonden."
+
+#: src/check_truststore/engine/builder.py:795
+msgid "A circular certificate reference was detected."
+msgstr "Er is een circulaire certificaatverwijzing gedetecteerd."
 
 #: src/check_truststore/engine/discovery.py:92
 #: src/check_truststore/engine/discovery.py:111
@@ -241,6 +286,49 @@ msgstr "CRL-controle mislukt"
 #: src/check_truststore/engine/discovery.py:526
 msgid "Could not save CRL to cache"
 msgstr "Kon CRL niet opslaan in cache"
+
+#: src/check_truststore/engine/orchestrator.py:66
+msgid "SystemProvider"
+msgstr "Systeem-provider"
+
+#: src/check_truststore/engine/orchestrator.py:66
+#, python-brace-format
+msgid "Could not load system truststore: {error}"
+msgstr "Kon systeem-truststore niet laden: {error}"
+
+#: src/check_truststore/engine/orchestrator.py:70
+msgid "Processing Group"
+msgstr "Groep verwerken"
+
+#: src/check_truststore/engine/orchestrator.py:145
+#: src/check_truststore/engine/orchestrator.py:157
+#: src/check_truststore/engine/orchestrator.py:163
+msgid "Export"
+msgstr "Export"
+
+#: src/check_truststore/engine/orchestrator.py:145
+msgid "Using PEM sequence fallback for legacy environment"
+msgstr "PEM-reeks fallback wordt gebruikt voor legacy omgeving"
+
+#: src/check_truststore/engine/orchestrator.py:157
+#, python-brace-format
+msgid "Bundle saved to {path}"
+msgstr "Bundel opgeslagen in {path}"
+
+#: src/check_truststore/engine/orchestrator.py:163
+#, python-brace-format
+msgid "Failed to create bundle: {error}"
+msgstr "Niet gelukt om een bundel te maken: {error}"
+
+# python-brace-format
+#: src/check_truststore/engine/orchestrator.py:192
+#, python-brace-format
+msgid "{used} of the {total} system certificates used"
+msgstr "{used} van de {total} systeem-certificaten gebruikt"
+
+#: src/check_truststore/engine/orchestrator.py:196
+msgid "System usage"
+msgstr "Systeemgebruik"
 
 #: src/check_truststore/engine/policy.py:107
 #, python-brace-format
@@ -460,94 +548,6 @@ msgstr "Maximale certificaatlimiet ({limit}) bereikt. Scan wordt gestopt."
 msgid "File too large ({size:.1f}MB)"
 msgstr "Bestand te groot ({size:.1f}MB)."
 
-#: src/check_truststore/engine/builder.py:107
-msgid "Serial"
-msgstr "S/N"
-
-#: src/check_truststore/engine/builder.py:109
-#: src/check_truststore/renderers/text_renderer.py:97
-msgid "Unknown"
-msgstr "Onbekend"
-
-#: src/check_truststore/engine/builder.py:210
-msgid ""
-"This certificate is explicitly untrusted by the Operating System "
-"(Blacklisted)."
-msgstr ""
-"Dit certificaat wordt expliciet gewantrouwd door het besturingssysteem (op "
-"de zwarte lijst)."
-
-#: src/check_truststore/engine/builder.py:220
-#, python-brace-format
-msgid "Certificate expires within {days} days."
-msgstr "Certificaat verloopt binnen {days} dagen."
-
-#: src/check_truststore/engine/builder.py:240
-#, python-brace-format
-msgid "Circular chain detected: {path}"
-msgstr "Circulaire keten gedetecteerd: {path}"
-
-#: src/check_truststore/engine/builder.py:243
-msgid "CYCLE_BREAKER"
-msgstr "CYCLUS_BREKER"
-
-#: src/check_truststore/engine/builder.py:347
-msgid "SIG_ERR"
-msgstr "SIG_FOUT"
-
-#: src/check_truststore/engine/builder.py:350
-msgid "REVOKED"
-msgstr "INGETROKKEN"
-
-#: src/check_truststore/engine/builder.py:353 src/check_truststore/cli.py:110
-msgid "INVALID"
-msgstr "ONGELDIG"
-
-#: src/check_truststore/engine/builder.py:396
-#, python-brace-format
-msgid "Missing issuer for: {name}"
-msgstr "Ontbrekende issuer voor: {name}"
-
-#: src/check_truststore/engine/builder.py:399
-msgid "UNTRUSTED"
-msgstr "GEEN_TRUST"
-
-#: src/check_truststore/engine/builder.py:499
-msgid "The certificate chain leads to an untrusted or missing root."
-msgstr ""
-"De certificaatketen leidt naar een niet-vertrouwde of ontbrekende root."
-
-#: src/check_truststore/engine/builder.py:541
-msgid "The certificate chain is incomplete due to a missing upstream issuer."
-msgstr ""
-"De certificaatketen is incompleet door een ontbrekende bovenliggende "
-"uitgever."
-
-#: src/check_truststore/engine/builder.py:551
-msgid ""
-"The chain is untrusted because an upstream issuer is blacklisted by the OS."
-msgstr ""
-"De keten wordt niet vertrouwd omdat een bovenliggende uitgever op de "
-"blacklist van het besturingssysteem staat."
-
-#: src/check_truststore/engine/builder.py:758
-#, python-brace-format
-msgid "AIA: {name}"
-msgstr "AIA: {name}"
-
-#: src/check_truststore/engine/builder.py:759
-msgid "Successfully discovered issuer via AIA"
-msgstr "Uitgever succesvol gevonden via AIA"
-
-#: src/check_truststore/engine/builder.py:786
-msgid "The chain is broken; an issuer (Root or Intermediate) was not found."
-msgstr ""
-"De keten is verbroken; een uitgever (Root of Intermediate) is niet gevonden."
-
-#: src/check_truststore/engine/builder.py:795
-msgid "A circular certificate reference was detected."
-msgstr "Er is een circulaire certificaatverwijzing gedetecteerd."
-
 #: src/check_truststore/providers/json_provider.py:76
 msgid "Unknown JSON format or malformed structure."
 msgstr "Onbekend JSON-formaat of ongeldige structuur."
@@ -649,150 +649,157 @@ msgstr "Gebruik"
 msgid "ALT"
 msgstr "ALT"
 
-#: src/check_truststore/cli.py:105
+#: src/check_truststore/cli.py:106
 msgid "ERROR"
 msgstr "FOUT"
 
-#: src/check_truststore/cli.py:106
+#: src/check_truststore/cli.py:107
 msgid "WARNING"
 msgstr "WAARSCHUWING"
 
-#: src/check_truststore/cli.py:107
+#: src/check_truststore/cli.py:108
 msgid "OK"
 msgstr "OK"
 
-#: src/check_truststore/cli.py:108
+#: src/check_truststore/cli.py:109
 msgid "INFO"
 msgstr "INFO"
 
-#: src/check_truststore/cli.py:109
+#: src/check_truststore/cli.py:110
 msgid "CHAIN"
 msgstr "KETEN"
 
-#: src/check_truststore/cli.py:111
+#: src/check_truststore/cli.py:112
 msgid "EXPIRED"
 msgstr "VERLOPEN"
 
-#: src/check_truststore/cli.py:112
+#: src/check_truststore/cli.py:113
 msgid "EXPIRING"
 msgstr "BIJNA_VERLOPEN"
 
-#: src/check_truststore/cli.py:113
+#: src/check_truststore/cli.py:114
 msgid "SYSTEM"
 msgstr "SYSTEEM"
 
-#: src/check_truststore/cli.py:114
+#: src/check_truststore/cli.py:115
 msgid "PARENT_NOT_A_CA"
 msgstr "OUDER_GEEN_CA"
 
-#: src/check_truststore/cli.py:118
-msgid "Analyze certificate truststores and visualize the chain hierarchy."
-msgstr "Analyseer certificaat truststores en visualiseer de hiërarchie."
-
 #: src/check_truststore/cli.py:120
+#, python-brace-format
+msgid ""
+"TrustStore Analyzer v{version} - Analyze certificate truststores and "
+"visualize the chain hierarchy."
+msgstr "TrustStore Analyzer v{version} - Analyseer certificaat truststores en visualiseer de hiërarchie."
+
+#: src/check_truststore/cli.py:122
 msgid "Compatible with Python 3.6+"
 msgstr "Compatibel met Python 3.6+"
 
-#: src/check_truststore/cli.py:128
+#: src/check_truststore/cli.py:130
 msgid "Show this help message and exit"
 msgstr "Toon dit helpbericht en sluit af"
 
-#: src/check_truststore/cli.py:131
+#: src/check_truststore/cli.py:136
+msgid "Show program's version number and exit"
+msgstr "Toon het versienummer van het programma en sluit af"
+
+#: src/check_truststore/cli.py:139
 msgid "Path to the input source(s)"
 msgstr "Pad naar de invoerbron(en)"
 
-#: src/check_truststore/cli.py:134
+#: src/check_truststore/cli.py:142
 msgid "Input & Network Configuration"
 msgstr "Input- & Netwerkconfiguratie"
 
-#: src/check_truststore/cli.py:140
+#: src/check_truststore/cli.py:148
 msgid "Incorporate system truststore"
 msgstr "Systeem-truststore betrekken bij analyse"
 
-#: src/check_truststore/cli.py:147
+#: src/check_truststore/cli.py:155
 msgid "Allow internet access for AIA discovery and revocation checks"
 msgstr "Sta internettoegang toe voor AIA-discovery en intrekkingscontroles"
 
-#: src/check_truststore/cli.py:152
+#: src/check_truststore/cli.py:160
 msgid "Bypass local cache and force download of AIA/CRL/OCSP data"
 msgstr "Lokale cache omzeilen en download van AIA/CRL/OCSP-gegevens afdwingen"
 
-#: src/check_truststore/cli.py:157
+#: src/check_truststore/cli.py:165
 msgid "Override safety limits (max file size and certificate count)"
 msgstr ""
 "Veiligheidslimieten negeren (max. bestandsgrootte en aantal certificaten)"
 
-#: src/check_truststore/cli.py:160
+#: src/check_truststore/cli.py:168
 msgid "Analysis Settings"
 msgstr "Analyse-instellingen"
 
-#: src/check_truststore/cli.py:166
+#: src/check_truststore/cli.py:174
 msgid "Expiration threshold in days (default: 30)"
 msgstr "Vervaldrempel in dagen (standaard: 30)"
 
-#: src/check_truststore/cli.py:172
+#: src/check_truststore/cli.py:180
 msgid "Maximum recursion depth for chain discovery (default: 4)"
 msgstr "Maximale recursiediepte voor keten-ontdekking (standaard: 4)"
 
-#: src/check_truststore/cli.py:175
+#: src/check_truststore/cli.py:183
 msgid "Output & Debugging"
 msgstr "Output & Debugging"
 
-#: src/check_truststore/cli.py:181
+#: src/check_truststore/cli.py:189
 msgid "Output format"
 msgstr "Output formaat"
 
-#: src/check_truststore/cli.py:188
+#: src/check_truststore/cli.py:196
 msgid "Increase output verbosity (e.g., -v for SANs, -vv for policy findings)"
 msgstr ""
 "Verhoog de uitgebreidheid van de output (bijv. -v voor SANs, -vv voor "
 "beleidsbevindingen)"
 
-#: src/check_truststore/cli.py:194
+#: src/check_truststore/cli.py:202
 msgid "Show debug info"
 msgstr "Toon debug informatie"
 
-#: src/check_truststore/cli.py:196
+#: src/check_truststore/cli.py:204
 msgid "Export Options"
 msgstr "Exportopties"
 
-#: src/check_truststore/cli.py:202
+#: src/check_truststore/cli.py:210
 msgid "Export a complete PKCS#7 (.p7b) bundle for each analyzed group"
 msgstr ""
 "Exporteer een volledige PKCS#7 (.p7b) bundel voor elke geanalyseerde groep"
 
-#: src/check_truststore/cli.py:209
+#: src/check_truststore/cli.py:217
 msgid "Directory where bundles will be saved (default: output_bundles)"
 msgstr "Map waarin bundels worden opgeslagen (standaard: output_bundles)"
 
-#: src/check_truststore/cli.py:228
+#: src/check_truststore/cli.py:236
 msgid "Parameter '-o' is unknown"
 msgstr "Parameter '-o' is onbekend"
 
-#: src/check_truststore/cli.py:229
+#: src/check_truststore/cli.py:237
 msgid "Did you mean '-O' (uppercase) for online discovery?"
 msgstr "Bedoelde u '-O' (hoofdletter) voor online ontdekking?"
 
-#: src/check_truststore/cli.py:238
+#: src/check_truststore/cli.py:246
 msgid "Stdin requested via '-' but no data piped."
 msgstr "Stdin aangevraagd via '-', maar geen data ontvangen via pipe."
 
-#: src/check_truststore/cli.py:257
+#: src/check_truststore/cli.py:265
 msgid "No certificates found via this provider."
 msgstr "Geen certificaten gevonden via deze provider."
 
-#: src/check_truststore/cli.py:259
+#: src/check_truststore/cli.py:267
 msgid "Could not determine provider for this input."
 msgstr "Kon geen geschikte provider vinden voor deze invoer."
 
-#: src/check_truststore/cli.py:262
+#: src/check_truststore/cli.py:270
 msgid "No certificates found to display."
 msgstr "Geen certificaten gevonden om weer te geven."
 
-#: src/check_truststore/cli.py:287
+#: src/check_truststore/cli.py:295
 msgid "Analysis interrupted by user"
 msgstr "Analyse afgebroken door gebruiker"
 
-#: src/check_truststore/cli.py:290
+#: src/check_truststore/cli.py:298
 msgid "An unexpected error occurred"
 msgstr "Er is een onverwachte fout opgetreden"

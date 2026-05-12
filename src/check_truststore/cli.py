@@ -34,6 +34,7 @@ import io
 from pathlib import Path
 from typing import Optional
 
+from check_truststore import __version__
 from check_truststore.engine import (
     _,
     ERROR,
@@ -114,9 +115,10 @@ def main() -> None:
         _("PARENT_NOT_A_CA")
 
         parser = argparse.ArgumentParser(
+            prog="check_truststore",
             description=_(
-                "Analyze certificate truststores and visualize the chain hierarchy."
-            ),
+                "TrustStore Analyzer v{version} - Analyze certificate truststores and visualize the chain hierarchy."
+            ).format(version=__version__),
             epilog=_("Compatible with Python 3.6+"),
             add_help=False,
         )
@@ -126,6 +128,12 @@ def main() -> None:
             action="help",
             default=argparse.SUPPRESS,
             help=_("Show this help message and exit"),
+        )
+        parser.add_argument(
+            "--version",
+            action="version",
+            version=f"%(prog)s {__version__}",
+            help=_("Show program's version number and exit"),
         )
         parser.add_argument(
             "inputs", type=str, nargs="*", help=_("Path to the input source(s)")
