@@ -15,6 +15,7 @@ from .json_provider import JsonInputProvider
 from .xml_provider import XmlInputProvider
 from .file_provider import SingleFileInputProvider
 from .directory_provider import DirectoryInputProvider
+from .https_provider import HttpsInputProvider
 
 __all__ = [
     "BaseInputProvider",
@@ -24,4 +25,5 @@ __all__ = [
     "XmlInputProvider",
     "SingleFileInputProvider",
     "DirectoryInputProvider",
+    "HttpsInputProvider",
 ]

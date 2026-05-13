@@ -49,6 +49,7 @@ from check_truststore.providers import (
     XmlInputProvider,
     SingleFileInputProvider,
     DirectoryInputProvider,
+    HttpsInputProvider,
 )
 from check_truststore.renderers import TrustStoreRenderer
 from check_truststore.providers.base import BaseInputProvider
@@ -68,6 +69,9 @@ def get_provider(input_str: str, stdin_content: Optional[str], repo: Certificate
     """
     Factory logic to determine the correct provider based on input type or content.
     """
+    if input_str.startswith(("https://", "http://")):
+        return HttpsInputProvider(input_str, repository=repo, **kwargs)
+
     if input_str == "-":
         if not stdin_content:
             return None
@@ -79,7 +83,8 @@ def get_provider(input_str: str, stdin_content: Optional[str], repo: Certificate
             return XmlInputProvider(stdin_content, repository=repo, is_raw_data=True, **kwargs)
         if "BEGIN CERTIFICATE" in content:
             return SingleFileInputProvider(stdin_content, repository=repo, is_raw_data=True, **kwargs)
-        if ":" in content:
+        yaml_keywords = ["truststores:", "cert_src_dir:", "cert_chain:"]
+        if any(key in content for key in yaml_keywords):
             return YamlInputProvider(stdin_content, repository=repo, is_raw_data=True, **kwargs)
         return None
 

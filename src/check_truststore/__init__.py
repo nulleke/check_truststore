@@ -29,6 +29,7 @@ from .providers import (
     XmlInputProvider,
     DirectoryInputProvider,
     SingleFileInputProvider,
+    HttpsInputProvider,
 )
 
 from .renderers import TrustStoreRenderer
@@ -45,5 +46,6 @@ __all__ = [
     "XmlInputProvider",
     "DirectoryInputProvider",
     "SingleFileInputProvider",
+    "HttpsInputProvider",
     "TrustStoreRenderer",
 ]

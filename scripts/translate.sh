@@ -21,6 +21,7 @@ echo "[*] Extracting messages from source..."
 find "$BASE_DIR" -name "*.py" | xgettext -L Python --from-code=UTF-8 \
     --keyword=_ \
     --keyword=N_ \
+    --no-location \
     --package-name="check_truststore" \
     --package-version="${VERSION}" \
     -o "$POT_FILE" -f -
@@ -43,7 +44,7 @@ for LANG_CODE in "${LANGUAGES[@]}"; do
 
     if [ ! -f "$PO_FILE" ]; then
         echo "Creating new .po file for ${LANG_CODE}..."
-        msginit -i "$POT_FILE" -o "$PO_FILE" -l "$LANG_CODE" --no-translator
+        msginit --no-location -i "$POT_FILE" -o "$PO_FILE" -l "$LANG_CODE" --no-translator
     else
         msgmerge --quiet -U "$PO_FILE" "$POT_FILE"
         sed -i "s/^\"Project-Id-Version: .*/\"Project-Id-Version: check_truststore ${VERSION}\\\\n\"/" "$PO_FILE"
