@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.2.2] - 2026-05-14 (Stable)
+
+### 🚀 Highlights
+*   **RFC 5280 Name Constraints**: Implemented full validation for `NameConstraints` (permitted and excluded subtrees). The engine now ensures that an issuing CA is authorized to sign for specific (sub)domains, preventing unauthorized certificate issuance.
+*   **HTTPS Input Provider**: Added a new provider that allows scanning certificates directly from a URL (e.g., `https://example.com`), including full chain discovery.
+*   **Legacy Support (RHEL/CentOS)**: Optimized the engine to run on older system-installed libraries (Python 3.6/3.7) without requiring modern dependencies like Pydantic, while maintaining 100% output consistency.
+
+### Added
+*   **Netscape Comment Support**: The tool now detects and displays the legacy Netscape Comment extension (OID `2.16.840.1.113730.1.13`), often used in older PKI infrastructures for administrative notes.
+*   **CLI Versioning**: Added the `--version` flag for easier auditing of the installed tool version.
+*   **Poison Pill Test Cases**: The `MockProvider` was extended with complex Name Constraint scenarios to verify "forbidden" SAN (Subject Alternative Name) detection.
+
+### Fixed
+*   **Dependency Compatibility**: Fixed `GeneralSubtree` imports to ensure the `NameConstraints` logic works across different versions of the `cryptography` library.
+*   **Finding Deduplication**: Improved the `add_finding` logic in the models to prevent the same policy violation from being reported multiple times for a single certificate.
+
+### Changed
+*   **Refined DNS Matching**: Implemented RFC 5280 compliant DNS subtree matching (e.g., a constraint for `.safe.lan` correctly matches both `safe.lan` and `www.safe.lan`).
+*   **Status Signaling**: Introduced a dedicated `EXPIRING` status (⏳) to clearly distinguish certificates nearing expiry from those with general configuration warnings.
+*   **Translation Updates**: Synchronized Dutch, German, and French locale files to include the new technical strings for Name Constraints and Netscape Comments.
+
 ## [v1.2.0] - 2026-05-07 (Stable)
 
 ### 🚀 Highlights
