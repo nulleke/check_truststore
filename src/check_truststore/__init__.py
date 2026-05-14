@@ -9,7 +9,7 @@ input providers, and rendering results.
 """
 
 __author__ = "Serge van Thillo"
-__version__ = "1.2.1"
+__version__ = "1.2.2"
 
 from .engine import (
     TrustStoreAnalyzer,
@@ -29,6 +29,7 @@ from .providers import (
     XmlInputProvider,
     DirectoryInputProvider,
     SingleFileInputProvider,
+    HttpsInputProvider,
 )
 
 from .renderers import TrustStoreRenderer
@@ -45,5 +46,6 @@ __all__ = [
     "XmlInputProvider",
     "DirectoryInputProvider",
     "SingleFileInputProvider",
+    "HttpsInputProvider",
     "TrustStoreRenderer",
 ]

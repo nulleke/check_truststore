@@ -34,6 +34,7 @@ import io
 from pathlib import Path
 from typing import Optional
 
+from check_truststore import __version__
 from check_truststore.engine import (
     _,
     ERROR,
@@ -48,6 +49,7 @@ from check_truststore.providers import (
     XmlInputProvider,
     SingleFileInputProvider,
     DirectoryInputProvider,
+    HttpsInputProvider,
 )
 from check_truststore.renderers import TrustStoreRenderer
 from check_truststore.providers.base import BaseInputProvider
@@ -67,6 +69,9 @@ def get_provider(input_str: str, stdin_content: Optional[str], repo: Certificate
     """
     Factory logic to determine the correct provider based on input type or content.
     """
+    if input_str.startswith(("https://", "http://")):
+        return HttpsInputProvider(input_str, repository=repo, **kwargs)
+
     if input_str == "-":
         if not stdin_content:
             return None
@@ -78,7 +83,8 @@ def get_provider(input_str: str, stdin_content: Optional[str], repo: Certificate
             return XmlInputProvider(stdin_content, repository=repo, is_raw_data=True, **kwargs)
         if "BEGIN CERTIFICATE" in content:
             return SingleFileInputProvider(stdin_content, repository=repo, is_raw_data=True, **kwargs)
-        if ":" in content:
+        yaml_keywords = ["truststores:", "cert_src_dir:", "cert_chain:"]
+        if any(key in content for key in yaml_keywords):
             return YamlInputProvider(stdin_content, repository=repo, is_raw_data=True, **kwargs)
         return None
 
@@ -114,9 +120,10 @@ def main() -> None:
         _("PARENT_NOT_A_CA")
 
         parser = argparse.ArgumentParser(
+            prog="check_truststore",
             description=_(
-                "Analyze certificate truststores and visualize the chain hierarchy."
-            ),
+                "TrustStore Analyzer v{version} - Analyze certificate truststores and visualize the chain hierarchy."
+            ).format(version=__version__),
             epilog=_("Compatible with Python 3.6+"),
             add_help=False,
         )
@@ -126,6 +133,12 @@ def main() -> None:
             action="help",
             default=argparse.SUPPRESS,
             help=_("Show this help message and exit"),
+        )
+        parser.add_argument(
+            "--version",
+            action="version",
+            version=f"%(prog)s {__version__}",
+            help=_("Show program's version number and exit"),
         )
         parser.add_argument(
             "inputs", type=str, nargs="*", help=_("Path to the input source(s)")

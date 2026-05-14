@@ -10,7 +10,7 @@ A tool for system administrators and security engineers to audit certificate tru
 **Audit your truststores in seconds**:
 1. **Install**: `pip install check-truststore`
 2. **Run Ad-hoc**: `check_truststore /path/to/certs/`
-3. **Visualize**: `check_truststore /path/to/certs/ --format text -s -O -vvv`
+3. **Visualize**: `check_truststore /path/to/certs/ --format text --system --online -vvv` or `check_truststore https://example.com --system --online`
 
 *Supports **PEM**, **DER**, and **PKCS#7**. Works on macOS, and Linux. Windows in development*
 
@@ -42,6 +42,7 @@ A tool for system administrators and security engineers to audit certificate tru
     * **Stream Processing**: Supports piped input (stdin) for JSON, XML, or raw PEM data, allowing seamless integration into shell pipelines.
     * **Single File Audit**: Analyze individual certificate files with automatic system truststore resolution for quick validation.
 * **RFC 5280 Compliant Path Building**: Uses AKI/SKI stringing instead of unreliable Subject/Issuer name matching.
+* **Name Constraints (RFC 5280)**: The engine now validates whether an intermediate CA is authorized to sign for specific DNS subtrees. It detects "poison pill" certificates where a SAN (Subject Alternative Name) falls outside the permitted scope of the issuer.
 * **Cryptographic Chain Integrity**: Full support for signature verification across RSA and ECDSA algorithms.
 * **📦 Chain Bundling**: Automatically generates a complete PKCS#7 (`.p7b`) bundle for each analyzed group, including missing intermediates discovered via AIA.
 
@@ -215,7 +216,7 @@ Thanks to the `XmlInputProvider`, you can pipe network scan results directly int
 
 ```bash
 # Scan multiple domains and validate the full chain live
-nmap -p 443 --script ssl-cert example.com next.example.com -oX - | check_truststore - -s -O
+nmap -p 443 --script ssl-cert example.com next.example.com -oX - | check_truststore - --system --online
 ```
 
 ### System Truststores
@@ -229,6 +230,11 @@ Using the `--system` flag (powered by `SystemInputProvider`), you can audit the 
 check_truststore my-certs/ --system
 ```
 
+```bash
+# Check a live website
+check_truststore https://www.example.com --system --online
+```
+
 ### 📥 Supported Input Providers
 
 | Provider | Trigger | Description |
@@ -238,6 +244,7 @@ check_truststore my-certs/ --system
 | **XML (Nmap)** | `.xml` or `stdin` | Specifically optimized for Nmap `-oX` output; extracts PEM data from XML elements. |
 | **Directory** | Folder path | Scans the filesystem and groups certificates based on directory structure. |
 | **File(s)** | `.pem`, `.crt`, `.p7b` | Processes individual files or raw PEM/PKCS#7 data from stdin. |
+| **HTTPS** | https:// | Fetches the full certificate chain from a live website via TLS. |
 | **System** | `--system` | Provides access to the native OS root certificate stores. |
 
 ## 📊 Output Examples
@@ -599,7 +606,7 @@ To update or add translations, use the provided utility script:
 ## 🤝 Contributing
 Contributions are welcome! Whether it's reporting a bug, suggesting an enhancement, or submitting a pull request, your help is appreciated.
 
-Please see our [CONTRIBUTING.md](https://raw.githubusercontent.com/nulleke/check_truststore/main/docs/CONTRIBUTING.md) for details on our development standards, legacy environment support (RHEL 8), and how to get started.
+Please see our [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on our development standards, legacy environment support (RHEL 8), and how to get started.
 
 ## ⚖️ License
 **Copyright (C) 2024-2026 Serge van Thillo**
@@ -609,4 +616,4 @@ This program is free software: you can redistribute it and/or modify it under th
 This project is licensed under the **LGPL-3.0-or-later** - see the [LICENSE](LICENSE) file for details.
 
 ---
-**Status**: Version: 1.2.1 | Stable | **Logic validated for current system date**: May 8, 2026
+**Status**: Version: 1.2.2 | Stable | **Logic validated for current system date**: May 14, 2026

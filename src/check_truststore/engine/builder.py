@@ -17,7 +17,7 @@ from datetime import datetime, timedelta, timezone
 from .models import ORPHAN_NODE_ID, CYCLE_NODE_ID, Certificate
 from .policy import PolicyEngine, PolicyFinding
 from .repository import CertificateRepository
-from .logging import _, OK, WARNING, MISSING, ERROR, COLLISION, SYSTEM, AIA, REVOKED, Icons as Icons
+from .logging import _, OK, EXPIRING, WARNING, MISSING, ERROR, COLLISION, SYSTEM, AIA, REVOKED, Icons as Icons
 
 def N_(message):
     return message
@@ -352,7 +352,7 @@ class TrustChainBuilder:
                 st = ERROR
                 current_label = _("INVALID")
             elif cert_obj.is_expiring_soon:
-                st = WARNING
+                st = EXPIRING
             elif cert_obj.is_system_cert:
                 st = SYSTEM
             elif cert_obj.is_aia_cert:

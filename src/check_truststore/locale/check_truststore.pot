@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: check_truststore 1.2.1\n"
+"Project-Id-Version: check_truststore 1.2.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-12 17:00+0200\n"
+"POT-Creation-Date: 2026-05-14 10:07+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,743 +17,593 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/check_truststore/engine/orchestrator.py:66
-msgid "SystemProvider"
+msgid "Serial"
 msgstr ""
 
-#: src/check_truststore/engine/orchestrator.py:66
+msgid "Unknown"
+msgstr ""
+
+msgid ""
+"This certificate is explicitly untrusted by the Operating System "
+"(Blacklisted)."
+msgstr ""
+
 #, python-brace-format
-msgid "Could not load system truststore: {error}"
+msgid "Certificate expires within {days} days."
 msgstr ""
 
-#: src/check_truststore/engine/orchestrator.py:70
-msgid "Processing Group"
-msgstr ""
-
-#: src/check_truststore/engine/orchestrator.py:145
-#: src/check_truststore/engine/orchestrator.py:157
-#: src/check_truststore/engine/orchestrator.py:163
-msgid "Export"
-msgstr ""
-
-#: src/check_truststore/engine/orchestrator.py:145
-msgid "Using PEM sequence fallback for legacy environment"
-msgstr ""
-
-#: src/check_truststore/engine/orchestrator.py:157
 #, python-brace-format
-msgid "Bundle saved to {path}"
+msgid "Circular chain detected: {path}"
 msgstr ""
 
-#: src/check_truststore/engine/orchestrator.py:163
+msgid "CYCLE_BREAKER"
+msgstr ""
+
+msgid "SIG_ERR"
+msgstr ""
+
+msgid "REVOKED"
+msgstr ""
+
+msgid "INVALID"
+msgstr ""
+
 #, python-brace-format
-msgid "Failed to create bundle: {error}"
+msgid "Missing issuer for: {name}"
 msgstr ""
 
-#: src/check_truststore/engine/orchestrator.py:192
+msgid "UNTRUSTED"
+msgstr ""
+
+msgid "The certificate chain leads to an untrusted or missing root."
+msgstr ""
+
+msgid "The certificate chain is incomplete due to a missing upstream issuer."
+msgstr ""
+
+msgid ""
+"The chain is untrusted because an upstream issuer is blacklisted by the OS."
+msgstr ""
+
 #, python-brace-format
-msgid "{used} of the {total} system certificates used"
+msgid "AIA: {name}"
 msgstr ""
 
-#: src/check_truststore/engine/orchestrator.py:196
-msgid "System usage"
+msgid "Successfully discovered issuer via AIA"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:92
-#: src/check_truststore/engine/discovery.py:111
-#: src/check_truststore/engine/discovery.py:411
-#: src/check_truststore/engine/discovery.py:472
+msgid "The chain is broken; an issuer (Root or Intermediate) was not found."
+msgstr ""
+
+msgid "A circular certificate reference was detected."
+msgstr ""
+
 msgid "CACHE"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:92
 msgid "Could not create cache directory"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:111
 msgid "AIA_CACHE"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:111
 #, python-brace-format
 msgid "Cache hit for AKI {aki}, skipping network."
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:116
-#: src/check_truststore/engine/discovery.py:155
 msgid "AIA_FETCH"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:116
 msgid "Bypassing cache due to --no-cache flag"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:116
 msgid "AUDIT"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:141
 msgid "AIA_THREAD"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:141
 msgid "Thread error during discovery"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:155
 msgid "Downloading"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:162
 msgid "AIA_SIZE"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:162
 #, python-brace-format
 msgid "Certificate at {url} exceeds size limit."
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:170
 msgid "AIA_FAILED"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:170
 msgid "Connection failed"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:182
 msgid "AIA_PARSE"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:182
 #, python-brace-format
 msgid "Failed to parse certificate from {url}"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:212
 msgid "OCSP_BUILD"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:232
 msgid "OCSP thread error"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:233
 msgid "OCSP_THREAD"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:254
 msgid "CRL_CHECK"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:254
 msgid "No CRL endpoints found in certificate"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:274
 msgid "CRL thread error"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:275
 msgid "CRL_THREAD"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:308
 msgid "DNS"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:308
 msgid "Could not resolve host"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:361
 msgid "Cache"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:361
 msgid "Error reading cache"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:371
 msgid "CACHE_LOAD"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:371
 msgid "Failed to load cached cert"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:411
 msgid "Could not save certificate to cache"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:420
 #, python-brace-format
 msgid "Checking: {url}"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:421
 msgid "OCSP_CHECK"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:451
 msgid "OCSP_FAILED"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:451
 msgid "OCSP request failed"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:471
 msgid "Using cached CRL for"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:472
-#: src/check_truststore/engine/discovery.py:526
 msgid "CRL_CACHE"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:483
 msgid "CRL_FETCH"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:483
 msgid "Downloading CRL"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:498
 #, python-brace-format
 msgid "Serial {serial_number} is REVOKED"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:499
 msgid "CRL_RESULT"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:507
 msgid "CRL_FAILED"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:507
 msgid "Failed to check CRL"
 msgstr ""
 
-#: src/check_truststore/engine/discovery.py:526
 msgid "Could not save CRL to cache"
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:107
+msgid "SystemProvider"
+msgstr ""
+
+#, python-brace-format
+msgid "Could not load system truststore: {error}"
+msgstr ""
+
+msgid "Processing Group"
+msgstr ""
+
+msgid "Export"
+msgstr ""
+
+msgid "Using PEM sequence fallback for legacy environment"
+msgstr ""
+
+#, python-brace-format
+msgid "Bundle saved to {path}"
+msgstr ""
+
+#, python-brace-format
+msgid "Failed to create bundle: {error}"
+msgstr ""
+
+#, python-brace-format
+msgid "{used} of the {total} system certificates used"
+msgstr ""
+
+msgid "System usage"
+msgstr ""
+
 #, python-brace-format
 msgid ""
 "The cryptographic signature from issuer '{issuer}' is invalid or could not "
 "be verified."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:118
 #, python-brace-format
 msgid "Issuer '{issuer}' is not a CA or lacks keyCertSign usage."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:134
 #, python-brace-format
 msgid ""
 "The issuer '{issuer}' could not be found in the truststore, making this "
 "chain untrusted."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:144
 msgid ""
 "This certificate is untrusted because it or an issuer in its chain has been "
 "revoked."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:304
 #, python-brace-format
 msgid ""
 "RSA key size ({bits} bits) is below the minimum required {min_bits} bits."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:314
 #, python-brace-format
 msgid ""
 "ECC key size ({bits} bits) is below the minimum required {min_bits} bits."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:335
 msgid "The signature algorithm is unknown or unsupported by the system."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:347
 msgid "Certificate is missing a hashing algorithm for its signature."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:358
 #, python-brace-format
 msgid "Certificate uses a deprecated hash algorithm ({name})."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:381
 msgid "End-entity certificate lacks Extended Key Usage extension."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:396
 msgid ""
 "Certificate contains 'Any Extended Key Usage', which is overly permissive."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:407
 msgid ""
 "Certificate allows both Server Auth and Code Signing. Functional separation "
 "is recommended."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:428
 msgid "Could not parse Extended Key Usage extension data."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:446
 msgid "Server Authentication"
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:447
 msgid "Client Authentication"
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:448
 msgid "Code Signing"
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:449
 msgid "Email Protection"
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:450
 msgid "Time Stamping"
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:451
 msgid "OCSP Signing"
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:452
 msgid "IPSec User"
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:453
 msgid "IPSec Intermediate"
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:454
 msgid "IPSec Tunnel"
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:458
 #, python-brace-format
 msgid "Unknown ({oid})"
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:488
 #, python-brace-format
 msgid "Validity period ({days} days) exceeds the 398-day limit."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:523
 #, python-brace-format
 msgid "Common Name '{cn}' is missing from Subject Alternative Names (SAN)."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:535
 #, python-brace-format
 msgid ""
 "SAN contains a non-FQDN '{name}', which is disallowed for public "
 "certificates."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:544
 msgid "Certificate lacks a SAN extension. Relying solely on CN is deprecated."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:568
 msgid ""
 "Certificate lacks CRL Distribution Points (CDP). Revocation checking may be "
 "limited."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:594
 #, python-brace-format
 msgid ""
 "Path length constraint exceeded. Issuer allows max {limit} intermediate(s)."
 msgstr ""
 
-#: src/check_truststore/engine/policy.py:622
 #, python-brace-format
 msgid ""
 "Hostname mismatch: Certificate is valid for '{names}', but you connected to "
 "'{target}'."
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:80
+#, python-brace-format
+msgid "Netscape Comment found: {comment}"
+msgstr ""
+
+#, python-brace-format
+msgid "Certificate name '{name}' is not permitted by issuer constraints."
+msgstr ""
+
+#, python-brace-format
+msgid "Certificate name '{name}' is explicitly excluded by the issuer."
+msgstr ""
+
 msgid "Invalid DER structure"
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:98
 #, python-brace-format
 msgid "Maximum certificate limit ({limit}) reached."
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:110
 msgid "Skipping duplicate certificate (already loaded)"
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:111
 msgid "DUPLICATE"
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:126
 msgid "Invalid certificate structure"
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:133
 msgid "PKCS7-container"
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:144
 msgid "Legacy cryptography detected, falling back."
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:147
 #, python-brace-format
 msgid "Failed to parse PKCS7: {error}"
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:154
 #, python-brace-format
 msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
 msgstr ""
 
-#: src/check_truststore/engine/repository.py:181
 #, python-brace-format
 msgid "File too large ({size:.1f}MB)"
 msgstr ""
 
-#: src/check_truststore/engine/builder.py:107
-msgid "Serial"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:109
-#: src/check_truststore/renderers/text_renderer.py:97
-msgid "Unknown"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:210
-msgid ""
-"This certificate is explicitly untrusted by the Operating System "
-"(Blacklisted)."
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:220
-#, python-brace-format
-msgid "Certificate expires within {days} days."
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:240
-#, python-brace-format
-msgid "Circular chain detected: {path}"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:243
-msgid "CYCLE_BREAKER"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:347
-msgid "SIG_ERR"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:350
-msgid "REVOKED"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:353 src/check_truststore/cli.py:110
-msgid "INVALID"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:396
-#, python-brace-format
-msgid "Missing issuer for: {name}"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:399
-msgid "UNTRUSTED"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:499
-msgid "The certificate chain leads to an untrusted or missing root."
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:541
-msgid "The certificate chain is incomplete due to a missing upstream issuer."
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:551
-msgid ""
-"The chain is untrusted because an upstream issuer is blacklisted by the OS."
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:758
-#, python-brace-format
-msgid "AIA: {name}"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:759
-msgid "Successfully discovered issuer via AIA"
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:786
-msgid "The chain is broken; an issuer (Root or Intermediate) was not found."
-msgstr ""
-
-#: src/check_truststore/engine/builder.py:795
-msgid "A circular certificate reference was detected."
-msgstr ""
-
-#: src/check_truststore/providers/json_provider.py:76
 msgid "Unknown JSON format or malformed structure."
 msgstr ""
 
-#: src/check_truststore/providers/json_provider.py:90
-#: src/check_truststore/providers/yaml_provider.py:174
 msgid "Unnamed Store"
 msgstr ""
 
-#: src/check_truststore/providers/json_provider.py:110
-#: src/check_truststore/providers/yaml_provider.py:189
 msgid "Certificate not found in {}"
 msgstr ""
 
-#: src/check_truststore/providers/json_provider.py:110
-#: src/check_truststore/providers/yaml_provider.py:189
 msgid "MISSING"
 msgstr ""
 
-#: src/check_truststore/providers/yaml_provider.py:91
 msgid "Jinja2 Render Error"
 msgstr ""
 
-#: src/check_truststore/providers/yaml_provider.py:95
 msgid "Jinja2 not found. Using regex fallback."
 msgstr ""
 
-#: src/check_truststore/providers/yaml_provider.py:145
 msgid "YAML Syntax Error"
 msgstr ""
 
-#: src/check_truststore/providers/yaml_provider.py:146
 msgid ""
 "Found unquoted Jinja2 delimiters. Wrap expressions like '{{ var }}' in "
 "quotes."
 msgstr ""
 
-#: src/check_truststore/providers/yaml_provider.py:155
 msgid "YAML Parse Error"
 msgstr ""
 
-#: src/check_truststore/providers/yaml_provider.py:194
 msgid "Group contains no valid certificates."
 msgstr ""
 
-#: src/check_truststore/providers/yaml_provider.py:194
 msgid "EMPTY_GROUP"
 msgstr ""
 
-#: src/check_truststore/renderers/__init__.py:56
+#, python-brace-format
+msgid "Initiating TLS connection to {host}:{port}"
+msgstr ""
+
+#, python-brace-format
+msgid "Failed to fetch certificate from {host}"
+msgstr ""
+
 msgid "Unknown format: {}"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:41
 msgid "SIG_INVALID"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:42
 msgid "NO_TRUST"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:43
 msgid "UNTRUSTED_CHAIN"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:44
 msgid "CHAIN_BROKEN"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:47
+msgid "CIRCULAR_PATH"
+msgstr ""
+
+msgid "COMMENT"
+msgstr ""
+
 msgid "Certificate Hierarchy:"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:57
-#: src/check_truststore/renderers/text_renderer.py:60
 msgid "Unnamed Group"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:68
 msgid "(No certificates found)"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:146
 msgid "EXTERNAL ISSUER / MISSING ROOT"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:148
 msgid "CIRCULAR REFERENCE"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:164
 msgid "Usage"
 msgstr ""
 
-#: src/check_truststore/renderers/text_renderer.py:175
-#: src/check_truststore/renderers/text_renderer.py:177
 msgid "ALT"
 msgstr ""
 
-#: src/check_truststore/cli.py:105
 msgid "ERROR"
 msgstr ""
 
-#: src/check_truststore/cli.py:106
 msgid "WARNING"
 msgstr ""
 
-#: src/check_truststore/cli.py:107
 msgid "OK"
 msgstr ""
 
-#: src/check_truststore/cli.py:108
 msgid "INFO"
 msgstr ""
 
-#: src/check_truststore/cli.py:109
 msgid "CHAIN"
 msgstr ""
 
-#: src/check_truststore/cli.py:111
 msgid "EXPIRED"
 msgstr ""
 
-#: src/check_truststore/cli.py:112
 msgid "EXPIRING"
 msgstr ""
 
-#: src/check_truststore/cli.py:113
 msgid "SYSTEM"
 msgstr ""
 
-#: src/check_truststore/cli.py:114
 msgid "PARENT_NOT_A_CA"
 msgstr ""
 
-#: src/check_truststore/cli.py:118
-msgid "Analyze certificate truststores and visualize the chain hierarchy."
+#, python-brace-format
+msgid ""
+"TrustStore Analyzer v{version} - Analyze certificate truststores and "
+"visualize the chain hierarchy."
 msgstr ""
 
-#: src/check_truststore/cli.py:120
 msgid "Compatible with Python 3.6+"
 msgstr ""
 
-#: src/check_truststore/cli.py:128
 msgid "Show this help message and exit"
 msgstr ""
 
-#: src/check_truststore/cli.py:131
+msgid "Show program's version number and exit"
+msgstr ""
+
 msgid "Path to the input source(s)"
 msgstr ""
 
-#: src/check_truststore/cli.py:134
 msgid "Input & Network Configuration"
 msgstr ""
 
-#: src/check_truststore/cli.py:140
 msgid "Incorporate system truststore"
 msgstr ""
 
-#: src/check_truststore/cli.py:147
 msgid "Allow internet access for AIA discovery and revocation checks"
 msgstr ""
 
-#: src/check_truststore/cli.py:152
 msgid "Bypass local cache and force download of AIA/CRL/OCSP data"
 msgstr ""
 
-#: src/check_truststore/cli.py:157
 msgid "Override safety limits (max file size and certificate count)"
 msgstr ""
 
-#: src/check_truststore/cli.py:160
 msgid "Analysis Settings"
 msgstr ""
 
-#: src/check_truststore/cli.py:166
 msgid "Expiration threshold in days (default: 30)"
 msgstr ""
 
-#: src/check_truststore/cli.py:172
 msgid "Maximum recursion depth for chain discovery (default: 4)"
 msgstr ""
 
-#: src/check_truststore/cli.py:175
 msgid "Output & Debugging"
 msgstr ""
 
-#: src/check_truststore/cli.py:181
 msgid "Output format"
 msgstr ""
 
-#: src/check_truststore/cli.py:188
 msgid "Increase output verbosity (e.g., -v for SANs, -vv for policy findings)"
 msgstr ""
 
-#: src/check_truststore/cli.py:194
 msgid "Show debug info"
 msgstr ""
 
-#: src/check_truststore/cli.py:196
 msgid "Export Options"
 msgstr ""
 
-#: src/check_truststore/cli.py:202
 msgid "Export a complete PKCS#7 (.p7b) bundle for each analyzed group"
 msgstr ""
 
-#: src/check_truststore/cli.py:209
 msgid "Directory where bundles will be saved (default: output_bundles)"
 msgstr ""
 
-#: src/check_truststore/cli.py:228
 msgid "Parameter '-o' is unknown"
 msgstr ""
 
-#: src/check_truststore/cli.py:229
 msgid "Did you mean '-O' (uppercase) for online discovery?"
 msgstr ""
 
-#: src/check_truststore/cli.py:238
 msgid "Stdin requested via '-' but no data piped."
 msgstr ""
 
-#: src/check_truststore/cli.py:257
 msgid "No certificates found via this provider."
 msgstr ""
 
-#: src/check_truststore/cli.py:259
 msgid "Could not determine provider for this input."
 msgstr ""
 
-#: src/check_truststore/cli.py:262
 msgid "No certificates found to display."
 msgstr ""
 
-#: src/check_truststore/cli.py:287
 msgid "Analysis interrupted by user"
 msgstr ""
 
-#: src/check_truststore/cli.py:290
 msgid "An unexpected error occurred"
 msgstr ""

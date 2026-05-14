@@ -42,6 +42,8 @@ class TextRenderer(BaseRenderer):
         _("NO_TRUST")
         _("UNTRUSTED_CHAIN")
         _("CHAIN_BROKEN")
+        _("CIRCULAR_PATH")
+        _("COMMENT")
         self.now = datetime.now(timezone.utc)
 
         output = ["", _("Certificate Hierarchy:")]
@@ -199,11 +201,22 @@ class TextRenderer(BaseRenderer):
                 filtered_findings = [f for f in findings if not (self.verbosity >= 3 and getattr(f, "code", "") == "EKU_PURPOSE")]
 
                 for f_idx, f in enumerate(filtered_findings):
+                    is_special_group = is_orphan or is_cycle
+                    if is_special_group and f.code in ["NO_TRUST", "UNTRUSTED_CHAIN"]:
+                        continue
+
                     is_last_finding = (f_idx == len(filtered_findings) - 1) and not children
                     f_connector = "└── " if is_last_finding else "├── "
-                    f_icon = "[!]" if f.level == "ERROR" else "[i]"
+                    if f.code == "COMMENT":
+                        f_icon = f"[{Icons.COMMENT}]"
+                    else:
+                        f_icon = "[!]" if f.level == "ERROR" else "[i]"
                     try:
-                        translated_msg = _(f.raw_message).format(**(f.params or {}))
+                        clean_params = {
+                            k: str(v).replace('\n', ' ').replace('\r', '').strip()
+                            for k, v in (f.params or {}).items()
+                        }
+                        translated_msg = _(f.raw_message).format(**clean_params)
                     except (KeyError, ValueError):
                         translated_msg = _(f.message)
                     lines.append(f"{base_indent}{f_connector}{f_icon} {translated_msg} ({f.code})")
