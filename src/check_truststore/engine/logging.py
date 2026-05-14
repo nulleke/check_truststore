@@ -101,23 +101,13 @@ C = {
     "RESET": "\033[0m"
 }
 
-# Predefined Status Instances
-ERROR = Status("ERROR", "\U0000274c", C["RED"])  # ❌
-OK = Status("OK", "\U00002705", C["GREEN"])  # ✅
-WARNING = Status("WARNING", "\U000023f3", C["YELLOW"])  # ⏳
-MISSING = Status("MISSING", "\U00002753", C["MAGENTA"], translate=False)  # ❓
-COLLISION = Status("COLLISION", "\U0001f46f", C["CYAN"], translate=False)  # 👯
-INFO = Status("INFO", "\U0001f535", C["BLUE"])  # 🔵
-SYSTEM = Status("SYSTEM", "\U0001f4bb", C["BLUE"], translate=False)  # 💻
-AIA = Status("AIA", "\U0001f310", C["CYAN"], translate=False)  # 🌐
-REVOKED = Status("REVOKED", "\U0001f6ab", C["RED"])  # 🚫
-
 class Icons:
     """
     Static repository of Unicode icons used for inline certificate status signaling
     within the TrustChainBuilder and Renderers.
     """
 
+    INFO = "\U0001f535"  # 🔵
     VALID = "\U00002705"  # ✅ (White Heavy Check Mark)
     EXPIRED = "\U0000274c"  # ❌ (Cross Mark)
     EXPIRING = "\U000023f3"  # ⏳
@@ -127,7 +117,21 @@ class Icons:
     UNKNOWN = "\U00002753"  # ❓ (Black Question Mark Ornament)
     AIA = "\U0001f310"  # 🌐 (Globe with Meridians)
     SYSTEM = "\U0001f4bb"  # 💻 (Laptop)
+    COLLISION = "\U0001f46f"  # 👯
     OCSP_OK = "\U0001f6e1\ufe0f"  # 🛡️
     SIGNED = "\U00002611\ufe0f"  # ☑️
     UNCERTAIN = "\U00002754"  # ❔
     REVOKED = "\U0001f6ab"  # 🚫
+    COMMENT = "\U0001f4ac"  # 💬
+
+# Predefined Status Instances
+ERROR = Status("ERROR", Icons.EXPIRED, C["RED"])
+OK = Status("OK", Icons.VALID, C["GREEN"])
+WARNING = Status("WARNING", Icons.WARNING, C["YELLOW"])
+EXPIRING = Status("EXPIRING", Icons.EXPIRING, C["YELLOW"])
+MISSING = Status("MISSING", Icons.UNKNOWN, C["MAGENTA"], translate=False)
+COLLISION = Status("COLLISION", Icons.COLLISION, C["CYAN"], translate=False)
+INFO = Status("INFO", Icons.INFO, C["BLUE"])
+SYSTEM = Status("SYSTEM", Icons.SYSTEM, C["BLUE"], translate=False)
+AIA = Status("AIA", Icons.AIA, C["CYAN"], translate=False)
+REVOKED = Status("REVOKED", Icons.REVOKED, C["RED"])

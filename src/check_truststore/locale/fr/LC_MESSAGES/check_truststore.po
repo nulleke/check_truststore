@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: check_truststore 1.2.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-13 06:46+0200\n"
+"POT-Creation-Date: 2026-05-13 15:58+0200\n"
 "PO-Revision-Date: 2026-05-07 14:35+0200\n"
 "Last-Translator: Assistant\n"
 "Language-Team: fr\n"
@@ -401,6 +401,10 @@ msgstr ""
 "Erreur de nom d'hôte : Le certificat est valide pour '{names}', mais vous "
 "êtes connecté à '{target}'."
 
+#, python-brace-format
+msgid "Netscape Comment found: {comment}"
+msgstr "Commentaire Netscape trouvé : {comment}"
+
 msgid "Invalid DER structure"
 msgstr "Structure DER invalide"
 
@@ -494,6 +498,12 @@ msgstr "CHAÎNE_NON_FIABLE"
 
 msgid "CHAIN_BROKEN"
 msgstr "CHAÎNE_ROMPUE"
+
+msgid "CIRCULAR_PATH"
+msgstr "CHEMIN_CIRCULAIRE"
+
+msgid "COMMENT"
+msgstr "COMMENTAIRE"
 
 msgid "Certificate Hierarchy:"
 msgstr "Hiérarchie des certificats :"

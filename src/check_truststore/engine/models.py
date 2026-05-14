@@ -61,6 +61,15 @@ class _BaseUniversal:
         when calculating the final audit state to prevent false positives.
         """
 
+        if getattr(self, "common_name", "") == ORPHAN_NODE_ID:
+             return {"code": 3, "label": "UNTRUSTED", "message": "The trust chain is broken; an issuer was not found.", "level": "error"}
+
+        if getattr(self, "common_name", "") == CYCLE_NODE_ID:
+            return {"code": 3, "label": "CYCLE", "message": "Circular reference detected.", "level": "error"}
+
+        if getattr(self, "is_in_circular_group", False):
+            return {"code": 3, "label": "CIRCULAR_PATH", "message": "Part of a circular trust chain.", "level": "error"}
+
         # Critical Security & Integrity (Hard Errors)
         # These represent immediate trust failures.
         if getattr(self, "ocsp_status", "UNKNOWN") == "REVOKED":
@@ -315,6 +324,8 @@ if PYDANTIC_AVAILABLE:
                 self.children.append(child)
 
         def add_finding(self, finding: PolicyFinding):
+            if any(f.code == finding.code and f.message == finding.message for f in self.findings):
+                return
             self.findings.append(finding)
 
         def model_dump(self, **kwargs):
@@ -473,6 +484,8 @@ else:
                 self.children.append(child)
 
         def add_finding(self, finding: PolicyFinding):
+            if any(f.code == finding.code and f.message == finding.message for f in self.findings):
+                return
             self.findings.append(finding)
 
         def model_dump(self, **kwargs):

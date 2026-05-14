@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: check_truststore 1.2.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-13 06:46+0200\n"
+"POT-Creation-Date: 2026-05-13 15:58+0200\n"
 "PO-Revision-Date: 2026-05-07 14:25+0200\n"
 "Last-Translator: Serge van Thillo\n"
 "Language-Team: German\n"
@@ -401,6 +401,10 @@ msgstr ""
 "Hostname-Fehlermatch: Zertifikat ist gültig für '{names}', aber Sie sind mit "
 "'{target}' verbunden."
 
+#, python-brace-format
+msgid "Netscape Comment found: {comment}"
+msgstr "Netscape-Kommentar gefunden: {comment}"
+
 msgid "Invalid DER structure"
 msgstr "Ungültige DER-Struktur"
 
@@ -494,6 +498,12 @@ msgstr "UNSICHERE_KETTE"
 
 msgid "CHAIN_BROKEN"
 msgstr "KETTE_UNTERBROCHEN"
+
+msgid "CIRCULAR_PATH"
+msgstr "KREISFÖRMIGER_PFAD"
+
+msgid "COMMENT"
+msgstr "KOMMENTAR"
 
 msgid "Certificate Hierarchy:"
 msgstr "Zertifikatshierarchie:"

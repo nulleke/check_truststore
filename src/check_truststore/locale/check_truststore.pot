@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: check_truststore 1.2.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-13 06:46+0200\n"
+"POT-Creation-Date: 2026-05-14 07:23+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -363,6 +363,10 @@ msgid ""
 "'{target}'."
 msgstr ""
 
+#, python-brace-format
+msgid "Netscape Comment found: {comment}"
+msgstr ""
+
 msgid "Invalid DER structure"
 msgstr ""
 
@@ -453,6 +457,12 @@ msgid "UNTRUSTED_CHAIN"
 msgstr ""
 
 msgid "CHAIN_BROKEN"
+msgstr ""
+
+msgid "CIRCULAR_PATH"
+msgstr ""
+
+msgid "COMMENT"
 msgstr ""
 
 msgid "Certificate Hierarchy:"

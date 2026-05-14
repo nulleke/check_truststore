@@ -151,6 +151,9 @@ class PolicyEngine:
         # Check presence of crl for non root certificates
         findings.extend(self._check_crl_presence(cert))
 
+        # Check presence of a Netscape Comment field
+        findings.extend(self._check_netscape_comment(cert))
+
         # Check if hostname matches the certificate commonName
         if target_hostname:
             findings.extend(self._check_hostname_match(cert, target_hostname))
@@ -654,3 +657,22 @@ class PolicyEngine:
         hostname_left_label = hostname[:hostname_remainder_len]
 
         return "." not in hostname_left_label
+
+    def _check_netscape_comment(self, cert: x509.Certificate) -> List[PolicyFinding]:
+        findings = []
+        NETSCAPE_COMMENT_OID = x509.ObjectIdentifier("2.16.840.1.113730.1.13")
+        try:
+            for ext in cert.extensions:
+                if ext.oid == NETSCAPE_COMMENT_OID:
+                    comment_value = ext.value.value.decode('utf-8', errors='replace')
+                    findings.append(PolicyFinding(
+                        level="INFO",
+                        code="COMMENT",
+                        label="COMMENT",
+                        message=N_("Netscape Comment found: {comment}"),
+                        params={"comment": comment_value},
+                        code_int=0
+                    ))
+        except Exception:
+            pass
+        return findings

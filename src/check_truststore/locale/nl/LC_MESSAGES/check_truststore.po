@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: check_truststore 1.2.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-13 06:46+0200\n"
+"POT-Creation-Date: 2026-05-13 15:58+0200\n"
 "PO-Revision-Date: 2026-04-13 11:08+0200\n"
 "Last-Translator: Serge van Thillo <nulleke76@gmail.com>\n"
 "Language-Team: Dutch <vertaling@vrijschrift.org>\n"
@@ -396,6 +396,10 @@ msgstr ""
 "Hostnaam-fout: Certificaat is geldig voor '{names}', maar u bent verbonden "
 "met '{target}'."
 
+#, python-brace-format
+msgid "Netscape Comment found: {comment}"
+msgstr "Netscape Commentaar gevonden: {comment}"
+
 msgid "Invalid DER structure"
 msgstr "Ongeldige DER structuur"
 
@@ -489,6 +493,12 @@ msgstr "ONGELDIGE_KETEN"
 
 msgid "CHAIN_BROKEN"
 msgstr "KETEN_VERBROKEN"
+
+msgid "CIRCULAR_PATH"
+msgstr "CIRCULAIR_PAD"
+
+msgid "COMMENT"
+msgstr "COMMENTAAR"
 
 msgid "Certificate Hierarchy:"
 msgstr "Certificaat Hiërarchie:"
