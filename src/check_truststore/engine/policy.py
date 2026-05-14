@@ -120,6 +120,9 @@ class PolicyEngine:
                     code_int=4
                 ))
 
+            # Check if the issuer imposes constraints on the subject's name
+            findings.extend(self._check_name_constraints(cert, issuer))
+
             if path_depth is not None:
                 findings.extend(self._check_path_limit(cert, issuer, path_depth))
 
@@ -602,6 +605,10 @@ class PolicyEngine:
         return findings
 
     def _check_hostname_match(self, cert: x509.Certificate, target_host: str) -> List[PolicyFinding]:
+        """
+        Validates that the certificate is actually valid for the host being accessed.
+        It prioritizes Subject Alternative Names (SAN) over the legacy Common Name.
+        """
         findings: List[PolicyFinding] = []
         target_host = target_host.lower()
         matched = False
@@ -659,6 +666,10 @@ class PolicyEngine:
         return "." not in hostname_left_label
 
     def _check_netscape_comment(self, cert: x509.Certificate) -> List[PolicyFinding]:
+        """
+        Extracts and reports the legacy Netscape Comment extension if present.
+        Often used in older PKI infrastructures to provide administrative info.
+        """
         findings = []
         NETSCAPE_COMMENT_OID = x509.ObjectIdentifier("2.16.840.1.113730.1.13")
         try:
@@ -676,3 +687,80 @@ class PolicyEngine:
         except Exception:
             pass
         return findings
+
+    def _check_name_constraints(self, cert: x509.Certificate, issuer: x509.Certificate) -> List[PolicyFinding]:
+        """
+        Validates Name Constraints (RFC 5280) imposed by the issuer on the subject.
+        Ensures the certificate's identity falls within the permitted subtrees
+        defined by the Certificate Authority.
+        """
+        findings = []
+        try:
+            nc_ext = issuer.extensions.get_extension_for_oid(ExtensionOID.NAME_CONSTRAINTS)
+            constraints = nc_ext.value
+
+            cert_names = []
+            try:
+                san_ext = cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
+                cert_names = [
+                    n.value if hasattr(n, 'value') else str(n)
+                    for n in san_ext.value.get_values_for_type(x509.DNSName)
+                ]
+            except x509.ExtensionNotFound:
+                cert_names = [
+                    attr.value if hasattr(attr, 'value') else str(attr)
+                    for attr in cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+                ]
+
+            if constraints.permitted_subtrees:
+                for name_str in cert_names:
+                    is_permitted = False
+                    for subtree in constraints.permitted_subtrees:
+                        base = subtree.base if hasattr(subtree, 'base') else subtree
+
+                        if isinstance(base, x509.DNSName):
+                            if self._match_dns(name_str, base.value):
+                                is_permitted = True
+                                break
+
+                    if not is_permitted:
+                        findings.append(PolicyFinding(
+                            level="ERROR",
+                            code="NAME_CONSTRAINT_VIOLATION",
+                            label="RESTRICTED",
+                            message=N_("Certificate name '{name}' is not permitted by issuer constraints."),
+                            params={"name": name_str},
+                            code_int=4
+                        ))
+
+            if constraints.excluded_subtrees:
+                for name_str in cert_names:
+                    for subtree in constraints.excluded_subtrees:
+                        base = subtree.base if hasattr(subtree, 'base') else subtree
+                        if isinstance(base, x509.DNSName):
+                            if self._match_dns(name_str, base.value):
+                                findings.append(PolicyFinding(
+                                    level="ERROR",
+                                    code="NAME_CONSTRAINT_EXCLUDED",
+                                    label="RESTRICTED",
+                                    message=N_("Certificate name '{name}' is explicitly excluded by the issuer."),
+                                    params={"name": name_str},
+                                    code_int=4
+                                ))
+                                break
+
+        except x509.ExtensionNotFound:
+            pass
+        return findings
+
+    def _match_dns(self, hostname: str, constraint: str) -> bool:
+        """
+        Performs DNS subtree matching for Name Constraints according to RFC 5280.
+        A constraint '.example.com' matches 'host.example.com' and 'example.com'.
+        """
+        hostname = hostname.lower().lstrip('.')
+        constraint = constraint.lower().lstrip('.')
+
+        if hostname == constraint or hostname.endswith("." + constraint):
+            return True
+        return False

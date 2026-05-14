@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: check_truststore 1.2.2\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-13 15:58+0200\n"
+"POT-Creation-Date: 2026-05-14 10:07+0200\n"
 "PO-Revision-Date: 2026-05-07 14:25+0200\n"
 "Last-Translator: Serge van Thillo\n"
 "Language-Team: German\n"
@@ -404,6 +404,14 @@ msgstr ""
 #, python-brace-format
 msgid "Netscape Comment found: {comment}"
 msgstr "Netscape-Kommentar gefunden: {comment}"
+
+#, python-brace-format
+msgid "Certificate name '{name}' is not permitted by issuer constraints."
+msgstr "Zertifikatsname '{name}' ist aufgrund von Herausgeber-Einschränkungen nicht zulässig."
+
+#, python-brace-format
+msgid "Certificate name '{name}' is explicitly excluded by the issuer."
+msgstr "Zertifikatsname '{name}' wurde vom Herausgeber explizit ausgeschlossen."
 
 msgid "Invalid DER structure"
 msgstr "Ungültige DER-Struktur"

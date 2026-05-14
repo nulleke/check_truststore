@@ -24,6 +24,7 @@ from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
 from check_truststore.engine import CertificateRepository
 from check_truststore.engine.models import Certificate
 
+
 class MockProvider(BaseInputProvider):
     """
     Provides mock certificates and groups to simulate various trust chain scenarios.
@@ -75,6 +76,8 @@ class MockProvider(BaseInputProvider):
         add_crl: bool = False,
         key_size: int = 2048,
         hash_algo: hashes.HashAlgorithm = hashes.SHA256(),
+        permitted_dns: Optional[List[str]] = None,
+        excluded_dns: Optional[List[str]] = None,
     ) -> x509.Certificate:
         """
         Fabricates an x509 certificate with specific properties for test scenarios.
@@ -132,6 +135,42 @@ class MockProvider(BaseInputProvider):
             crl_sign=is_ca, encipher_only=False, decipher_only=False
         )
         builder = builder.add_extension(usage, critical=True)
+
+        # Name Constraints (RFC 5280)
+        if permitted_dns or excluded_dns:
+            GS = getattr(x509, "GeneralSubtree", None)
+            if GS is None:
+                for loc in ["cryptography.x509.name_constraints", "cryptography.x509.general_name"]:
+                    try:
+                        mod = __import__(loc, fromlist=["GeneralSubtree"])
+                        GS = getattr(mod, "GeneralSubtree")
+                        break
+                    except (ImportError, AttributeError):
+                        continue
+
+            if GS:
+                permitted = [GS(x509.DNSName(name)) for name in permitted_dns] if permitted_dns else None
+                excluded = [GS(x509.DNSName(name)) for name in excluded_dns] if excluded_dns else None
+
+                try:
+                    builder = builder.add_extension(
+                        x509.NameConstraints(permitted_subtrees=permitted, excluded_subtrees=excluded),
+                        critical=True
+                    )
+                except Exception:
+                    pass
+
+            else:
+                try:
+                    builder = builder.add_extension(
+                        x509.NameConstraints(
+                            permitted_subtrees=[x509.DNSName(n) for n in permitted_dns] if permitted_dns else None,
+                            excluded_subtrees=[x509.DNSName(n) for n in excluded_dns] if excluded_dns else None
+                        ),
+                        critical=True
+                    )
+                except Exception:
+                    pass
 
         # SAN & EKU for Leaf certificates
         if not is_ca:
@@ -234,6 +273,36 @@ class MockProvider(BaseInputProvider):
                                       subject_key_override=loop_a_key, issuer_key_override=loop_b_key))
         certs.append(self.create_cert("Loop CA B", issuer_cn="Loop CA A", is_ca=True,
                                       subject_key_override=loop_b_key, issuer_key_override=loop_a_key))
+
+        # Name constraints
+        certs.append(self.create_cert(
+            "Name Constrained CA",
+            issuer_cn="Root CA",
+            is_ca=True,
+            permitted_dns=["safe.lan"],
+            excluded_dns=["invalid.safe.lan"],
+            add_crl=True,
+        ))
+
+        certs.append(self.create_cert(
+            "safe.lan",
+            issuer_cn="Name Constrained CA",
+            san_names=["safe.lan", "www.safe.lan"],
+            add_crl=True,
+        ))
+
+        certs.append(self.create_cert(
+            "www.notsafe.lan",
+            issuer_cn="Name Constrained CA",
+            add_crl=True,
+        ))
+
+        certs.append(self.create_cert(
+            "invalid.safe.lan",
+            issuer_cn="Name Constrained CA",
+            san_names=["invalid.safe.lan", "www.safe.lan"],
+            add_crl=True,
+        ))
 
         # Orphans
         certs.append(self.create_cert("Orphan Server", issuer_cn="Non-Existent Root", is_ca=False))
