@@ -16,6 +16,10 @@ test_full_compatibility:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH != "main"'
       when: manual
       allow_failure: true
+    - changes:
+        - "**/*.md"
+        - "docs/**/*"
+      when: never
     - if: $PYTHON_VERSION == "3.15-rc"
       allow_failure: true
     - when: on_success
