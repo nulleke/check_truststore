@@ -47,6 +47,8 @@ A tool for system administrators and security engineers to audit certificate tru
 * **📦 Chain Bundling**: Automatically generates a complete PKCS#7 (`.p7b`) bundle for each analyzed group, including missing intermediates discovered via AIA.
 
 ## 🛠 Installation & Setup
+
+### PIP Installation
 The tool now follows a standard Python project structure and can be installed as an editable package.
 
 ```bash
@@ -58,6 +60,25 @@ cd check_truststore
 pip install -e ".[all]"
 
 # The command 'check_truststore' is now available in your PATH (within your venv)
+```
+
+### Enterprise Linux (RHEL/AlmaLinux/Rocky)
+This tool is officially packaged and signed for Enterprise Linux 8, 9, and 10.
+
+#### Platform Support & Compatibility
+
+| OS Version | Support Level | Python Version | GPG Signed | Package Format |
+| :--- | :--- | :--- | :--- | :--- |
+| **RHEL 8 / Alma 8** | Legacy | 3.6+ | No | RPM (Gzip) |
+| **RHEL 9 / Alma 9** | Standard | 3.9+ | **Yes** | RPM (Zstd) |
+| **RHEL 10 / Rawhide** | Cutting Edge | 3.12+ | **Yes** | RPM (Zstd) |
+
+> **Security Note on RHEL 8**: 
+> The RHEL 8 repository is intentionally not GPG-signed. The modern Elliptic Curve (Ed25519) GPG key used for this project's security supply chain is incompatible with the legacy cryptographic policies and older GnuPG versions (2.2.x) found in RHEL 8. To ensure seamless installation on legacy systems without forcing a downgrade of our security standards, GPG verification is disabled for this specific version. RHEL 9 and 10 provide full cryptographic path validation. So RHEL 8 admins should disable gpg verification in the repo file.
+
+```bash
+   sudo curl -sL [https://thillo.ddns.net/repository/thillo-rhel.repo](https://thillo.ddns.net/repository/thillo-rhel.repo) -o /etc/yum.repos.d/thillo.repo
+   sudo dnf install check_truststore
 ```
 
 ### 🐳 Running via Docker/Podman
