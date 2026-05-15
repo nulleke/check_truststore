@@ -62,6 +62,13 @@ pip install -e ".[all]"
 # The command 'check_truststore' is now available in your PATH (within your venv)
 ```
 
+or you can install the pip package directly from pypi
+
+```bash
+# Install directly from pypi
+pip install check-truststore
+```
+
 ### Enterprise Linux (RHEL/AlmaLinux/Rocky)
 This tool is officially packaged and signed for Enterprise Linux 8, 9, and 10.
 
