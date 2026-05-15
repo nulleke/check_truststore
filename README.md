@@ -77,7 +77,7 @@ This tool is officially packaged and signed for Enterprise Linux 8, 9, and 10.
 > The RHEL 8 repository is intentionally not GPG-signed. The modern Elliptic Curve (Ed25519) GPG key used for this project's security supply chain is incompatible with the legacy cryptographic policies and older GnuPG versions (2.2.x) found in RHEL 8. To ensure seamless installation on legacy systems without forcing a downgrade of our security standards, GPG verification is disabled for this specific version. RHEL 9 and 10 provide full cryptographic path validation. So RHEL 8 admins should disable gpg verification in the repo file.
 
 ```bash
-   sudo curl -sL [https://thillo.ddns.net/repository/thillo-rhel.repo](https://thillo.ddns.net/repository/thillo-rhel.repo) -o /etc/yum.repos.d/thillo.repo
+   sudo curl -sL https://thillo.ddns.net/repository/thillo-rhel.repo -o /etc/yum.repos.d/thillo.repo
    sudo dnf install check_truststore
 ```
 
