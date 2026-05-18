@@ -82,13 +82,17 @@ class BaseRenderer(ABC):
 
     def _get_sorted_nodes(self, nodes: List[Any]) -> List[Any]:
         """
-        Sorts nodes by expiry date (descending) to ensure the longest-lived
-        certificates are processed first for deduplication.
+        Sorts nodes by expiry date (descending) and breaks ties alphabetically
+        by display name to ensure 100% deterministic output.
         """
+        epoch_ts = 0.0
+
         return sorted(
             nodes,
-            key=lambda x: getattr(x, "expiry_date", None) or datetime(1970, 1, 1, tzinfo=timezone.utc),
-            reverse=True
+            key=lambda x: (
+                -getattr(getattr(x, "expiry_date", None), "timestamp", lambda: epoch_ts)(),
+                str(getattr(x, "display_name", "")).lower()
+            )
         )
 
     def _should_skip(self, cert_node: Any) -> bool:

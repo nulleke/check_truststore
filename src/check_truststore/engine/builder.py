@@ -579,15 +579,11 @@ class TrustChainBuilder:
         # Find Roots and Orphans to start the tree
         trusted_tree = []
         orphan_skis = []
+
         cycle_skis = [ski for ski in relevant_skis if ski in self.circular_skis]
+        roots = [ski for ski in relevant_skis if self.parent_map.get(ski) not in relevant_skis]
 
-        roots = [
-            ski
-            for ski in relevant_skis
-            if self.parent_map.get(ski) not in relevant_skis
-        ]
-
-        for r_ski in sorted(roots, key=lambda x: self.cert_data[x].common_name.lower()):
+        for r_ski in sorted(roots, key=lambda x: (self.cert_data[x].common_name.lower(), self.cert_data[x].cert_id)):
             p_id = self.parent_map.get(r_ski)
             if p_id is None or p_id == r_ski:
                 trusted_tree.append(to_node(r_ski))
@@ -600,7 +596,7 @@ class TrustChainBuilder:
             ext_node = self._create_virtual_node(ORPHAN_NODE_ID)
             processed_orphans = []
 
-            for o in sorted(orphan_skis, key=lambda x: self.cert_data[x].common_name.lower()):
+            for o in sorted(orphan_skis, key=lambda x: (self.cert_data[x].common_name.lower(), self.cert_data[x].cert_id)):
                 child_node = to_node(o)
                 child_node.add_parent(ext_node)
                 processed_orphans.append(child_node)
@@ -612,7 +608,8 @@ class TrustChainBuilder:
             cycle_root = self._create_virtual_node(CYCLE_NODE_ID)
             processed_cycles = []
 
-            for c_ski in sorted(cycle_skis, key=lambda x: self.cert_data[x].common_name.lower()):
+            unique_cycle_skis = list(dict.fromkeys(cycle_skis))
+            for c_ski in sorted(unique_cycle_skis, key=lambda x: (self.cert_data[x].common_name.lower(), self.cert_data[x].cert_id)):
                 if c_ski in node_cache:
                     del node_cache[c_ski]
                 node = to_node(c_ski, parent_status="INVALID")
