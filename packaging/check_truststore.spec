@@ -95,6 +95,15 @@ EOF
   /usr/bin/python3 -m pip install --root %{buildroot} --no-deps --ignore-installed ./*.whl
 %endif
 
+mkdir -p %{buildroot}%{_tmpfilesdir}
+cat > %{buildroot}%{_tmpfilesdir}/%{name}.conf << EOF
+e       /home/*/.cache/truststore_analyzer/ocsp                      -    -    -    30d
+e       /home/*/.cache/truststore_analyzer/aia                       -    -    -    90d
+
+d       /root/.cache/truststore_analyzer/ocsp                        0755 root root 30d
+d       /root/.cache/truststore_analyzer/aia                         0755 root root 90d
+EOF
+
 %check
 PATH=%{buildroot}%{_bindir}:$PATH \
 PYTHONPATH=%{buildroot}%{python3_sitelib} \
@@ -105,11 +114,13 @@ PYTHONPATH=%{buildroot}%{python3_sitelib} \
 %doc README.md
 %license LICENSE
 %{_bindir}/check_truststore
+%{_tmpfilesdir}/%{name}.conf
 %else
 %files
 %doc README.md
 %license LICENSE
 %{_bindir}/check_truststore
+%{_tmpfilesdir}/%{name}.conf
 %{python3_sitelib}/check_truststore/
 %{python3_sitelib}/check_truststore-*.dist-info/
 %endif
