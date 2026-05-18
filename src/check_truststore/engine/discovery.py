@@ -133,9 +133,9 @@ class NetworkResolver:
                         if fp not in seen_fingerprints:
                             issuers.append(new_cert)
                             seen_fingerprints.add(fp)
-                            aki = self._get_aki_hex(new_cert)
-                            if aki:
-                                self._save_to_aia_cache(aki, new_cert)
+                            ski = self._get_ski_hex(new_cert)
+                            if ski:
+                                self._save_to_aia_cache(ski, new_cert)
                 except Exception as e:
                     if self.debug:
                         ERROR.log(_("AIA_THREAD"), f"{_('Thread error during discovery')}: {e}")
@@ -286,6 +286,14 @@ class NetworkResolver:
             pass
         return None
 
+    def _get_ski_hex(self, cert: x509.Certificate) -> Optional[str]:
+        """Extracts Subject Key Identifier as hex string."""
+        try:
+            ski_ext = cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_KEY_IDENTIFIER)
+            return ski_ext.value.digest.hex()
+        except x509.ExtensionNotFound:
+            return None
+
     def _get_fingerprint(self, cert: x509.Certificate) -> str:
         """Helper to get SHA256 fingerprint."""
         return Certificate.calculate_fingerprint(cert.public_bytes(serialization.Encoding.DER))
@@ -385,17 +393,17 @@ class NetworkResolver:
             return cert.not_valid_after_utc
         return cert.not_valid_after.replace(tzinfo=timezone.utc)
 
-    def _save_to_aia_cache(self, aki: str, cert: x509.Certificate) -> None:
+    def _save_to_aia_cache(self, key: str, cert: x509.Certificate) -> None:
         """
         Saves a certificate to the AIA cache using atomic writes to prevent corruption.
         """
         try:
-            aki_dir = self.aia_cache / aki
-            aki_dir.mkdir(parents=True, exist_ok=True)
+            key_dir = self.aia_cache / key
+            key_dir.mkdir(parents=True, exist_ok=True)
             fp = self._get_fingerprint(cert)
-            final_path = aki_dir / f"{fp}.der"
+            final_path = key_dir / f"{fp}.der"
 
-            with tempfile.NamedTemporaryFile(dir=aki_dir, delete=False, suffix=".tmp") as tmp_file:
+            with tempfile.NamedTemporaryFile(dir=key_dir, delete=False, suffix=".tmp") as tmp_file:
                 tmp_file.write(cert.public_bytes(serialization.Encoding.DER))
                 temp_path = tmp_file.name
 

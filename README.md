@@ -631,6 +631,22 @@ To update or add translations, use the provided utility script:
 ./scripts/translate.sh nl  # Updates Dutch translations
 ```
 
+## Cache Management
+
+The utility caches Authority Information Access (AIA) certificates and Certificate Revocation Lists (CRLs) inside the user's home directory (`~/.cache/truststore_analyzer/`).
+
+### Automated Cleanup (Linux / RHEL / Fedora)
+
+To prevent the cache from growing indefinitely in environments where thousands of certificates are audited, you can leverage `systemd-tmpfiles` to manage cache expiration automatically.
+
+Create a file named `/usr/lib/tmpfiles.d/truststore_analyzer.conf`:
+
+```text
+# Type  Path                                               Mode UID  GID  Age
+d       %h/.cache/truststore_analyzer/ocsp                 0755 root root 30d
+d       %h/.cache/truststore_analyzer/aia                  0755 root root 90d
+```
+
 ## 🤝 Contributing
 Contributions are welcome! Whether it's reporting a bug, suggesting an enhancement, or submitting a pull request, your help is appreciated.
 

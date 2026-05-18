@@ -29,6 +29,7 @@ logs/
 files/certificates/tst/
 files/certificates/acc/
 files/certificates/prd/
+files/certificates/bad/
 vars/tst/
 vars/acc/
 vars/prd/
