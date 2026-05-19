@@ -643,8 +643,11 @@ Create a file named `/usr/lib/tmpfiles.d/truststore_analyzer.conf`:
 
 ```text
 # Type  Path                                               Mode UID  GID  Age
-d       %h/.cache/truststore_analyzer/ocsp                 0755 root root 30d
-d       %h/.cache/truststore_analyzer/aia                  0755 root root 90d
+e       /home/*/.cache/truststore_analyzer/ocsp            -    -    -    30d
+e       /home/*/.cache/truststore_analyzer/aia             -    -    -    90d
+
+d       /root/.cache/truststore_analyzer/ocsp              0755 root root 30d
+d       /root/.cache/truststore_analyzer/aia               0755 root root 90d
 ```
 
 ## 🤝 Contributing
