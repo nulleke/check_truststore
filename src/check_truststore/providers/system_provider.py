@@ -87,7 +87,7 @@ class SystemInputProvider(BaseInputProvider):
                 path_obj = Path(p)
                 if path_obj.exists():
                     paths.append(path_obj)
-                    break #
+                    break
 
         elif os_type == "Darwin": # macOS
             common_mac_paths = [

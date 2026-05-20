@@ -85,6 +85,7 @@ class TrustStoreAnalyzer:
             tree_data = builder.build(
                 current_pool,
                 authority_pool=system_pool if self.include_system else None,
+                blacklist_pool=blacklist_pool if self.include_system else None,
                 resolver=resolver,
                 max_depth=self.max_depth
             )

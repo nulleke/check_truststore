@@ -663,4 +663,4 @@ This program is free software: you can redistribute it and/or modify it under th
 This project is licensed under the **LGPL-3.0-or-later** - see the [LICENSE](LICENSE) file for details.
 
 ---
-**Status**: Version: 1.2.2 | Stable | **Logic validated for current system date**: May 14, 2026
+**Status**: Version: 1.2.3 | Stable | **Logic validated for current system date**: May 20, 2026

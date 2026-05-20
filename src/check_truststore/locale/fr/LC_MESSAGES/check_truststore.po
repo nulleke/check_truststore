@@ -4,9 +4,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: check_truststore 1.2.2\n"
+"Project-Id-Version: check_truststore 1.2.3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-14 10:07+0200\n"
+"POT-Creation-Date: 2026-05-20 08:23+0200\n"
 "PO-Revision-Date: 2026-05-07 14:35+0200\n"
 "Last-Translator: Assistant\n"
 "Language-Team: fr\n"
@@ -15,209 +15,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-
-msgid "Serial"
-msgstr "Série"
-
-msgid "Unknown"
-msgstr "Inconnu"
-
-msgid ""
-"This certificate is explicitly untrusted by the Operating System "
-"(Blacklisted)."
-msgstr ""
-"Ce certificat est explicitement non fiable pour le système d'exploitation "
-"(liste noire)."
-
-#, python-brace-format
-msgid "Certificate expires within {days} days."
-msgstr "Le certificat expire dans {days} jours."
-
-#, python-brace-format
-msgid "Circular chain detected: {path}"
-msgstr "Chaîne circulaire détectée : {path}"
-
-msgid "CYCLE_BREAKER"
-msgstr "RUPTEUR_CYCLE"
-
-msgid "SIG_ERR"
-msgstr "ERR_SIG"
-
-msgid "REVOKED"
-msgstr "RÉVOQUÉ"
-
-msgid "INVALID"
-msgstr "INVALIDE"
-
-#, python-brace-format
-msgid "Missing issuer for: {name}"
-msgstr "Émetteur manquant pour : {name}"
-
-msgid "UNTRUSTED"
-msgstr "NON_FIABLE"
-
-msgid "The certificate chain leads to an untrusted or missing root."
-msgstr "La chaîne de certificats mène à une racine non approuvée ou manquante."
-
-msgid "The certificate chain is incomplete due to a missing upstream issuer."
-msgstr ""
-"La chaîne de certificats est incomplète en raison d'un émetteur amont "
-"manquant."
-
-msgid ""
-"The chain is untrusted because an upstream issuer is blacklisted by the OS."
-msgstr ""
-"La chaîne n'est pas fiable car un émetteur en amont est sur la liste noire "
-"de l'OS."
-
-#, python-brace-format
-msgid "AIA: {name}"
-msgstr "AIA : {name}"
-
-msgid "Successfully discovered issuer via AIA"
-msgstr "Émetteur découvert avec succès via AIA"
-
-msgid "The chain is broken; an issuer (Root or Intermediate) was not found."
-msgstr ""
-"La chaîne est rompue ; un émetteur (racine ou intermédiaire) n'a pas été "
-"trouvé."
-
-msgid "A circular certificate reference was detected."
-msgstr "Une référence de certificat circulaire a été détectée."
-
-msgid "CACHE"
-msgstr "CACHE"
-
-msgid "Could not create cache directory"
-msgstr "Impossible de créer le répertoire de cache"
-
-msgid "AIA_CACHE"
-msgstr "CACHE_AIA"
-
-#, python-brace-format
-msgid "Cache hit for AKI {aki}, skipping network."
-msgstr "Correspondance en cache pour l'AKI {aki}, réseau ignoré."
-
-msgid "AIA_FETCH"
-msgstr "RÉCUP_AIA"
-
-msgid "Bypassing cache due to --no-cache flag"
-msgstr "Contournement du cache dû à l'option --no-cache"
-
-msgid "AUDIT"
-msgstr "AUDIT"
-
-msgid "AIA_THREAD"
-msgstr "FIL_AIA"
-
-msgid "Thread error during discovery"
-msgstr "Erreur de thread lors de la découverte"
-
-msgid "Downloading"
-msgstr "Téléchargement"
-
-msgid "AIA_SIZE"
-msgstr "TAILLE_AIA"
-
-#, python-brace-format
-msgid "Certificate at {url} exceeds size limit."
-msgstr "Le certificat à l'URL {url} dépasse la limite de taille."
-
-msgid "AIA_FAILED"
-msgstr "ÉCHEC_AIA"
-
-msgid "Connection failed"
-msgstr "Échec de la connexion"
-
-msgid "AIA_PARSE"
-msgstr "ANALYSE_AIA"
-
-#, python-brace-format
-msgid "Failed to parse certificate from {url}"
-msgstr "Impossible d'analyser le certificat de {url}"
-
-msgid "OCSP_BUILD"
-msgstr "CONST_OCSP"
-
-msgid "OCSP thread error"
-msgstr "Erreur de thread OCSP"
-
-msgid "OCSP_THREAD"
-msgstr "FIL_OCSP"
-
-msgid "CRL_CHECK"
-msgstr "VÉRIF_CRL"
-
-msgid "No CRL endpoints found in certificate"
-msgstr "Aucun point de terminaison CRL trouvé dans le certificat"
-
-msgid "CRL thread error"
-msgstr "Erreur de thread CRL"
-
-msgid "CRL_THREAD"
-msgstr "FIL_CRL"
-
-msgid "DNS"
-msgstr "DNS"
-
-msgid "Could not resolve host"
-msgstr "Impossible de résoudre l'hôte"
-
-msgid "Cache"
-msgstr "Cache"
-
-msgid "Error reading cache"
-msgstr "Erreur lors de la lecture du cache"
-
-msgid "CACHE_LOAD"
-msgstr "CHARG_CACHE"
-
-msgid "Failed to load cached cert"
-msgstr "Échec du chargement du certificat en cache"
-
-msgid "Could not save certificate to cache"
-msgstr "Impossible de sauvegarder le certificat dans le cache"
-
-#, python-brace-format
-msgid "Checking: {url}"
-msgstr "Vérification : {url}"
-
-msgid "OCSP_CHECK"
-msgstr "VÉRIF_OCSP"
-
-msgid "OCSP_FAILED"
-msgstr "ÉCHEC_OCSP"
-
-msgid "OCSP request failed"
-msgstr "La requête OCSP a échoué"
-
-msgid "Using cached CRL for"
-msgstr "Utilisation de la CRL en cache pour"
-
-msgid "CRL_CACHE"
-msgstr "CACHE_CRL"
-
-msgid "CRL_FETCH"
-msgstr "RÉCUP_CRL"
-
-msgid "Downloading CRL"
-msgstr "Téléchargement de la CRL"
-
-#, python-brace-format
-msgid "Serial {serial_number} is REVOKED"
-msgstr "Le numéro de série {serial_number} est RÉVOQUÉ"
-
-msgid "CRL_RESULT"
-msgstr "RÉSULTAT_CRL"
-
-msgid "CRL_FAILED"
-msgstr "ÉCHEC_CRL"
-
-msgid "Failed to check CRL"
-msgstr "Échec de la vérification CRL"
-
-msgid "Could not save CRL to cache"
-msgstr "Impossible de sauvegarder la CRL dans le cache"
 
 msgid "SystemProvider"
 msgstr "FournisseurSystème"
@@ -250,6 +47,40 @@ msgstr "{used} des {total} certificats système utilisés"
 
 msgid "System usage"
 msgstr "Utilisation du système"
+
+msgid "Invalid DER structure"
+msgstr "Structure DER invalide"
+
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached."
+msgstr "Limite maximale de certificats ({limit}) atteinte."
+
+msgid "Skipping duplicate certificate (already loaded)"
+msgstr "Saut du certificat en double (déjà chargé)"
+
+msgid "DUPLICATE"
+msgstr "DOUBLON"
+
+msgid "Invalid certificate structure"
+msgstr "Structure de certificat invalide"
+
+msgid "PKCS7-container"
+msgstr "Conteneur-PKCS7"
+
+msgid "Legacy cryptography detected, falling back."
+msgstr "Cryptographie obsolète détectée, mode de repli activé."
+
+#, python-brace-format
+msgid "Failed to parse PKCS7: {error}"
+msgstr "Échec de l'analyse du PKCS7 : {error}"
+
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
+msgstr "Limite maximale de certificats ({limit}) atteinte. Arrêt de l'analyse."
+
+#, python-brace-format
+msgid "File too large ({size:.1f}MB)"
+msgstr "Fichier trop volumineux ({size:.1f} Mo)"
 
 #, python-brace-format
 msgid ""
@@ -407,45 +238,216 @@ msgstr "Commentaire Netscape trouvé : {comment}"
 
 #, python-brace-format
 msgid "Certificate name '{name}' is not permitted by issuer constraints."
-msgstr "Le nom du certificat '{name}' n'est pas autorisé par les contraintes de l'émetteur."
+msgstr ""
+"Le nom du certificat '{name}' n'est pas autorisé par les contraintes de "
+"l'émetteur."
 
 #, python-brace-format
 msgid "Certificate name '{name}' is explicitly excluded by the issuer."
 msgstr "Le nom du certificat '{name}' est explicitement exclu par l'émetteur."
 
-msgid "Invalid DER structure"
-msgstr "Structure DER invalide"
+msgid "CACHE"
+msgstr "CACHE"
+
+msgid "Could not create cache directory"
+msgstr "Impossible de créer le répertoire de cache"
+
+msgid "AIA_CACHE"
+msgstr "CACHE_AIA"
 
 #, python-brace-format
-msgid "Maximum certificate limit ({limit}) reached."
-msgstr "Limite maximale de certificats ({limit}) atteinte."
+msgid "Cache hit for AKI {aki}, skipping network."
+msgstr "Correspondance en cache pour l'AKI {aki}, réseau ignoré."
 
-msgid "Skipping duplicate certificate (already loaded)"
-msgstr "Saut du certificat en double (déjà chargé)"
+msgid "AIA_FETCH"
+msgstr "RÉCUP_AIA"
 
-msgid "DUPLICATE"
-msgstr "DOUBLON"
+msgid "Bypassing cache due to --no-cache flag"
+msgstr "Contournement du cache dû à l'option --no-cache"
 
-msgid "Invalid certificate structure"
-msgstr "Structure de certificat invalide"
+msgid "AUDIT"
+msgstr "AUDIT"
 
-msgid "PKCS7-container"
-msgstr "Conteneur-PKCS7"
+msgid "AIA_THREAD"
+msgstr "FIL_AIA"
 
-msgid "Legacy cryptography detected, falling back."
-msgstr "Cryptographie obsolète détectée, mode de repli activé."
+msgid "Thread error during discovery"
+msgstr "Erreur de thread lors de la découverte"
 
-#, python-brace-format
-msgid "Failed to parse PKCS7: {error}"
-msgstr "Échec de l'analyse du PKCS7 : {error}"
+msgid "Downloading"
+msgstr "Téléchargement"
 
-#, python-brace-format
-msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
-msgstr "Limite maximale de certificats ({limit}) atteinte. Arrêt de l'analyse."
+msgid "AIA_SIZE"
+msgstr "TAILLE_AIA"
 
 #, python-brace-format
-msgid "File too large ({size:.1f}MB)"
-msgstr "Fichier trop volumineux ({size:.1f} Mo)"
+msgid "Certificate at {url} exceeds size limit."
+msgstr "Le certificat à l'URL {url} dépasse la limite de taille."
+
+msgid "AIA_FAILED"
+msgstr "ÉCHEC_AIA"
+
+msgid "Connection failed"
+msgstr "Échec de la connexion"
+
+msgid "AIA_PARSE"
+msgstr "ANALYSE_AIA"
+
+#, python-brace-format
+msgid "Failed to parse certificate from {url}"
+msgstr "Impossible d'analyser le certificat de {url}"
+
+msgid "OCSP_BUILD"
+msgstr "CONST_OCSP"
+
+msgid "OCSP thread error"
+msgstr "Erreur de thread OCSP"
+
+msgid "OCSP_THREAD"
+msgstr "FIL_OCSP"
+
+msgid "CRL_CHECK"
+msgstr "VÉRIF_CRL"
+
+msgid "No CRL endpoints found in certificate"
+msgstr "Aucun point de terminaison CRL trouvé dans le certificat"
+
+msgid "CRL thread error"
+msgstr "Erreur de thread CRL"
+
+msgid "CRL_THREAD"
+msgstr "FIL_CRL"
+
+msgid "DNS"
+msgstr "DNS"
+
+msgid "Could not resolve host"
+msgstr "Impossible de résoudre l'hôte"
+
+msgid "Cache"
+msgstr "Cache"
+
+msgid "Error reading cache"
+msgstr "Erreur lors de la lecture du cache"
+
+msgid "CACHE_LOAD"
+msgstr "CHARG_CACHE"
+
+msgid "Failed to load cached cert"
+msgstr "Échec du chargement du certificat en cache"
+
+msgid "Could not save certificate to cache"
+msgstr "Impossible de sauvegarder le certificat dans le cache"
+
+#, python-brace-format
+msgid "Checking: {url}"
+msgstr "Vérification : {url}"
+
+msgid "OCSP_CHECK"
+msgstr "VÉRIF_OCSP"
+
+msgid "OCSP_FAILED"
+msgstr "ÉCHEC_OCSP"
+
+msgid "OCSP request failed"
+msgstr "La requête OCSP a échoué"
+
+msgid "Using cached CRL for"
+msgstr "Utilisation de la CRL en cache pour"
+
+msgid "CRL_CACHE"
+msgstr "CACHE_CRL"
+
+msgid "CRL_FETCH"
+msgstr "RÉCUP_CRL"
+
+msgid "Downloading CRL"
+msgstr "Téléchargement de la CRL"
+
+#, python-brace-format
+msgid "Serial {serial_number} is REVOKED"
+msgstr "Le numéro de série {serial_number} est RÉVOQUÉ"
+
+msgid "CRL_RESULT"
+msgstr "RÉSULTAT_CRL"
+
+msgid "CRL_FAILED"
+msgstr "ÉCHEC_CRL"
+
+msgid "Failed to check CRL"
+msgstr "Échec de la vérification CRL"
+
+msgid "Could not save CRL to cache"
+msgstr "Impossible de sauvegarder la CRL dans le cache"
+
+msgid "Serial"
+msgstr "Série"
+
+msgid "Unknown"
+msgstr "Inconnu"
+
+msgid ""
+"This certificate is explicitly untrusted by the Operating System "
+"(Blacklisted)."
+msgstr ""
+"Ce certificat est explicitement non fiable pour le système d'exploitation "
+"(liste noire)."
+
+#, python-brace-format
+msgid "Certificate expires within {days} days."
+msgstr "Le certificat expire dans {days} jours."
+
+#, python-brace-format
+msgid "Circular chain detected: {path}"
+msgstr "Chaîne circulaire détectée : {path}"
+
+msgid "CYCLE_BREAKER"
+msgstr "RUPTEUR_CYCLE"
+
+msgid "SIG_ERR"
+msgstr "ERR_SIG"
+
+msgid "REVOKED"
+msgstr "RÉVOQUÉ"
+
+msgid "INVALID"
+msgstr "INVALIDE"
+
+#, python-brace-format
+msgid "Missing issuer for: {name}"
+msgstr "Émetteur manquant pour : {name}"
+
+msgid "UNTRUSTED"
+msgstr "NON_FIABLE"
+
+msgid "The certificate chain leads to an untrusted or missing root."
+msgstr "La chaîne de certificats mène à une racine non approuvée ou manquante."
+
+msgid "The certificate chain is incomplete due to a missing upstream issuer."
+msgstr ""
+"La chaîne de certificats est incomplète en raison d'un émetteur amont "
+"manquant."
+
+msgid ""
+"The chain is untrusted because an upstream issuer is blacklisted by the OS."
+msgstr ""
+"La chaîne n'est pas fiable car un émetteur en amont est sur la liste noire "
+"de l'OS."
+
+#, python-brace-format
+msgid "AIA: {name}"
+msgstr "AIA : {name}"
+
+msgid "Successfully discovered issuer via AIA"
+msgstr "Émetteur découvert avec succès via AIA"
+
+msgid "The chain is broken; an issuer (Root or Intermediate) was not found."
+msgstr ""
+"La chaîne est rompue ; un émetteur (racine ou intermédiaire) n'a pas été "
+"trouvé."
+
+msgid "A circular certificate reference was detected."
+msgstr "Une référence de certificat circulaire a été détectée."
 
 msgid "Unknown JSON format or malformed structure."
 msgstr "Format JSON inconnu ou structure malformée."
@@ -533,6 +535,10 @@ msgstr "Utilisation"
 
 msgid "ALT"
 msgstr "ALT"
+
+#, python-brace-format
+msgid "check_truststore v{app_version} (Python {python_ver} on {os_pretty})"
+msgstr "check_truststore v{app_version} (Python {python_ver} sur {os_pretty})"
 
 msgid "ERROR"
 msgstr "ERREUR"

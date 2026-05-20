@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: check_truststore 1.2.2\n"
+"Project-Id-Version: check_truststore 1.2.3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-14 10:07+0200\n"
+"POT-Creation-Date: 2026-05-20 08:23+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,65 +17,201 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-msgid "Serial"
+msgid "SystemProvider"
 msgstr ""
 
-msgid "Unknown"
+#, python-brace-format
+msgid "Could not load system truststore: {error}"
+msgstr ""
+
+msgid "Processing Group"
+msgstr ""
+
+msgid "Export"
+msgstr ""
+
+msgid "Using PEM sequence fallback for legacy environment"
+msgstr ""
+
+#, python-brace-format
+msgid "Bundle saved to {path}"
+msgstr ""
+
+#, python-brace-format
+msgid "Failed to create bundle: {error}"
+msgstr ""
+
+#, python-brace-format
+msgid "{used} of the {total} system certificates used"
+msgstr ""
+
+msgid "System usage"
+msgstr ""
+
+msgid "Invalid DER structure"
+msgstr ""
+
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached."
+msgstr ""
+
+msgid "Skipping duplicate certificate (already loaded)"
+msgstr ""
+
+msgid "DUPLICATE"
+msgstr ""
+
+msgid "Invalid certificate structure"
+msgstr ""
+
+msgid "PKCS7-container"
+msgstr ""
+
+msgid "Legacy cryptography detected, falling back."
+msgstr ""
+
+#, python-brace-format
+msgid "Failed to parse PKCS7: {error}"
+msgstr ""
+
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
+msgstr ""
+
+#, python-brace-format
+msgid "File too large ({size:.1f}MB)"
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"The cryptographic signature from issuer '{issuer}' is invalid or could not "
+"be verified."
+msgstr ""
+
+#, python-brace-format
+msgid "Issuer '{issuer}' is not a CA or lacks keyCertSign usage."
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"The issuer '{issuer}' could not be found in the truststore, making this "
+"chain untrusted."
 msgstr ""
 
 msgid ""
-"This certificate is explicitly untrusted by the Operating System "
-"(Blacklisted)."
+"This certificate is untrusted because it or an issuer in its chain has been "
+"revoked."
 msgstr ""
 
 #, python-brace-format
-msgid "Certificate expires within {days} days."
+msgid ""
+"RSA key size ({bits} bits) is below the minimum required {min_bits} bits."
 msgstr ""
 
 #, python-brace-format
-msgid "Circular chain detected: {path}"
+msgid ""
+"ECC key size ({bits} bits) is below the minimum required {min_bits} bits."
 msgstr ""
 
-msgid "CYCLE_BREAKER"
+msgid "The signature algorithm is unknown or unsupported by the system."
 msgstr ""
 
-msgid "SIG_ERR"
-msgstr ""
-
-msgid "REVOKED"
-msgstr ""
-
-msgid "INVALID"
+msgid "Certificate is missing a hashing algorithm for its signature."
 msgstr ""
 
 #, python-brace-format
-msgid "Missing issuer for: {name}"
+msgid "Certificate uses a deprecated hash algorithm ({name})."
 msgstr ""
 
-msgid "UNTRUSTED"
-msgstr ""
-
-msgid "The certificate chain leads to an untrusted or missing root."
-msgstr ""
-
-msgid "The certificate chain is incomplete due to a missing upstream issuer."
+msgid "End-entity certificate lacks Extended Key Usage extension."
 msgstr ""
 
 msgid ""
-"The chain is untrusted because an upstream issuer is blacklisted by the OS."
+"Certificate contains 'Any Extended Key Usage', which is overly permissive."
+msgstr ""
+
+msgid ""
+"Certificate allows both Server Auth and Code Signing. Functional separation "
+"is recommended."
+msgstr ""
+
+msgid "Could not parse Extended Key Usage extension data."
+msgstr ""
+
+msgid "Server Authentication"
+msgstr ""
+
+msgid "Client Authentication"
+msgstr ""
+
+msgid "Code Signing"
+msgstr ""
+
+msgid "Email Protection"
+msgstr ""
+
+msgid "Time Stamping"
+msgstr ""
+
+msgid "OCSP Signing"
+msgstr ""
+
+msgid "IPSec User"
+msgstr ""
+
+msgid "IPSec Intermediate"
+msgstr ""
+
+msgid "IPSec Tunnel"
 msgstr ""
 
 #, python-brace-format
-msgid "AIA: {name}"
+msgid "Unknown ({oid})"
 msgstr ""
 
-msgid "Successfully discovered issuer via AIA"
+#, python-brace-format
+msgid "Validity period ({days} days) exceeds the 398-day limit."
 msgstr ""
 
-msgid "The chain is broken; an issuer (Root or Intermediate) was not found."
+#, python-brace-format
+msgid "Common Name '{cn}' is missing from Subject Alternative Names (SAN)."
 msgstr ""
 
-msgid "A circular certificate reference was detected."
+#, python-brace-format
+msgid ""
+"SAN contains a non-FQDN '{name}', which is disallowed for public "
+"certificates."
+msgstr ""
+
+msgid "Certificate lacks a SAN extension. Relying solely on CN is deprecated."
+msgstr ""
+
+msgid ""
+"Certificate lacks CRL Distribution Points (CDP). Revocation checking may be "
+"limited."
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"Path length constraint exceeded. Issuer allows max {limit} intermediate(s)."
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"Hostname mismatch: Certificate is valid for '{names}', but you connected to "
+"'{target}'."
+msgstr ""
+
+#, python-brace-format
+msgid "Netscape Comment found: {comment}"
+msgstr ""
+
+#, python-brace-format
+msgid "Certificate name '{name}' is not permitted by issuer constraints."
+msgstr ""
+
+#, python-brace-format
+msgid "Certificate name '{name}' is explicitly excluded by the issuer."
 msgstr ""
 
 msgid "CACHE"
@@ -212,201 +348,65 @@ msgstr ""
 msgid "Could not save CRL to cache"
 msgstr ""
 
-msgid "SystemProvider"
+msgid "Serial"
 msgstr ""
 
-#, python-brace-format
-msgid "Could not load system truststore: {error}"
-msgstr ""
-
-msgid "Processing Group"
-msgstr ""
-
-msgid "Export"
-msgstr ""
-
-msgid "Using PEM sequence fallback for legacy environment"
-msgstr ""
-
-#, python-brace-format
-msgid "Bundle saved to {path}"
-msgstr ""
-
-#, python-brace-format
-msgid "Failed to create bundle: {error}"
-msgstr ""
-
-#, python-brace-format
-msgid "{used} of the {total} system certificates used"
-msgstr ""
-
-msgid "System usage"
-msgstr ""
-
-#, python-brace-format
-msgid ""
-"The cryptographic signature from issuer '{issuer}' is invalid or could not "
-"be verified."
-msgstr ""
-
-#, python-brace-format
-msgid "Issuer '{issuer}' is not a CA or lacks keyCertSign usage."
-msgstr ""
-
-#, python-brace-format
-msgid ""
-"The issuer '{issuer}' could not be found in the truststore, making this "
-"chain untrusted."
+msgid "Unknown"
 msgstr ""
 
 msgid ""
-"This certificate is untrusted because it or an issuer in its chain has been "
-"revoked."
+"This certificate is explicitly untrusted by the Operating System "
+"(Blacklisted)."
 msgstr ""
 
 #, python-brace-format
-msgid ""
-"RSA key size ({bits} bits) is below the minimum required {min_bits} bits."
+msgid "Certificate expires within {days} days."
 msgstr ""
 
 #, python-brace-format
-msgid ""
-"ECC key size ({bits} bits) is below the minimum required {min_bits} bits."
+msgid "Circular chain detected: {path}"
 msgstr ""
 
-msgid "The signature algorithm is unknown or unsupported by the system."
+msgid "CYCLE_BREAKER"
 msgstr ""
 
-msgid "Certificate is missing a hashing algorithm for its signature."
+msgid "SIG_ERR"
 msgstr ""
 
-#, python-brace-format
-msgid "Certificate uses a deprecated hash algorithm ({name})."
+msgid "REVOKED"
 msgstr ""
 
-msgid "End-entity certificate lacks Extended Key Usage extension."
-msgstr ""
-
-msgid ""
-"Certificate contains 'Any Extended Key Usage', which is overly permissive."
-msgstr ""
-
-msgid ""
-"Certificate allows both Server Auth and Code Signing. Functional separation "
-"is recommended."
-msgstr ""
-
-msgid "Could not parse Extended Key Usage extension data."
-msgstr ""
-
-msgid "Server Authentication"
-msgstr ""
-
-msgid "Client Authentication"
-msgstr ""
-
-msgid "Code Signing"
-msgstr ""
-
-msgid "Email Protection"
-msgstr ""
-
-msgid "Time Stamping"
-msgstr ""
-
-msgid "OCSP Signing"
-msgstr ""
-
-msgid "IPSec User"
-msgstr ""
-
-msgid "IPSec Intermediate"
-msgstr ""
-
-msgid "IPSec Tunnel"
+msgid "INVALID"
 msgstr ""
 
 #, python-brace-format
-msgid "Unknown ({oid})"
+msgid "Missing issuer for: {name}"
 msgstr ""
 
-#, python-brace-format
-msgid "Validity period ({days} days) exceeds the 398-day limit."
+msgid "UNTRUSTED"
 msgstr ""
 
-#, python-brace-format
-msgid "Common Name '{cn}' is missing from Subject Alternative Names (SAN)."
+msgid "The certificate chain leads to an untrusted or missing root."
 msgstr ""
 
-#, python-brace-format
-msgid ""
-"SAN contains a non-FQDN '{name}', which is disallowed for public "
-"certificates."
-msgstr ""
-
-msgid "Certificate lacks a SAN extension. Relying solely on CN is deprecated."
+msgid "The certificate chain is incomplete due to a missing upstream issuer."
 msgstr ""
 
 msgid ""
-"Certificate lacks CRL Distribution Points (CDP). Revocation checking may be "
-"limited."
+"The chain is untrusted because an upstream issuer is blacklisted by the OS."
 msgstr ""
 
 #, python-brace-format
-msgid ""
-"Path length constraint exceeded. Issuer allows max {limit} intermediate(s)."
+msgid "AIA: {name}"
 msgstr ""
 
-#, python-brace-format
-msgid ""
-"Hostname mismatch: Certificate is valid for '{names}', but you connected to "
-"'{target}'."
+msgid "Successfully discovered issuer via AIA"
 msgstr ""
 
-#, python-brace-format
-msgid "Netscape Comment found: {comment}"
+msgid "The chain is broken; an issuer (Root or Intermediate) was not found."
 msgstr ""
 
-#, python-brace-format
-msgid "Certificate name '{name}' is not permitted by issuer constraints."
-msgstr ""
-
-#, python-brace-format
-msgid "Certificate name '{name}' is explicitly excluded by the issuer."
-msgstr ""
-
-msgid "Invalid DER structure"
-msgstr ""
-
-#, python-brace-format
-msgid "Maximum certificate limit ({limit}) reached."
-msgstr ""
-
-msgid "Skipping duplicate certificate (already loaded)"
-msgstr ""
-
-msgid "DUPLICATE"
-msgstr ""
-
-msgid "Invalid certificate structure"
-msgstr ""
-
-msgid "PKCS7-container"
-msgstr ""
-
-msgid "Legacy cryptography detected, falling back."
-msgstr ""
-
-#, python-brace-format
-msgid "Failed to parse PKCS7: {error}"
-msgstr ""
-
-#, python-brace-format
-msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
-msgstr ""
-
-#, python-brace-format
-msgid "File too large ({size:.1f}MB)"
+msgid "A circular certificate reference was detected."
 msgstr ""
 
 msgid "Unknown JSON format or malformed structure."
@@ -492,6 +492,10 @@ msgid "Usage"
 msgstr ""
 
 msgid "ALT"
+msgstr ""
+
+#, python-brace-format
+msgid "check_truststore v{app_version} (Python {python_ver} on {os_pretty})"
 msgstr ""
 
 msgid "ERROR"
