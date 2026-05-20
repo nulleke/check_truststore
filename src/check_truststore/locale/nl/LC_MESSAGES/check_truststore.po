@@ -5,9 +5,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: check_truststore 1.2.2\n"
+"Project-Id-Version: check_truststore 1.2.3\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-14 10:07+0200\n"
+"POT-Creation-Date: 2026-05-20 08:23+0200\n"
 "PO-Revision-Date: 2026-04-13 11:08+0200\n"
 "Last-Translator: Serge van Thillo <nulleke76@gmail.com>\n"
 "Language-Team: Dutch <vertaling@vrijschrift.org>\n"
@@ -16,209 +16,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-
-msgid "Serial"
-msgstr "S/N"
-
-msgid "Unknown"
-msgstr "Onbekend"
-
-msgid ""
-"This certificate is explicitly untrusted by the Operating System "
-"(Blacklisted)."
-msgstr ""
-"Dit certificaat wordt expliciet gewantrouwd door het besturingssysteem (op "
-"de zwarte lijst)."
-
-#, python-brace-format
-msgid "Certificate expires within {days} days."
-msgstr "Certificaat verloopt binnen {days} dagen."
-
-#, python-brace-format
-msgid "Circular chain detected: {path}"
-msgstr "Circulaire keten gedetecteerd: {path}"
-
-msgid "CYCLE_BREAKER"
-msgstr "CYCLUS_BREKER"
-
-msgid "SIG_ERR"
-msgstr "SIG_FOUT"
-
-msgid "REVOKED"
-msgstr "INGETROKKEN"
-
-msgid "INVALID"
-msgstr "ONGELDIG"
-
-#, python-brace-format
-msgid "Missing issuer for: {name}"
-msgstr "Ontbrekende issuer voor: {name}"
-
-msgid "UNTRUSTED"
-msgstr "GEEN_TRUST"
-
-msgid "The certificate chain leads to an untrusted or missing root."
-msgstr ""
-"De certificaatketen leidt naar een niet-vertrouwde of ontbrekende root."
-
-msgid "The certificate chain is incomplete due to a missing upstream issuer."
-msgstr ""
-"De certificaatketen is incompleet door een ontbrekende bovenliggende "
-"uitgever."
-
-msgid ""
-"The chain is untrusted because an upstream issuer is blacklisted by the OS."
-msgstr ""
-"De keten wordt niet vertrouwd omdat een bovenliggende uitgever op de "
-"blacklist van het besturingssysteem staat."
-
-#, python-brace-format
-msgid "AIA: {name}"
-msgstr "AIA: {name}"
-
-msgid "Successfully discovered issuer via AIA"
-msgstr "Uitgever succesvol gevonden via AIA"
-
-msgid "The chain is broken; an issuer (Root or Intermediate) was not found."
-msgstr ""
-"De keten is verbroken; een uitgever (Root of Intermediate) is niet gevonden."
-
-msgid "A circular certificate reference was detected."
-msgstr "Er is een circulaire certificaatverwijzing gedetecteerd."
-
-msgid "CACHE"
-msgstr "CACHE"
-
-msgid "Could not create cache directory"
-msgstr "Kon cache-directory niet aanmaken"
-
-msgid "AIA_CACHE"
-msgstr "AIA_CACHE"
-
-#, python-brace-format
-msgid "Cache hit for AKI {aki}, skipping network."
-msgstr "Cache-hit voor AKI {aki}, netwerkbezoek overgeslagen."
-
-msgid "AIA_FETCH"
-msgstr "AIA_OPHALEN"
-
-msgid "Bypassing cache due to --no-cache flag"
-msgstr "Cache wordt omzeild vanwege de --no-cache vlag"
-
-msgid "AUDIT"
-msgstr "AUDIT"
-
-msgid "AIA_THREAD"
-msgstr "AIA_THREAD"
-
-msgid "Thread error during discovery"
-msgstr "Thread-fout tijdens discovery-proces"
-
-msgid "Downloading"
-msgstr "Downloaden"
-
-msgid "AIA_SIZE"
-msgstr "AIA_GROOTTE"
-
-#, python-brace-format
-msgid "Certificate at {url} exceeds size limit."
-msgstr "Certificaat op {url} overschrijdt de maximale bestandsgrootte."
-
-msgid "AIA_FAILED"
-msgstr "AIA_MISLUKT"
-
-msgid "Connection failed"
-msgstr "Verbinding mislukt"
-
-msgid "AIA_PARSE"
-msgstr "AIA_PARSING"
-
-#, python-brace-format
-msgid "Failed to parse certificate from {url}"
-msgstr "Parsen van certificaat van {url} mislukt"
-
-msgid "OCSP_BUILD"
-msgstr "OCSP_OPBOUW"
-
-msgid "OCSP thread error"
-msgstr "Fout in OCSP-thread"
-
-msgid "OCSP_THREAD"
-msgstr "OCSP_THREAD"
-
-msgid "CRL_CHECK"
-msgstr "CRL_CONTROLE"
-
-msgid "No CRL endpoints found in certificate"
-msgstr "Geen CRL-eindpunten gevonden in certificaat"
-
-msgid "CRL thread error"
-msgstr "Fout in CRL-thread"
-
-msgid "CRL_THREAD"
-msgstr "CRL_THREAD"
-
-msgid "DNS"
-msgstr "DNS"
-
-msgid "Could not resolve host"
-msgstr "Hostnaam kon niet worden omgezet (DNS)"
-
-msgid "Cache"
-msgstr "Buffer (Cache)"
-
-msgid "Error reading cache"
-msgstr "Fout bij lezen van cache"
-
-msgid "CACHE_LOAD"
-msgstr "CACHE_LADEN"
-
-msgid "Failed to load cached cert"
-msgstr "Gecacht certificaat laden mislukt"
-
-msgid "Could not save certificate to cache"
-msgstr "Kon certificaat niet opslaan in cache"
-
-#, python-brace-format
-msgid "Checking: {url}"
-msgstr "Controleren: {url}"
-
-msgid "OCSP_CHECK"
-msgstr "OCSP_CONTROLE"
-
-msgid "OCSP_FAILED"
-msgstr "OCSP_MISLUKT"
-
-msgid "OCSP request failed"
-msgstr "OCSP-aanvraag mislukt"
-
-msgid "Using cached CRL for"
-msgstr "Gecachte CRL wordt gebruikt voor"
-
-msgid "CRL_CACHE"
-msgstr "CRL_CACHE"
-
-msgid "CRL_FETCH"
-msgstr "CRL_OPHALEN"
-
-msgid "Downloading CRL"
-msgstr "CRL Downloaden"
-
-#, python-brace-format
-msgid "Serial {serial_number} is REVOKED"
-msgstr "Serienummer {serial_number} is ingetrokken (REVOKED)"
-
-msgid "CRL_RESULT"
-msgstr "CRL_RESULTAAT"
-
-msgid "CRL_FAILED"
-msgstr "CRL_MISLUKT"
-
-msgid "Failed to check CRL"
-msgstr "CRL-controle mislukt"
-
-msgid "Could not save CRL to cache"
-msgstr "Kon CRL niet opslaan in cache"
 
 msgid "SystemProvider"
 msgstr "Systeem-provider"
@@ -251,6 +48,40 @@ msgstr "{used} van de {total} systeem-certificaten gebruikt"
 
 msgid "System usage"
 msgstr "Systeemgebruik"
+
+msgid "Invalid DER structure"
+msgstr "Ongeldige DER structuur"
+
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached."
+msgstr "Maximale certificaatlimiet ({limit}) bereikt."
+
+msgid "Skipping duplicate certificate (already loaded)"
+msgstr "Duplicaat certificaat overgeslagen (reeds geladen)"
+
+msgid "DUPLICATE"
+msgstr "DUPLICAAT"
+
+msgid "Invalid certificate structure"
+msgstr "Ongeldige certificaat structuur"
+
+msgid "PKCS7-container"
+msgstr "PKCS7-container"
+
+msgid "Legacy cryptography detected, falling back."
+msgstr "Verouderde cryptografie gedetecteerd, fallback wordt uitgevoerd."
+
+#, python-brace-format
+msgid "Failed to parse PKCS7: {error}"
+msgstr "Parsen van PKCS7 mislukt: {error}"
+
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
+msgstr "Maximale certificaatlimiet ({limit}) bereikt. Scan wordt gestopt."
+
+#, python-brace-format
+msgid "File too large ({size:.1f}MB)"
+msgstr "Bestand te groot ({size:.1f}MB)."
 
 #, python-brace-format
 msgid ""
@@ -410,39 +241,208 @@ msgstr ""
 msgid "Certificate name '{name}' is explicitly excluded by the issuer."
 msgstr "Certificaatnaam '{name}' is expliciet uitgesloten door de uitgever."
 
-msgid "Invalid DER structure"
-msgstr "Ongeldige DER structuur"
+msgid "CACHE"
+msgstr "CACHE"
+
+msgid "Could not create cache directory"
+msgstr "Kon cache-directory niet aanmaken"
+
+msgid "AIA_CACHE"
+msgstr "AIA_CACHE"
 
 #, python-brace-format
-msgid "Maximum certificate limit ({limit}) reached."
-msgstr "Maximale certificaatlimiet ({limit}) bereikt."
+msgid "Cache hit for AKI {aki}, skipping network."
+msgstr "Cache-hit voor AKI {aki}, netwerkbezoek overgeslagen."
 
-msgid "Skipping duplicate certificate (already loaded)"
-msgstr "Duplicaat certificaat overgeslagen (reeds geladen)"
+msgid "AIA_FETCH"
+msgstr "AIA_OPHALEN"
 
-msgid "DUPLICATE"
-msgstr "DUPLICAAT"
+msgid "Bypassing cache due to --no-cache flag"
+msgstr "Cache wordt omzeild vanwege de --no-cache vlag"
 
-msgid "Invalid certificate structure"
-msgstr "Ongeldige certificaat structuur"
+msgid "AUDIT"
+msgstr "AUDIT"
 
-msgid "PKCS7-container"
-msgstr "PKCS7-container"
+msgid "AIA_THREAD"
+msgstr "AIA_THREAD"
 
-msgid "Legacy cryptography detected, falling back."
-msgstr "Verouderde cryptografie gedetecteerd, fallback wordt uitgevoerd."
+msgid "Thread error during discovery"
+msgstr "Thread-fout tijdens discovery-proces"
 
-#, python-brace-format
-msgid "Failed to parse PKCS7: {error}"
-msgstr "Parsen van PKCS7 mislukt: {error}"
+msgid "Downloading"
+msgstr "Downloaden"
 
-#, python-brace-format
-msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
-msgstr "Maximale certificaatlimiet ({limit}) bereikt. Scan wordt gestopt."
+msgid "AIA_SIZE"
+msgstr "AIA_GROOTTE"
 
 #, python-brace-format
-msgid "File too large ({size:.1f}MB)"
-msgstr "Bestand te groot ({size:.1f}MB)."
+msgid "Certificate at {url} exceeds size limit."
+msgstr "Certificaat op {url} overschrijdt de maximale bestandsgrootte."
+
+msgid "AIA_FAILED"
+msgstr "AIA_MISLUKT"
+
+msgid "Connection failed"
+msgstr "Verbinding mislukt"
+
+msgid "AIA_PARSE"
+msgstr "AIA_PARSING"
+
+#, python-brace-format
+msgid "Failed to parse certificate from {url}"
+msgstr "Parsen van certificaat van {url} mislukt"
+
+msgid "OCSP_BUILD"
+msgstr "OCSP_OPBOUW"
+
+msgid "OCSP thread error"
+msgstr "Fout in OCSP-thread"
+
+msgid "OCSP_THREAD"
+msgstr "OCSP_THREAD"
+
+msgid "CRL_CHECK"
+msgstr "CRL_CONTROLE"
+
+msgid "No CRL endpoints found in certificate"
+msgstr "Geen CRL-eindpunten gevonden in certificaat"
+
+msgid "CRL thread error"
+msgstr "Fout in CRL-thread"
+
+msgid "CRL_THREAD"
+msgstr "CRL_THREAD"
+
+msgid "DNS"
+msgstr "DNS"
+
+msgid "Could not resolve host"
+msgstr "Hostnaam kon niet worden omgezet (DNS)"
+
+msgid "Cache"
+msgstr "Buffer (Cache)"
+
+msgid "Error reading cache"
+msgstr "Fout bij lezen van cache"
+
+msgid "CACHE_LOAD"
+msgstr "CACHE_LADEN"
+
+msgid "Failed to load cached cert"
+msgstr "Gecacht certificaat laden mislukt"
+
+msgid "Could not save certificate to cache"
+msgstr "Kon certificaat niet opslaan in cache"
+
+#, python-brace-format
+msgid "Checking: {url}"
+msgstr "Controleren: {url}"
+
+msgid "OCSP_CHECK"
+msgstr "OCSP_CONTROLE"
+
+msgid "OCSP_FAILED"
+msgstr "OCSP_MISLUKT"
+
+msgid "OCSP request failed"
+msgstr "OCSP-aanvraag mislukt"
+
+msgid "Using cached CRL for"
+msgstr "Gecachte CRL wordt gebruikt voor"
+
+msgid "CRL_CACHE"
+msgstr "CRL_CACHE"
+
+msgid "CRL_FETCH"
+msgstr "CRL_OPHALEN"
+
+msgid "Downloading CRL"
+msgstr "CRL Downloaden"
+
+#, python-brace-format
+msgid "Serial {serial_number} is REVOKED"
+msgstr "Serienummer {serial_number} is ingetrokken (REVOKED)"
+
+msgid "CRL_RESULT"
+msgstr "CRL_RESULTAAT"
+
+msgid "CRL_FAILED"
+msgstr "CRL_MISLUKT"
+
+msgid "Failed to check CRL"
+msgstr "CRL-controle mislukt"
+
+msgid "Could not save CRL to cache"
+msgstr "Kon CRL niet opslaan in cache"
+
+msgid "Serial"
+msgstr "S/N"
+
+msgid "Unknown"
+msgstr "Onbekend"
+
+msgid ""
+"This certificate is explicitly untrusted by the Operating System "
+"(Blacklisted)."
+msgstr ""
+"Dit certificaat wordt expliciet gewantrouwd door het besturingssysteem (op "
+"de zwarte lijst)."
+
+#, python-brace-format
+msgid "Certificate expires within {days} days."
+msgstr "Certificaat verloopt binnen {days} dagen."
+
+#, python-brace-format
+msgid "Circular chain detected: {path}"
+msgstr "Circulaire keten gedetecteerd: {path}"
+
+msgid "CYCLE_BREAKER"
+msgstr "CYCLUS_BREKER"
+
+msgid "SIG_ERR"
+msgstr "SIG_FOUT"
+
+msgid "REVOKED"
+msgstr "INGETROKKEN"
+
+msgid "INVALID"
+msgstr "ONGELDIG"
+
+#, python-brace-format
+msgid "Missing issuer for: {name}"
+msgstr "Ontbrekende issuer voor: {name}"
+
+msgid "UNTRUSTED"
+msgstr "GEEN_TRUST"
+
+msgid "The certificate chain leads to an untrusted or missing root."
+msgstr ""
+"De certificaatketen leidt naar een niet-vertrouwde of ontbrekende root."
+
+msgid "The certificate chain is incomplete due to a missing upstream issuer."
+msgstr ""
+"De certificaatketen is incompleet door een ontbrekende bovenliggende "
+"uitgever."
+
+msgid ""
+"The chain is untrusted because an upstream issuer is blacklisted by the OS."
+msgstr ""
+"De keten wordt niet vertrouwd omdat een bovenliggende uitgever op de "
+"blacklist van het besturingssysteem staat."
+
+#, python-brace-format
+msgid "AIA: {name}"
+msgstr "AIA: {name}"
+
+msgid "Successfully discovered issuer via AIA"
+msgstr "Uitgever succesvol gevonden via AIA"
+
+msgid "The chain is broken; an issuer (Root or Intermediate) was not found."
+msgstr ""
+"De keten is verbroken; een uitgever (Root of Intermediate) is niet gevonden."
+
+msgid "A circular certificate reference was detected."
+msgstr "Er is een circulaire certificaatverwijzing gedetecteerd."
 
 msgid "Unknown JSON format or malformed structure."
 msgstr "Onbekend JSON-formaat of ongeldige structuur."
@@ -530,6 +530,10 @@ msgstr "Gebruik"
 
 msgid "ALT"
 msgstr "ALT"
+
+#, python-brace-format
+msgid "check_truststore v{app_version} (Python {python_ver} on {os_pretty})"
+msgstr "check_truststore v{app_version} (Python {python_ver} op {os_pretty})"
 
 msgid "ERROR"
 msgstr "FOUT"

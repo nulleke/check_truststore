@@ -71,7 +71,7 @@ class TrustChainBuilder:
         if resolver:
             self._perform_aia_discovery(resolver, max_depth=max_depth)
 
-        tree_result = self._create_tree(resolver=resolver)
+        tree_result = self._create_tree(resolver=resolver, max_depth=max_depth)
 
         if self.debug:
             self._log_debug_summary()
@@ -420,7 +420,7 @@ class TrustChainBuilder:
             flat_list.append(cert_obj)
         return sorted(flat_list, key=lambda x: x.common_name.lower())
 
-    def _create_tree(self, resolver: Optional[Any] = None) -> List[Certificate]:
+    def _create_tree(self, resolver: Optional[Any] = None, max_depth: int = 4) -> List[Certificate]:
         """
         The core recursive algorithm.
         It filters certificates to only show chains that lead to a user-provided cert.
@@ -455,8 +455,8 @@ class TrustChainBuilder:
         node_cache = {}
 
         # Recursive function to build Node objects
-        def to_node(ski: str, parent_status: str = "VALID", depth: int = 0) -> Certificate:
-            if depth > 15:
+        def to_node(ski: str, parent_status: str = "VALID", depth: int = 0, max_depth: int = 4) -> Certificate:
+            if depth > max_depth:
                 return self._create_virtual_node("LOOP_LIMIT_REACHED")
 
             cert_info = self.cert_data[ski]
@@ -466,7 +466,8 @@ class TrustChainBuilder:
                 p_skis.sort(
                 key=lambda x: (
                     self.cert_data[x].is_system_cert if x in self.cert_data else False,
-                    self.cert_data[x].expiry_date if x in self.cert_data else datetime.min.replace(tzinfo=timezone.utc)
+                    self.cert_data[x].expiry_date if x in self.cert_data else datetime.min.replace(tzinfo=timezone.utc),
+                    self.cert_data[x].fingerprint.lower() if x in self.cert_data else "",
                 ),
                 reverse=True
             )
@@ -570,7 +571,7 @@ class TrustChainBuilder:
 
             processed_children = []
             for c_ski in sorted_child_skis:
-                child_node = to_node(c_ski, cert_info.status_label, depth + 1)
+                child_node = to_node(c_ski, cert_info.status_label, depth + 1, max_depth=max_depth)
                 processed_children.append(child_node)
 
             cert_info.children = processed_children
@@ -583,10 +584,10 @@ class TrustChainBuilder:
         cycle_skis = [ski for ski in relevant_skis if ski in self.circular_skis]
         roots = [ski for ski in relevant_skis if self.parent_map.get(ski) not in relevant_skis]
 
-        for r_ski in sorted(roots, key=lambda x: (self.cert_data[x].common_name.lower(), self.cert_data[x].cert_id)):
+        for r_ski in sorted(roots, key=lambda x: (self.cert_data[x].common_name.lower(), self.cert_data[x].fingerprint.lower())):
             p_id = self.parent_map.get(r_ski)
             if p_id is None or p_id == r_ski:
-                trusted_tree.append(to_node(r_ski))
+                trusted_tree.append(to_node(r_ski, max_depth=max_depth))
             elif p_id == CYCLE_NODE_ID:
                 cycle_skis.append(r_ski)
             else:
@@ -596,8 +597,8 @@ class TrustChainBuilder:
             ext_node = self._create_virtual_node(ORPHAN_NODE_ID)
             processed_orphans = []
 
-            for o in sorted(orphan_skis, key=lambda x: (self.cert_data[x].common_name.lower(), self.cert_data[x].cert_id)):
-                child_node = to_node(o)
+            for o in sorted(orphan_skis, key=lambda x: (self.cert_data[x].common_name.lower(), self.cert_data[x].fingerprint.lower())):
+                child_node = to_node(o, max_depth=max_depth)
                 child_node.add_parent(ext_node)
                 processed_orphans.append(child_node)
 
@@ -609,10 +610,10 @@ class TrustChainBuilder:
             processed_cycles = []
 
             unique_cycle_skis = list(dict.fromkeys(cycle_skis))
-            for c_ski in sorted(unique_cycle_skis, key=lambda x: (self.cert_data[x].common_name.lower(), self.cert_data[x].cert_id)):
+            for c_ski in sorted(unique_cycle_skis, key=lambda x: (self.cert_data[x].common_name.lower(), self.cert_data[x].fingerprint.lower())):
                 if c_ski in node_cache:
                     del node_cache[c_ski]
-                node = to_node(c_ski, parent_status="INVALID")
+                node = to_node(c_ski, parent_status="INVALID", max_depth=max_depth)
                 node.children = []
                 node.is_in_circular_group = True
 

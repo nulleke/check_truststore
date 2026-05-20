@@ -10,16 +10,17 @@ for orphans and circular references.
 
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Union, Optional
-
-try:
-    from pydantic import BaseModel, Field, ConfigDict, model_validator
-
-    PYDANTIC_AVAILABLE = True
-except ImportError:
-    PYDANTIC_AVAILABLE = False
-
 from .logging import Icons
 from .policy import PolicyFinding
+
+PYDANTIC_AVAILABLE = False
+try:
+    import pydantic
+    if pydantic.__version__.startswith("2"):
+        from pydantic import BaseModel, Field, ConfigDict, model_validator
+        PYDANTIC_AVAILABLE = True
+except (ImportError, AttributeError):
+    PYDANTIC_AVAILABLE = False
 
 ORPHAN_NODE_ID = "EXTERNAL_OR_MISSING_ISSUER"
 CYCLE_NODE_ID = "CIRCULAR_REFERENCE"
@@ -353,7 +354,7 @@ if PYDANTIC_AVAILABLE:
                     key=lambda x: (
                         getattr(x, "common_name", "").lower(),
                         getattr(x, "serial_number", "").lower(),
-                        getattr(x, "sha256_hash", "").lower(),
+                        x.fingerprint.lower(),
                     ),
                 )
                 d["children"] = [c.model_dump(**kwargs) for c in sorted_children]
@@ -398,7 +399,7 @@ else:
                     sort_weight(x),
                     getattr(x, "common_name", "").lower(),
                     getattr(x, "serial_number", "").lower(),
-                    getattr(x, "sha256_hash", "").lower(),
+                    x.fingerprint.lower(),
                 ),
             )
 
@@ -464,13 +465,14 @@ else:
                 isinstance(getattr(self, "expiry_date", None), str)
                 and self.expiry_date != "1970-01-01"
             ):
+                clean_date = self.expiry_date.replace(" ", "T").replace("Z", "").split(".")[0]
                 try:
-                    self.expiry_date = datetime.strptime(
-                        self.expiry_date.split(".")[0].replace("Z", ""),
-                        "%Y-%m-%dT%H:%M:%S",
-                    )
-                except Exception:
-                    pass
+                    self.expiry_date = datetime.strptime(clean_date, "%Y-%m-%dT%H:%M:%S")
+                except ValueError:
+                    try:
+                        self.expiry_date = datetime.strptime(clean_date, "%Y-%m-%d")
+                    except ValueError:
+                        pass
 
         def add_parent(self, parent: "Certificate"):
             parent_hashes = {getattr(p, "sha256_hash", "") for p in self.parents}
@@ -525,7 +527,7 @@ else:
                     key=lambda x: (
                         getattr(x, "common_name", "").lower(),
                         getattr(x, "serial_number", "").lower(),
-                        getattr(x, "sha256_hash", "").lower(),
+                        x.fingerprint.lower(),
                     ),
                 )
                 res["children"] = [c.model_dump(**kwargs) for c in sorted_children]

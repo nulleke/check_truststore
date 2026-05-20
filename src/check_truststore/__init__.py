@@ -9,7 +9,7 @@ input providers, and rendering results.
 """
 
 __author__ = "Serge van Thillo"
-__version__ = "1.2.2"
+__version__ = "1.2.3"
 
 from .engine import (
     TrustStoreAnalyzer,

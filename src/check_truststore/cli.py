@@ -28,6 +28,7 @@
 # -----------------------------------------------------------------------------
 
 import sys
+import platform
 import argparse
 import json
 import io
@@ -105,6 +106,26 @@ def get_provider(input_str: str, stdin_content: Optional[str], repo: Certificate
 
     return SingleFileInputProvider(path, repository=repo, **kwargs)
 
+def get_version_string():
+    app_version = __version__
+    python_ver = platform.python_version()
+    os_name = platform.system()
+
+    if os_name == "Linux":
+        try:
+            os_info = platform.freedesktop_os_release()
+            os_pretty = os_info.get("PRETTY_NAME", "Linux")
+        except AttributeError:
+            os_pretty = f"Linux ({platform.release()})"
+    else:
+        os_pretty = f"{os_name} {platform.release()}"
+
+    return _("check_truststore v{app_version} (Python {python_ver} on {os_pretty})").format(
+        app_version=app_version,
+        python_ver=python_ver,
+        os_pretty=os_pretty
+    )
+
 def main() -> None:
     setup_utf8_output()
     try:
@@ -137,7 +158,7 @@ def main() -> None:
         parser.add_argument(
             "--version",
             action="version",
-            version=f"%(prog)s {__version__}",
+            version=get_version_string(),
             help=_("Show program's version number and exit"),
         )
         parser.add_argument(
