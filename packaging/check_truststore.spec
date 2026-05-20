@@ -17,6 +17,7 @@ BuildRequires:  python3-pip
 BuildRequires:  python3-setuptools
 BuildRequires:  python3-wheel
 BuildRequires:  gettext
+BuildRequires:  systemd-rpm-macros
 
 %if 0%{?rhel} == 8 || 0%{?rhel} == 9
 BuildRequires:  python3-cryptography
