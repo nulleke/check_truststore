@@ -71,7 +71,7 @@ def get_provider(input_str: str, stdin_content: Optional[str], repo: Certificate
     Factory logic to determine the correct provider based on input type or content.
     """
     if input_str.startswith(("https://", "http://")):
-        return HttpsInputProvider(input_str, repository=repo, **kwargs)
+        return HttpsInputProvider([input_str], repository=repo, **kwargs)
 
     if input_str == "-":
         if not stdin_content:
@@ -205,6 +205,11 @@ def main() -> None:
             default=4,
             help=_("Maximum recursion depth for chain discovery (default: 4)"),
         )
+        analysis_group.add_argument(
+            "--internal-domains",
+            nargs="+",
+            help=_("List of internal TLDs or domains to treat as private (e.g., --internal-domains lan local)"),
+        )
 
         output_group = parser.add_argument_group(_("Output & Debugging"))
         output_group.add_argument(
@@ -280,7 +285,18 @@ def main() -> None:
 
         # Main provider loop
         effective_inputs = args.inputs if args.inputs else ["-"]
-        for input_str in effective_inputs:
+        https_urls = [i for i in effective_inputs if i.startswith(("https://", "http://"))]
+        other_inputs = [i for i in effective_inputs if not i.startswith(("https://", "http://"))]
+
+        if https_urls:
+            provider = HttpsInputProvider(urls=https_urls, repository=repo, **vars(args))
+            groups = provider.get_groups()
+            if groups:
+                analysis_groups.extend(groups)
+            elif args.debug:
+                WARNING.log(", ".join(https_urls), _("No certificates found via this provider."))
+
+        for input_str in other_inputs:
             provider = get_provider(input_str, stdin_content, repo, **vars(args))
 
             if provider:

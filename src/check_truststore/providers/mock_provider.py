@@ -223,7 +223,7 @@ class MockProvider(BaseInputProvider):
                 "is_system_cert": False
             })
 
-        return [TrustStoreGroup(name="Mock Test Suite", targets=pool)]
+        return [TrustStoreGroup(name="Mock Test Suite", targets=pool, ignore_ct=True)]
 
     def _generate_test_suite(self) -> List[x509.Certificate]:
         """

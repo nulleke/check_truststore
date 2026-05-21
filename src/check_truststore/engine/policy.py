@@ -5,7 +5,7 @@ Architect: Serge van Thillo
 SPDX-License-Identifier: LGPL-3.0-or-later
 """
 
-from typing import List, Optional, Any, Dict
+from typing import List, Optional, Any, Dict, Set
 from datetime import timezone
 from cryptography import x509
 from cryptography.hazmat.primitives.asymmetric import rsa, ec, padding as rsa_padding
@@ -61,14 +61,21 @@ class PolicyEngine:
     modern security standards, trust constraints, and cryptographic best practices.
     """
 
-    def __init__(self, **kwargs):
+    DEPRECATED_HASHES = frozenset({'sha1', 'md5', 'md2', 'md4'})
+    DEFAULT_INTERNAL_TLDS = frozenset({'.lan', '.local', '.internal', '.home.arpa', '.node'})
+
+    def __init__(self, ignore_ct=False, **kwargs):
         """
         Initializes the engine with default security thresholds for 2026.
         """
         self.min_rsa_bits = 2048
         self.min_ecdsa_bits = 256
+        user_domains = kwargs.get('internal_domains') or []
+        self.internal_tlds = self.DEFAULT_INTERNAL_TLDS.union({
+            d if d.startswith('.') else f'.{d}' for d in user_domains
+        })
         self.debug = kwargs.get('debug', False)
-        self.internal_tlds = {'.lan', '.local', '.internal', '.home.arpa', '.node'}
+        self.ignore_ct = ignore_ct
 
     def validate(self, cert: x509.Certificate, issuer: Optional[x509.Certificate] = None, path_depth: Optional[int] = None, target_hostname: Optional[str] = None) -> List[PolicyFinding]:
         """
@@ -82,16 +89,18 @@ class PolicyEngine:
             A list of PolicyFinding objects representing discovered issues.
         """
         findings: List[PolicyFinding] = []
+        present_oids = {ext.oid for ext in cert.extensions}
+        is_internal = self._is_internal_domain(cert)
 
         # Independent Cryptographic Checks
         findings.extend(self._check_key_strength(cert))
         findings.extend(self._check_signature_algorithm(cert))
 
         # Check validity period
-        findings.extend(self._check_validity_period(cert))
+        findings.extend(self._check_validity_period(cert, is_internal))
 
         # RFC 6125 Compliancy Checks
-        findings.extend(self._check_rfc6125_compliance(cert))
+        findings.extend(self._check_rfc6125_compliance(cert, present_oids, is_internal))
 
         # Link Validation (Requires Issuer)
         if issuer:
@@ -121,7 +130,7 @@ class PolicyEngine:
                 ))
 
             # Check if the issuer imposes constraints on the subject's name
-            findings.extend(self._check_name_constraints(cert, issuer))
+            findings.extend(self._check_name_constraints(cert, issuer, present_oids))
 
             if path_depth is not None:
                 findings.extend(self._check_path_limit(cert, issuer, path_depth))
@@ -149,13 +158,16 @@ class PolicyEngine:
             ))
 
         # Usage & Extension checks
-        findings.extend(self._check_eku_compliance(cert))
+        findings.extend(self._check_eku_compliance(cert, present_oids))
+
+        # Checks presence of Signed Certificate Timestamps (SCT)
+        findings.extend(self._check_ct_compliance(cert, present_oids, is_internal))
 
         # Check presence of crl for non root certificates
-        findings.extend(self._check_crl_presence(cert))
+        findings.extend(self._check_crl_presence(cert, present_oids, is_internal))
 
         # Check presence of a Netscape Comment field
-        findings.extend(self._check_netscape_comment(cert))
+        findings.extend(self._check_netscape_comment(cert, present_oids))
 
         # Check if hostname matches the certificate commonName
         if target_hostname:
@@ -203,9 +215,6 @@ class PolicyEngine:
         except InvalidSignature:
             return False
 
-        except Exception:
-            return False
-
     def is_ca(self, cert: x509.Certificate) -> bool:
         """
         Determines if a certificate is permitted to act as a Certificate Authority (CA).
@@ -215,7 +224,7 @@ class PolicyEngine:
         on legacy environments (Python 3.6) that occur when 'ExtensionNotFound'
         exceptions are raised from within the Rust-based cryptography layer.
         """
-        present_oids = [ext.oid for ext in cert.extensions]
+        present_oids = {ext.oid for ext in cert.extensions}
 
         if ExtensionOID.BASIC_CONSTRAINTS in present_oids:
             bc = cert.extensions.get_extension_for_oid(ExtensionOID.BASIC_CONSTRAINTS)
@@ -244,7 +253,7 @@ class PolicyEngine:
             return False
 
         try:
-            present_oids = [ext.oid for ext in cert.extensions]
+            present_oids = {ext.oid for ext in cert.extensions}
 
             ski_val = None
             if ExtensionOID.SUBJECT_KEY_IDENTIFIER in present_oids:
@@ -261,12 +270,32 @@ class PolicyEngine:
             if ski_val and aki_val:
                 return ski_val == aki_val
 
-        except Exception:
-            return True
+        except (x509.ExtensionNotFound, AttributeError):
+            return False
 
         return True
 
-    def _is_internal_domain(self, cert: x509.Certificate) -> bool:
+    def _check_ct_compliance(self, cert: x509.Certificate, present_oids: Set[Any], is_internal: bool) -> List[PolicyFinding]:
+        """
+        Checks if the certificate contains Signed Certificate Timestamps (SCT).
+        """
+        if is_internal or self.ignore_ct or self.is_ca(cert):
+            return []
+
+        CT_SCT_OID = x509.ObjectIdentifier("1.3.6.1.4.1.11129.2.4.2")
+        findings: List[PolicyFinding] = []
+
+        if CT_SCT_OID not in present_oids:
+            findings.append(PolicyFinding(
+                level="WARNING",
+                code="CT_MISSING",
+                label="POLICY_VIOLATION",
+                message=N_("Certificate lacks Signed Certificate Timestamps (SCT). Not CT-compliant."),
+                code_int=2
+            ))
+        return findings
+
+    def _is_internal_domain(self, cert: x509.Certificate, present_oids: Optional[Set[Any]] = None) -> bool:
         """
         Detects if a certificate is intended for internal/private use.
         Checks for private TLDs, non-FQDNs, and private IP address ranges.
@@ -278,7 +307,9 @@ class PolicyEngine:
                 if any(cn.endswith(tld) for tld in self.internal_tlds):
                     return True
 
-            present_oids = [ext.oid for ext in cert.extensions]
+            if present_oids is None:
+                present_oids = {ext.oid for ext in cert.extensions}
+
             if ExtensionOID.SUBJECT_ALTERNATIVE_NAME in present_oids:
                 san = cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
 
@@ -356,7 +387,7 @@ class PolicyEngine:
             return findings
 
         algo_name = algo.name.lower()
-        if algo_name in ['sha1', 'md5', 'md2', 'md4']:
+        if algo_name in self.DEPRECATED_HASHES:
             findings.append(PolicyFinding(
                 level="ERROR",
                 code="DEPRECATED_HASH",
@@ -368,13 +399,12 @@ class PolicyEngine:
 
         return findings
 
-    def _check_eku_compliance(self, cert: x509.Certificate) -> List[PolicyFinding]:
+    def _check_eku_compliance(self, cert: x509.Certificate, present_oids: Set[Any]) -> List[PolicyFinding]:
         """
         Analyzes Extended Key Usage (EKU) to ensure the certificate is
         purposed correctly and not over-privileged.
         """
         findings: List[PolicyFinding] = []
-        present_oids = [ext.oid for ext in cert.extensions]
 
         if ExtensionOID.EXTENDED_KEY_USAGE not in present_oids:
             # For modern TLS/SSL, EKU is expected.
@@ -415,7 +445,7 @@ class PolicyEngine:
                 ))
 
             # Add information about the primary purpose for display logic
-            readable_usages = self._get_eku(cert)
+            readable_usages = self._get_eku(cert, present_oids)
             if readable_usages:
                 findings.append(PolicyFinding(
                     level="INFO",
@@ -437,12 +467,11 @@ class PolicyEngine:
 
         return findings
 
-    def _get_eku(self, cert: x509.Certificate) -> List[str]:
+    def _get_eku(self, cert: x509.Certificate, present_oids: Set[Any]) -> List[str]:
         """
         Maps EKU OIDs to human-readable strings.
         """
         try:
-            present_oids = [ext.oid for ext in cert.extensions]
             if ExtensionOID.EXTENDED_KEY_USAGE not in present_oids:
                 return []
 
@@ -467,7 +496,7 @@ class PolicyEngine:
         except Exception:
             return []
 
-    def _check_validity_period(self, cert: x509.Certificate) -> List[PolicyFinding]:
+    def _check_validity_period(self, cert: x509.Certificate, is_internal: bool) -> List[PolicyFinding]:
         """
         Checks if the certificate validity exceeds industry standards (e.g., 398 days).
         Internal domains are treated with lower severity.
@@ -484,26 +513,25 @@ class PolicyEngine:
         )
 
         duration = not_after - not_before
-        is_internal = self._is_internal_domain(cert)
+        limit = 398 if not is_internal else 825
 
-        if not self.is_ca(cert) and duration.days > 398:
+        if not self.is_ca(cert) and duration.days > limit:
             findings.append(PolicyFinding(
                 level="INFO" if is_internal else "WARNING",
                 code="LONG_VALIDITY",
                 label="POLICY_VIOLATION",
-                message=N_("Validity period ({days} days) exceeds the 398-day limit."),
-                params={"days": duration.days},
+                message=N_("Validity period ({days} days) exceeds the {limit}-day limit."),
+                params={"days": duration.days, "limit": limit},
                 code_int=0 if is_internal else 1
             ))
         return findings
 
-    def _check_rfc6125_compliance(self, cert: x509.Certificate) -> List[PolicyFinding]:
+    def _check_rfc6125_compliance(self, cert: x509.Certificate, present_oids: Set[Any], is_internal: bool) -> List[PolicyFinding]:
         """
         Verifies compliance with RFC 6125: If the SAN extension is present,
         the Common Name (CN) must also be included within the SAN list.
         """
         findings: List[PolicyFinding] = []
-        is_internal = self._is_internal_domain(cert)
 
         if self.is_ca(cert):
             return findings
@@ -513,13 +541,12 @@ class PolicyEngine:
             return findings
 
         cn_value = common_names[0].value.lower()
-        present_oids = [ext.oid for ext in cert.extensions]
 
         if ExtensionOID.SUBJECT_ALTERNATIVE_NAME in present_oids:
             san = cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
             san_dns = [name.lower() for name in san.value.get_values_for_type(x509.DNSName)]
             san_ips = [str(ip) for ip in san.value.get_values_for_type(x509.IPAddress)]
-            all_san_values = san_dns + san_ips
+            all_san_values = set(san_dns + san_ips)
 
             if cn_value not in all_san_values:
                 findings.append(PolicyFinding(
@@ -553,17 +580,15 @@ class PolicyEngine:
 
         return findings
 
-    def _check_crl_presence(self, cert: x509.Certificate) -> List[PolicyFinding]:
+    def _check_crl_presence(self, cert: x509.Certificate, present_oids: Set[Any], is_internal: bool) -> List[PolicyFinding]:
         """
         Checks for CRL Distribution Points (CDP).
         Warnings are suppressed for Root certificates (self-signed).
         """
         findings: List[PolicyFinding] = []
         is_root = self.is_root_ca(cert)
-        is_internal = self._is_internal_domain(cert)
 
         if not is_root:
-            present_oids = [ext.oid for ext in cert.extensions]
             if ExtensionOID.CRL_DISTRIBUTION_POINTS not in present_oids:
                 if not is_root:
                     level = "INFO" if is_internal else "WARNING"
@@ -587,9 +612,9 @@ class PolicyEngine:
         if not self.is_ca(cert):
             return findings
 
-        present_oids = [ext.oid for ext in issuer.extensions]
+        issuer_oids = {ext.oid for ext in issuer.extensions}
 
-        if ExtensionOID.BASIC_CONSTRAINTS in present_oids:
+        if ExtensionOID.BASIC_CONSTRAINTS in issuer_oids:
             bc = issuer.extensions.get_extension_for_oid(ExtensionOID.BASIC_CONSTRAINTS)
             path_len = bc.value.path_length
             if path_len is not None and (depth - 1) > path_len:
@@ -610,7 +635,7 @@ class PolicyEngine:
         It prioritizes Subject Alternative Names (SAN) over the legacy Common Name.
         """
         findings: List[PolicyFinding] = []
-        target_host = target_host.lower()
+        target_host_lower = target_host.lower()
         matched = False
 
         try:
@@ -620,7 +645,7 @@ class PolicyEngine:
             dns_names = []
 
         for pattern in dns_names:
-            if self._dns_name_match(pattern, target_host):
+            if self._dns_name_match(pattern, target_host_lower):
                 matched = True
                 break
 
@@ -630,7 +655,7 @@ class PolicyEngine:
                 code="HOSTNAME_MISMATCH",
                 label="INVALID",
                 message=N_("Hostname mismatch: Certificate is valid for '{names}', but you connected to '{target}'."),
-                params={"names": ", ".join(dns_names), "target": target_host},
+                params={"names": ", ".join(dns_names), "target": target_host_lower},
                 code_int=4
             ))
         return findings
@@ -640,9 +665,6 @@ class PolicyEngine:
         Professional RFC 6125 Wildcard Matcher.
         Reference: RFC 6125 Section 6.4.3
         """
-        pattern = pattern.lower()
-        hostname = hostname.lower()
-
         if pattern == hostname:
             return True
 
@@ -651,9 +673,6 @@ class PolicyEngine:
 
         parts = pattern.split('.')
         if parts[0] != '*' or len(parts) < 3:
-            return False
-
-        if len(parts) < 3:
             return False
 
         remainder = ".".join(parts[1:])
@@ -665,7 +684,7 @@ class PolicyEngine:
 
         return "." not in hostname_left_label
 
-    def _check_netscape_comment(self, cert: x509.Certificate) -> List[PolicyFinding]:
+    def _check_netscape_comment(self, cert: x509.Certificate, present_oids: Optional[Set[Any]] = None) -> List[PolicyFinding]:
         """
         Extracts and reports the legacy Netscape Comment extension if present.
         Often used in older PKI infrastructures to provide administrative info.
@@ -673,22 +692,25 @@ class PolicyEngine:
         findings = []
         NETSCAPE_COMMENT_OID = x509.ObjectIdentifier("2.16.840.1.113730.1.13")
         try:
-            for ext in cert.extensions:
-                if ext.oid == NETSCAPE_COMMENT_OID:
-                    comment_value = ext.value.value.decode('utf-8', errors='replace')
-                    findings.append(PolicyFinding(
-                        level="INFO",
-                        code="COMMENT",
-                        label="COMMENT",
-                        message=N_("Netscape Comment found: {comment}"),
-                        params={"comment": comment_value},
-                        code_int=0
-                    ))
+            if present_oids is None:
+                present_oids = {ext.oid for ext in cert.extensions}
+
+            if NETSCAPE_COMMENT_OID in present_oids:
+                ext = cert.extensions.get_extension_for_oid(NETSCAPE_COMMENT_OID)
+                comment_value = ext.value.value.decode('utf-8', errors='replace')
+                findings.append(PolicyFinding(
+                    level="INFO",
+                    code="COMMENT",
+                    label="COMMENT",
+                    message=N_("Netscape Comment found: {comment}"),
+                    params={"comment": comment_value},
+                    code_int=0
+                ))
         except Exception:
             pass
         return findings
 
-    def _check_name_constraints(self, cert: x509.Certificate, issuer: x509.Certificate) -> List[PolicyFinding]:
+    def _check_name_constraints(self, cert: x509.Certificate, issuer: x509.Certificate, present_oids: Optional[Set[Any]] = None) -> List[PolicyFinding]:
         """
         Validates Name Constraints (RFC 5280) imposed by the issuer on the subject.
         Ensures the certificate's identity falls within the permitted subtrees
@@ -700,15 +722,15 @@ class PolicyEngine:
             constraints = nc_ext.value
 
             cert_names = []
-            try:
+            if ExtensionOID.SUBJECT_ALTERNATIVE_NAME in present_oids:
                 san_ext = cert.extensions.get_extension_for_oid(ExtensionOID.SUBJECT_ALTERNATIVE_NAME)
                 cert_names = [
-                    n.value if hasattr(n, 'value') else str(n)
+                    n.value.lower() if hasattr(n, 'value') else str(n).lower()
                     for n in san_ext.value.get_values_for_type(x509.DNSName)
                 ]
-            except x509.ExtensionNotFound:
+            else:
                 cert_names = [
-                    attr.value if hasattr(attr, 'value') else str(attr)
+                    attr.value.lower() if hasattr(attr, 'value') else str(attr).lower()
                     for attr in cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
                 ]
 
@@ -719,7 +741,7 @@ class PolicyEngine:
                         base = subtree.base if hasattr(subtree, 'base') else subtree
 
                         if isinstance(base, x509.DNSName):
-                            if self._match_dns(name_str, base.value):
+                            if self._match_dns(name_str, base.value.lower()):
                                 is_permitted = True
                                 break
 
@@ -738,7 +760,7 @@ class PolicyEngine:
                     for subtree in constraints.excluded_subtrees:
                         base = subtree.base if hasattr(subtree, 'base') else subtree
                         if isinstance(base, x509.DNSName):
-                            if self._match_dns(name_str, base.value):
+                            if self._match_dns(name_str, base.value.lower()):
                                 findings.append(PolicyFinding(
                                     level="ERROR",
                                     code="NAME_CONSTRAINT_EXCLUDED",
@@ -755,12 +777,13 @@ class PolicyEngine:
 
     def _match_dns(self, hostname: str, constraint: str) -> bool:
         """
-        Performs DNS subtree matching for Name Constraints according to RFC 5280.
-        A constraint '.example.com' matches 'host.example.com' and 'example.com'.
+        Performs DNS subtree matching for Name Constraints.
+        Matches 'safe.lan' and '.safe.lan' against 'safe.lan' and 'www.safe.lan'.
         """
-        hostname = hostname.lower().lstrip('.')
-        constraint = constraint.lower().lstrip('.')
+        clean_constraint = constraint.lstrip('.')
 
-        if hostname == constraint or hostname.endswith("." + constraint):
-            return True
-        return False
+        if hostname.startswith('*.'):
+            wildcard_base = hostname[2:]
+            return wildcard_base == clean_constraint or wildcard_base.endswith('.' + clean_constraint)
+
+        return hostname == clean_constraint or hostname.endswith('.' + clean_constraint)

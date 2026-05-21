@@ -4,9 +4,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: check_truststore 1.2.3\n"
+"Project-Id-Version: check_truststore 1.2.4\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-20 08:23+0200\n"
+"POT-Creation-Date: 2026-05-21 16:53+0200\n"
 "PO-Revision-Date: 2026-05-07 14:35+0200\n"
 "Last-Translator: Assistant\n"
 "Language-Team: fr\n"
@@ -15,38 +15,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-
-msgid "SystemProvider"
-msgstr "FournisseurSystème"
-
-#, python-brace-format
-msgid "Could not load system truststore: {error}"
-msgstr "Impossible de charger le magasin de confiance du système : {error}"
-
-msgid "Processing Group"
-msgstr "Traitement du groupe"
-
-msgid "Export"
-msgstr "Exportation"
-
-msgid "Using PEM sequence fallback for legacy environment"
-msgstr ""
-"Utilisation du mode de secours (séquence PEM) voor l'environnement hérité"
-
-#, python-brace-format
-msgid "Bundle saved to {path}"
-msgstr "Lot enregistré sous {path}"
-
-#, python-brace-format
-msgid "Failed to create bundle: {error}"
-msgstr "Échec de la création du lot: {error}"
-
-#, python-brace-format
-msgid "{used} of the {total} system certificates used"
-msgstr "{used} des {total} certificats système utilisés"
-
-msgid "System usage"
-msgstr "Utilisation du système"
 
 msgid "Invalid DER structure"
 msgstr "Structure DER invalide"
@@ -81,170 +49,6 @@ msgstr "Limite maximale de certificats ({limit}) atteinte. Arrêt de l'analyse."
 #, python-brace-format
 msgid "File too large ({size:.1f}MB)"
 msgstr "Fichier trop volumineux ({size:.1f} Mo)"
-
-#, python-brace-format
-msgid ""
-"The cryptographic signature from issuer '{issuer}' is invalid or could not "
-"be verified."
-msgstr ""
-"La signature cryptographique de l'émetteur '{issuer}' est invalide ou n'a "
-"pas pu être vérifiée."
-
-#, python-brace-format
-msgid "Issuer '{issuer}' is not a CA or lacks keyCertSign usage."
-msgstr ""
-"L'émetteur '{issuer}' n'est pas une CA ou ne possède pas l'usage "
-"'keyCertSign'."
-
-#, python-brace-format
-msgid ""
-"The issuer '{issuer}' could not be found in the truststore, making this "
-"chain untrusted."
-msgstr ""
-"L'émetteur '{issuer}' est introuvable dans le magasin de confiance, rendant "
-"cette chaîne non fiable."
-
-msgid ""
-"This certificate is untrusted because it or an issuer in its chain has been "
-"revoked."
-msgstr ""
-"Ce certificat n'est pas fiable car il a été révoqué, ou l'un de ses "
-"émetteurs dans la chaîne l'a été."
-
-#, python-brace-format
-msgid ""
-"RSA key size ({bits} bits) is below the minimum required {min_bits} bits."
-msgstr ""
-"La taille de la clé RSA ({bits} bits) est inférieure au minimum requis de "
-"{min_bits} bits."
-
-#, python-brace-format
-msgid ""
-"ECC key size ({bits} bits) is below the minimum required {min_bits} bits."
-msgstr ""
-"La taille de la clé ECC ({bits} bits) est inférieure au minimum requis de "
-"{min_bits} bits."
-
-msgid "The signature algorithm is unknown or unsupported by the system."
-msgstr "L'algorithme de signature est inconnu ou non supporté par le système."
-
-msgid "Certificate is missing a hashing algorithm for its signature."
-msgstr ""
-"Le certificat ne contient pas d'algorithme de hachage pour sa signature."
-
-#, python-brace-format
-msgid "Certificate uses a deprecated hash algorithm ({name})."
-msgstr "Le certificat utilise un algorithme de hachage obsolète ({name})."
-
-msgid "End-entity certificate lacks Extended Key Usage extension."
-msgstr ""
-"Le certificat d'entité finale ne possède pas l'extension Extended Key Usage "
-"(EKU)."
-
-msgid ""
-"Certificate contains 'Any Extended Key Usage', which is overly permissive."
-msgstr ""
-"Le certificat contient 'Any Extended Key Usage', ce qui est trop permissif."
-
-msgid ""
-"Certificate allows both Server Auth and Code Signing. Functional separation "
-"is recommended."
-msgstr ""
-"Le certificat autorise à la fois l'authentification serveur et la signature "
-"de code. Une séparation fonctionnelle est recommandée."
-
-msgid "Could not parse Extended Key Usage extension data."
-msgstr "Impossible d'analyser les données de l'extension Extended Key Usage."
-
-msgid "Server Authentication"
-msgstr "Authentification Serveur"
-
-msgid "Client Authentication"
-msgstr "Authentification Client"
-
-msgid "Code Signing"
-msgstr "Signature de code"
-
-msgid "Email Protection"
-msgstr "Protection de messagerie"
-
-msgid "Time Stamping"
-msgstr "Horodatage"
-
-msgid "OCSP Signing"
-msgstr "Signature OCSP"
-
-msgid "IPSec User"
-msgstr "Utilisateur IPSec"
-
-msgid "IPSec Intermediate"
-msgstr "Intermédiaire IPSec"
-
-msgid "IPSec Tunnel"
-msgstr "Tunnel IPSec"
-
-#, python-brace-format
-msgid "Unknown ({oid})"
-msgstr "Inconnu ({oid})"
-
-#, python-brace-format
-msgid "Validity period ({days} days) exceeds the 398-day limit."
-msgstr ""
-"La période de validité du certificat ({days} jours) dépasse la limite de 398 "
-"jours."
-
-#, python-brace-format
-msgid "Common Name '{cn}' is missing from Subject Alternative Names (SAN)."
-msgstr "Le Common Name '{cn}' est absent des Subject Alternative Names (SAN)."
-
-#, python-brace-format
-msgid ""
-"SAN contains a non-FQDN '{name}', which is disallowed for public "
-"certificates."
-msgstr ""
-"Le SAN contient un nom non-FQDN '{name}', ce qui est interdit pour les "
-"certificats publics."
-
-msgid "Certificate lacks a SAN extension. Relying solely on CN is deprecated."
-msgstr ""
-"Le certificat n'a pas d'extension SAN. L'utilisation exclusive du CN est "
-"obsolète."
-
-msgid ""
-"Certificate lacks CRL Distribution Points (CDP). Revocation checking may be "
-"limited."
-msgstr ""
-"Le certificat ne contient pas de points de distribution CRL (CDP). La "
-"vérification de révocation peut être limitée."
-
-#, python-brace-format
-msgid ""
-"Path length constraint exceeded. Issuer allows max {limit} intermediate(s)."
-msgstr ""
-"Contrainte de longueur de chaîne dépassée. L'émetteur autorise max {limit} "
-"intermédiaire(s)."
-
-#, python-brace-format
-msgid ""
-"Hostname mismatch: Certificate is valid for '{names}', but you connected to "
-"'{target}'."
-msgstr ""
-"Erreur de nom d'hôte : Le certificat est valide pour '{names}', mais vous "
-"êtes connecté à '{target}'."
-
-#, python-brace-format
-msgid "Netscape Comment found: {comment}"
-msgstr "Commentaire Netscape trouvé : {comment}"
-
-#, python-brace-format
-msgid "Certificate name '{name}' is not permitted by issuer constraints."
-msgstr ""
-"Le nom du certificat '{name}' n'est pas autorisé par les contraintes de "
-"l'émetteur."
-
-#, python-brace-format
-msgid "Certificate name '{name}' is explicitly excluded by the issuer."
-msgstr "Le nom du certificat '{name}' est explicitement exclu par l'émetteur."
 
 msgid "CACHE"
 msgstr "CACHE"
@@ -449,6 +253,209 @@ msgstr ""
 msgid "A circular certificate reference was detected."
 msgstr "Une référence de certificat circulaire a été détectée."
 
+msgid "SystemProvider"
+msgstr "FournisseurSystème"
+
+#, python-brace-format
+msgid "Could not load system truststore: {error}"
+msgstr "Impossible de charger le magasin de confiance du système : {error}"
+
+msgid "Parallel Analysis"
+msgstr "Analyse parallèle"
+
+#, python-brace-format
+msgid "Group failed: {error}"
+msgstr "Échec du groupe : {error}"
+
+msgid "Export"
+msgstr "Exportation"
+
+msgid "Used OpenSSL CLI fallback to generate real PKCS#7 bundle"
+msgstr "Fallback CLI OpenSSL utilisé pour générer un vrai bundle PKCS#7"
+
+msgid "OpenSSL CLI fallback failed, using raw PEM list: {}"
+msgstr "Échec du fallback CLI OpenSSL, utilisation de la liste PEM brute : {}"
+
+msgid "Trust bundle exported successfully to {}"
+msgstr "Bundle de confiance exporté avec succès vers {}"
+
+msgid "Failed to export trust bundle"
+msgstr "Échec de l'exportation du bundle de confiance"
+
+#, python-brace-format
+msgid "{used} of the {total} system certificates used"
+msgstr "{used} des {total} certificats système utilisés"
+
+msgid "System usage"
+msgstr "Utilisation du système"
+
+#, python-brace-format
+msgid ""
+"The cryptographic signature from issuer '{issuer}' is invalid or could not "
+"be verified."
+msgstr ""
+"La signature cryptographique de l'émetteur '{issuer}' est invalide ou n'a "
+"pas pu être vérifiée."
+
+#, python-brace-format
+msgid "Issuer '{issuer}' is not a CA or lacks keyCertSign usage."
+msgstr ""
+"L'émetteur '{issuer}' n'est pas une CA ou ne possède pas l'usage "
+"'keyCertSign'."
+
+#, python-brace-format
+msgid ""
+"The issuer '{issuer}' could not be found in the truststore, making this "
+"chain untrusted."
+msgstr ""
+"L'émetteur '{issuer}' est introuvable dans le magasin de confiance, rendant "
+"cette chaîne non fiable."
+
+msgid ""
+"This certificate is untrusted because it or an issuer in its chain has been "
+"revoked."
+msgstr ""
+"Ce certificat n'est pas fiable car il a été révoqué, ou l'un de ses "
+"émetteurs dans la chaîne l'a été."
+
+msgid ""
+"Certificate lacks Signed Certificate Timestamps (SCT). Not CT-compliant."
+msgstr "Le certificat ne contient pas d'horodatages de certificat signés (SCT). Non conforme CT."
+
+#, python-brace-format
+msgid ""
+"RSA key size ({bits} bits) is below the minimum required {min_bits} bits."
+msgstr ""
+"La taille de la clé RSA ({bits} bits) est inférieure au minimum requis de "
+"{min_bits} bits."
+
+#, python-brace-format
+msgid ""
+"ECC key size ({bits} bits) is below the minimum required {min_bits} bits."
+msgstr ""
+"La taille de la clé ECC ({bits} bits) est inférieure au minimum requis de "
+"{min_bits} bits."
+
+msgid "The signature algorithm is unknown or unsupported by the system."
+msgstr "L'algorithme de signature est inconnu ou non supporté par le système."
+
+msgid "Certificate is missing a hashing algorithm for its signature."
+msgstr ""
+"Le certificat ne contient pas d'algorithme de hachage pour sa signature."
+
+#, python-brace-format
+msgid "Certificate uses a deprecated hash algorithm ({name})."
+msgstr "Le certificat utilise un algorithme de hachage obsolète ({name})."
+
+msgid "End-entity certificate lacks Extended Key Usage extension."
+msgstr ""
+"Le certificat d'entité finale ne possède pas l'extension Extended Key Usage "
+"(EKU)."
+
+msgid ""
+"Certificate contains 'Any Extended Key Usage', which is overly permissive."
+msgstr ""
+"Le certificat contient 'Any Extended Key Usage', ce qui est trop permissif."
+
+msgid ""
+"Certificate allows both Server Auth and Code Signing. Functional separation "
+"is recommended."
+msgstr ""
+"Le certificat autorise à la fois l'authentification serveur et la signature "
+"de code. Une séparation fonctionnelle est recommandée."
+
+msgid "Could not parse Extended Key Usage extension data."
+msgstr "Impossible d'analyser les données de l'extension Extended Key Usage."
+
+msgid "Server Authentication"
+msgstr "Authentification Serveur"
+
+msgid "Client Authentication"
+msgstr "Authentification Client"
+
+msgid "Code Signing"
+msgstr "Signature de code"
+
+msgid "Email Protection"
+msgstr "Protection de messagerie"
+
+msgid "Time Stamping"
+msgstr "Horodatage"
+
+msgid "OCSP Signing"
+msgstr "Signature OCSP"
+
+msgid "IPSec User"
+msgstr "Utilisateur IPSec"
+
+msgid "IPSec Intermediate"
+msgstr "Intermédiaire IPSec"
+
+msgid "IPSec Tunnel"
+msgstr "Tunnel IPSec"
+
+#, python-brace-format
+msgid "Unknown ({oid})"
+msgstr "Inconnu ({oid})"
+
+#, python-brace-format
+msgid "Validity period ({days} days) exceeds the {limit}-day limit."
+msgstr ""
+"La période de validité ({days} jours) dépasse la limite de {limit} jours."
+
+#, python-brace-format
+msgid "Common Name '{cn}' is missing from Subject Alternative Names (SAN)."
+msgstr "Le Common Name '{cn}' est absent des Subject Alternative Names (SAN)."
+
+#, python-brace-format
+msgid ""
+"SAN contains a non-FQDN '{name}', which is disallowed for public "
+"certificates."
+msgstr ""
+"Le SAN contient un nom non-FQDN '{name}', ce qui est interdit pour les "
+"certificats publics."
+
+msgid "Certificate lacks a SAN extension. Relying solely on CN is deprecated."
+msgstr ""
+"Le certificat n'a pas d'extension SAN. L'utilisation exclusive du CN est "
+"obsolète."
+
+msgid ""
+"Certificate lacks CRL Distribution Points (CDP). Revocation checking may be "
+"limited."
+msgstr ""
+"Le certificat ne contient pas de points de distribution CRL (CDP). La "
+"vérification de révocation peut être limitée."
+
+#, python-brace-format
+msgid ""
+"Path length constraint exceeded. Issuer allows max {limit} intermediate(s)."
+msgstr ""
+"Contrainte de longueur de chaîne dépassée. L'émetteur autorise max {limit} "
+"intermédiaire(s)."
+
+#, python-brace-format
+msgid ""
+"Hostname mismatch: Certificate is valid for '{names}', but you connected to "
+"'{target}'."
+msgstr ""
+"Erreur de nom d'hôte : Le certificat est valide pour '{names}', mais vous "
+"êtes connecté à '{target}'."
+
+#, python-brace-format
+msgid "Netscape Comment found: {comment}"
+msgstr "Commentaire Netscape trouvé : {comment}"
+
+#, python-brace-format
+msgid "Certificate name '{name}' is not permitted by issuer constraints."
+msgstr ""
+"Le nom du certificat '{name}' n'est pas autorisé par les contraintes de "
+"l'émetteur."
+
+#, python-brace-format
+msgid "Certificate name '{name}' is explicitly excluded by the issuer."
+msgstr "Le nom du certificat '{name}' est explicitement exclu par l'émetteur."
+
 msgid "Unknown JSON format or malformed structure."
 msgstr "Format JSON inconnu ou structure malformée."
 
@@ -493,6 +500,10 @@ msgstr "Initialisation de la connexion TLS vers {host}:{port}"
 #, python-brace-format
 msgid "Failed to fetch certificate from {host}"
 msgstr "Échec de la récupération du certificat depuis {host}"
+
+#, python-brace-format
+msgid "Thread crash while processing {host}"
+msgstr "Crash du thread lors du traitement de {host}"
 
 msgid "Unknown format: {}"
 msgstr "Format inconnu : {}"
@@ -617,6 +628,13 @@ msgid "Maximum recursion depth for chain discovery (default: 4)"
 msgstr ""
 "Profondeur de récursion maximale pour la découverte de chaîne (par défaut : "
 "4)"
+
+msgid ""
+"List of internal TLDs or domains to treat as private (e.g., --internal-"
+"domains lan local)"
+msgstr ""
+"Liste des TLD ou domaines internes à traiter comme privés (ex. : --internal-"
+"domains lan local)"
 
 msgid "Output & Debugging"
 msgstr "Sortie et débogage"

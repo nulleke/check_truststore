@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.2.4] - 2026-05-21
+
+### 🚀 Highlights
+*   **Batch HTTPS Scanning**: Architectural shift from sequential URL processing to bulk ingestion. The tool now aggregates all network targets upfront, allowing the engine to handle multiple live endpoints much more efficiently.
+
+### Added
+*   **Dynamic Hostname Grouping**: Certificates fetched from multiple HTTPS endpoints are now dynamically split into their own isolated `TrustStoreGroup` containers (e.g., `HTTPS: example.com`), ensuring strict cryptographic separation during the analysis phase.
+
+### Changed
+*   **CLI Input Orchestration**: Optimized the core argument parsing logic in `cli.py` to extract and bundle network-based targets before initializing input providers.
+
+---
+
+## [v1.2.3] - 2026-05-19
+
+### 🚀 Highlights
+*   **Enterprise Linux Packaging**: Added official RPM `.spec` files and Setuptools patches, enabling automated native builds for RHEL, AlmaLinux, and Rocky Linux (versions 8, 9, and 10).
+*   **Deterministic Rendering**: Replaced SHA-256 sorting with unified fingerprint attributes and alphabetical tie-breakers, guaranteeing 100% deterministic UI and JSON outputs.
+
+### Added
+*   **Enterprise Integration Guide**: Introduced `INTEGRATION.md` featuring blueprints for Prometheus Alertmanager metrics and Ansible Automation Platform (AAP) in-memory modules.
+*   **Cache Automation Docs**: Added documentation for automated AIA/CRL cache cleanup scheduling via `systemd-tmpfiles`.
+
+### Changed
+*   **Strict Depth Control**: The recursive chain builder now strictly enforces the user-defined `max_depth` parameter instead of relying on internal fallback limits.
+*   **Verbose Environment Info**: Enhanced the `--version` flag to dynamically extract and print the exact host OS distribution details alongside the Python version.
+
+### Fixed
+*   **Robust Date Parsing**: Improved fallback mechanisms for non-standard `expiry_date` strings, gracefully handling missing subseconds or missing timezone offsets.
+*   **AIA Caching Mapping**: Resolved a critical discovery bug by correctly utilizing the Subject Key Identifier (SKI) for cache mapping.
+*   **Blacklist Pools**: Fixed an issue where the OS `blacklist_pool` was not properly propagated to the builder when system truststores were explicitly included.
+*   **CI/CD Pipeline Stability**: Injected explicit UTF-8 locales (`LANG: "C.UTF-8"`) into GitLab C
+
+---
+
 ## [v1.2.2] - 2026-05-14 (Stable)
 
 ### 🚀 Highlights
@@ -23,6 +58,8 @@ All notable changes to this project will be documented in this file.
 *   **Status Signaling**: Introduced a dedicated `EXPIRING` status (⏳) to clearly distinguish certificates nearing expiry from those with general configuration warnings.
 *   **Translation Updates**: Synchronized Dutch, German, and French locale files to include the new technical strings for Name Constraints and Netscape Comments.
 
+---
+
 ## [v1.2.0] - 2026-05-07 (Stable)
 
 ### 🚀 Highlights
@@ -40,6 +77,8 @@ All notable changes to this project will be documented in this file.
 ### Changed
 *   **Code Maintenance**: Unified license headers (LGPL-3.0) and author attributions across all core modules.
 *   **CLI Feedback**: Improved error handling and logging in `cli.py` for scenarios where input providers fail to locate certificates, providing better diagnostic information in debug mode.
+
+---
 
 ## [v1.1.6] - 2026-05-04 (Stable)
 
@@ -65,11 +104,15 @@ All notable changes to this project will be documented in this file.
 *   **PyPI Metadata**: Badges in the `README.md` have been updated and now point to the correct PyPI locations.
 *   **Test Matrix**: Automated tests now explicitly validate compatibility across different `cryptography` versions for both legacy and modern Python environments.
 
+---
+
 ## [1.1.5] - 2026-05-03 (Stable)
 *   **Robustness**: Added a global `KeyboardInterrupt` handler in `cli.py` to prevent stacktraces during user interruptions.
 *   **Integrity**: Integrated GitLab source and issue tracker URLs into PyPI metadata.
 *   **Automation**: Full GitLab CI/CD pipeline for multi-version Python testing (3.6 to 3.14).
 *   **Localization**: Improved `gettext` integration with automated `.mo` compilation in the build process.
+
+---
 
 ## [1.1.3] - 2026-05-02 (Stable)
 

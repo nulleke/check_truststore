@@ -6,9 +6,9 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: check_truststore 1.2.3\n"
+"Project-Id-Version: check_truststore 1.2.4\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-20 08:23+0200\n"
+"POT-Creation-Date: 2026-05-21 16:53+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,37 +16,6 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
-
-msgid "SystemProvider"
-msgstr ""
-
-#, python-brace-format
-msgid "Could not load system truststore: {error}"
-msgstr ""
-
-msgid "Processing Group"
-msgstr ""
-
-msgid "Export"
-msgstr ""
-
-msgid "Using PEM sequence fallback for legacy environment"
-msgstr ""
-
-#, python-brace-format
-msgid "Bundle saved to {path}"
-msgstr ""
-
-#, python-brace-format
-msgid "Failed to create bundle: {error}"
-msgstr ""
-
-#, python-brace-format
-msgid "{used} of the {total} system certificates used"
-msgstr ""
-
-msgid "System usage"
-msgstr ""
 
 msgid "Invalid DER structure"
 msgstr ""
@@ -80,138 +49,6 @@ msgstr ""
 
 #, python-brace-format
 msgid "File too large ({size:.1f}MB)"
-msgstr ""
-
-#, python-brace-format
-msgid ""
-"The cryptographic signature from issuer '{issuer}' is invalid or could not "
-"be verified."
-msgstr ""
-
-#, python-brace-format
-msgid "Issuer '{issuer}' is not a CA or lacks keyCertSign usage."
-msgstr ""
-
-#, python-brace-format
-msgid ""
-"The issuer '{issuer}' could not be found in the truststore, making this "
-"chain untrusted."
-msgstr ""
-
-msgid ""
-"This certificate is untrusted because it or an issuer in its chain has been "
-"revoked."
-msgstr ""
-
-#, python-brace-format
-msgid ""
-"RSA key size ({bits} bits) is below the minimum required {min_bits} bits."
-msgstr ""
-
-#, python-brace-format
-msgid ""
-"ECC key size ({bits} bits) is below the minimum required {min_bits} bits."
-msgstr ""
-
-msgid "The signature algorithm is unknown or unsupported by the system."
-msgstr ""
-
-msgid "Certificate is missing a hashing algorithm for its signature."
-msgstr ""
-
-#, python-brace-format
-msgid "Certificate uses a deprecated hash algorithm ({name})."
-msgstr ""
-
-msgid "End-entity certificate lacks Extended Key Usage extension."
-msgstr ""
-
-msgid ""
-"Certificate contains 'Any Extended Key Usage', which is overly permissive."
-msgstr ""
-
-msgid ""
-"Certificate allows both Server Auth and Code Signing. Functional separation "
-"is recommended."
-msgstr ""
-
-msgid "Could not parse Extended Key Usage extension data."
-msgstr ""
-
-msgid "Server Authentication"
-msgstr ""
-
-msgid "Client Authentication"
-msgstr ""
-
-msgid "Code Signing"
-msgstr ""
-
-msgid "Email Protection"
-msgstr ""
-
-msgid "Time Stamping"
-msgstr ""
-
-msgid "OCSP Signing"
-msgstr ""
-
-msgid "IPSec User"
-msgstr ""
-
-msgid "IPSec Intermediate"
-msgstr ""
-
-msgid "IPSec Tunnel"
-msgstr ""
-
-#, python-brace-format
-msgid "Unknown ({oid})"
-msgstr ""
-
-#, python-brace-format
-msgid "Validity period ({days} days) exceeds the 398-day limit."
-msgstr ""
-
-#, python-brace-format
-msgid "Common Name '{cn}' is missing from Subject Alternative Names (SAN)."
-msgstr ""
-
-#, python-brace-format
-msgid ""
-"SAN contains a non-FQDN '{name}', which is disallowed for public "
-"certificates."
-msgstr ""
-
-msgid "Certificate lacks a SAN extension. Relying solely on CN is deprecated."
-msgstr ""
-
-msgid ""
-"Certificate lacks CRL Distribution Points (CDP). Revocation checking may be "
-"limited."
-msgstr ""
-
-#, python-brace-format
-msgid ""
-"Path length constraint exceeded. Issuer allows max {limit} intermediate(s)."
-msgstr ""
-
-#, python-brace-format
-msgid ""
-"Hostname mismatch: Certificate is valid for '{names}', but you connected to "
-"'{target}'."
-msgstr ""
-
-#, python-brace-format
-msgid "Netscape Comment found: {comment}"
-msgstr ""
-
-#, python-brace-format
-msgid "Certificate name '{name}' is not permitted by issuer constraints."
-msgstr ""
-
-#, python-brace-format
-msgid "Certificate name '{name}' is explicitly excluded by the issuer."
 msgstr ""
 
 msgid "CACHE"
@@ -409,6 +246,178 @@ msgstr ""
 msgid "A circular certificate reference was detected."
 msgstr ""
 
+msgid "SystemProvider"
+msgstr ""
+
+#, python-brace-format
+msgid "Could not load system truststore: {error}"
+msgstr ""
+
+msgid "Parallel Analysis"
+msgstr ""
+
+#, python-brace-format
+msgid "Group failed: {error}"
+msgstr ""
+
+msgid "Export"
+msgstr ""
+
+msgid "Used OpenSSL CLI fallback to generate real PKCS#7 bundle"
+msgstr ""
+
+msgid "OpenSSL CLI fallback failed, using raw PEM list: {}"
+msgstr ""
+
+msgid "Trust bundle exported successfully to {}"
+msgstr ""
+
+msgid "Failed to export trust bundle"
+msgstr ""
+
+#, python-brace-format
+msgid "{used} of the {total} system certificates used"
+msgstr ""
+
+msgid "System usage"
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"The cryptographic signature from issuer '{issuer}' is invalid or could not "
+"be verified."
+msgstr ""
+
+#, python-brace-format
+msgid "Issuer '{issuer}' is not a CA or lacks keyCertSign usage."
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"The issuer '{issuer}' could not be found in the truststore, making this "
+"chain untrusted."
+msgstr ""
+
+msgid ""
+"This certificate is untrusted because it or an issuer in its chain has been "
+"revoked."
+msgstr ""
+
+msgid ""
+"Certificate lacks Signed Certificate Timestamps (SCT). Not CT-compliant."
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"RSA key size ({bits} bits) is below the minimum required {min_bits} bits."
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"ECC key size ({bits} bits) is below the minimum required {min_bits} bits."
+msgstr ""
+
+msgid "The signature algorithm is unknown or unsupported by the system."
+msgstr ""
+
+msgid "Certificate is missing a hashing algorithm for its signature."
+msgstr ""
+
+#, python-brace-format
+msgid "Certificate uses a deprecated hash algorithm ({name})."
+msgstr ""
+
+msgid "End-entity certificate lacks Extended Key Usage extension."
+msgstr ""
+
+msgid ""
+"Certificate contains 'Any Extended Key Usage', which is overly permissive."
+msgstr ""
+
+msgid ""
+"Certificate allows both Server Auth and Code Signing. Functional separation "
+"is recommended."
+msgstr ""
+
+msgid "Could not parse Extended Key Usage extension data."
+msgstr ""
+
+msgid "Server Authentication"
+msgstr ""
+
+msgid "Client Authentication"
+msgstr ""
+
+msgid "Code Signing"
+msgstr ""
+
+msgid "Email Protection"
+msgstr ""
+
+msgid "Time Stamping"
+msgstr ""
+
+msgid "OCSP Signing"
+msgstr ""
+
+msgid "IPSec User"
+msgstr ""
+
+msgid "IPSec Intermediate"
+msgstr ""
+
+msgid "IPSec Tunnel"
+msgstr ""
+
+#, python-brace-format
+msgid "Unknown ({oid})"
+msgstr ""
+
+#, python-brace-format
+msgid "Validity period ({days} days) exceeds the {limit}-day limit."
+msgstr ""
+
+#, python-brace-format
+msgid "Common Name '{cn}' is missing from Subject Alternative Names (SAN)."
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"SAN contains a non-FQDN '{name}', which is disallowed for public "
+"certificates."
+msgstr ""
+
+msgid "Certificate lacks a SAN extension. Relying solely on CN is deprecated."
+msgstr ""
+
+msgid ""
+"Certificate lacks CRL Distribution Points (CDP). Revocation checking may be "
+"limited."
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"Path length constraint exceeded. Issuer allows max {limit} intermediate(s)."
+msgstr ""
+
+#, python-brace-format
+msgid ""
+"Hostname mismatch: Certificate is valid for '{names}', but you connected to "
+"'{target}'."
+msgstr ""
+
+#, python-brace-format
+msgid "Netscape Comment found: {comment}"
+msgstr ""
+
+#, python-brace-format
+msgid "Certificate name '{name}' is not permitted by issuer constraints."
+msgstr ""
+
+#, python-brace-format
+msgid "Certificate name '{name}' is explicitly excluded by the issuer."
+msgstr ""
+
 msgid "Unknown JSON format or malformed structure."
 msgstr ""
 
@@ -450,6 +459,10 @@ msgstr ""
 
 #, python-brace-format
 msgid "Failed to fetch certificate from {host}"
+msgstr ""
+
+#, python-brace-format
+msgid "Thread crash while processing {host}"
 msgstr ""
 
 msgid "Unknown format: {}"
@@ -565,6 +578,11 @@ msgid "Expiration threshold in days (default: 30)"
 msgstr ""
 
 msgid "Maximum recursion depth for chain discovery (default: 4)"
+msgstr ""
+
+msgid ""
+"List of internal TLDs or domains to treat as private (e.g., --internal-"
+"domains lan local)"
 msgstr ""
 
 msgid "Output & Debugging"

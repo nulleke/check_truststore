@@ -37,7 +37,9 @@ class TrustChainBuilder:
         self.raw_certs: Dict[str, x509.Certificate] = {}
         self.parent_map: Dict[str, str] = {}
         self.name_count: Dict[str, int] = defaultdict(int)
-        self.policy_engine = PolicyEngine(**kwargs)
+        engine_kwargs = kwargs.copy()
+        ignore_ct_val = engine_kwargs.pop('ignore_ct', False)
+        self.policy_engine = PolicyEngine(ignore_ct=ignore_ct_val, **engine_kwargs)
         self.parents_map: Dict[str, List[str]] = defaultdict(list)
 
     def build(

@@ -20,7 +20,7 @@ class TrustStoreGroup:
     Each group results in a separate trust tree in the output.
     """
 
-    def __init__(self, name: str, targets: List[Union[Path, Dict[str, Any]]], target_hostname: Optional[str] = None):
+    def __init__(self, name: str, targets: List[Union[Path, Dict[str, Any]]], target_hostname: Optional[str] = None, ignore_ct: bool = False):
         """
         Initializes a group.
 
@@ -31,6 +31,7 @@ class TrustStoreGroup:
         self.name = name
         self.targets = targets
         self.target_hostname = target_hostname
+        self.ignore_ct = ignore_ct
 
 
 class BaseInputProvider(ABC):
