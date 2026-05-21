@@ -5,9 +5,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: check_truststore 1.2.3\n"
+"Project-Id-Version: check_truststore 1.2.4\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-20 08:23+0200\n"
+"POT-Creation-Date: 2026-05-21 16:53+0200\n"
 "PO-Revision-Date: 2026-04-13 11:08+0200\n"
 "Last-Translator: Serge van Thillo <nulleke76@gmail.com>\n"
 "Language-Team: Dutch <vertaling@vrijschrift.org>\n"
@@ -16,38 +16,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-
-msgid "SystemProvider"
-msgstr "Systeem-provider"
-
-#, python-brace-format
-msgid "Could not load system truststore: {error}"
-msgstr "Kon systeem-truststore niet laden: {error}"
-
-msgid "Processing Group"
-msgstr "Groep verwerken"
-
-msgid "Export"
-msgstr "Export"
-
-msgid "Using PEM sequence fallback for legacy environment"
-msgstr "PEM-reeks fallback wordt gebruikt voor legacy omgeving"
-
-#, python-brace-format
-msgid "Bundle saved to {path}"
-msgstr "Bundel opgeslagen in {path}"
-
-#, python-brace-format
-msgid "Failed to create bundle: {error}"
-msgstr "Niet gelukt om een bundel te maken: {error}"
-
-# python-brace-format
-#, python-brace-format
-msgid "{used} of the {total} system certificates used"
-msgstr "{used} van de {total} systeem-certificaten gebruikt"
-
-msgid "System usage"
-msgstr "Systeemgebruik"
 
 msgid "Invalid DER structure"
 msgstr "Ongeldige DER structuur"
@@ -82,164 +50,6 @@ msgstr "Maximale certificaatlimiet ({limit}) bereikt. Scan wordt gestopt."
 #, python-brace-format
 msgid "File too large ({size:.1f}MB)"
 msgstr "Bestand te groot ({size:.1f}MB)."
-
-#, python-brace-format
-msgid ""
-"The cryptographic signature from issuer '{issuer}' is invalid or could not "
-"be verified."
-msgstr ""
-"De cryptografische handtekening van uitgever '{issuer}' is ongeldig of kon "
-"niet worden geverifieerd."
-
-#, python-brace-format
-msgid "Issuer '{issuer}' is not a CA or lacks keyCertSign usage."
-msgstr "Uitgever '{issuer}' is geen CA of mist de 'keyCertSign' rechten."
-
-#, python-brace-format
-msgid ""
-"The issuer '{issuer}' could not be found in the truststore, making this "
-"chain untrusted."
-msgstr ""
-"De uitgever '{issuer}' is niet gevonden in de truststore, waardoor deze "
-"keten niet wordt vertrouwd."
-
-msgid ""
-"This certificate is untrusted because it or an issuer in its chain has been "
-"revoked."
-msgstr ""
-"Dit certificaat wordt niet vertrouwd omdat het certificaat zelf of een "
-"uitgever in de keten is ingetrokken (revoked)."
-
-#, python-brace-format
-msgid ""
-"RSA key size ({bits} bits) is below the minimum required {min_bits} bits."
-msgstr ""
-"RSA-sleutelgrootte ({bits} bits) is kleiner dan de minimaal vereiste "
-"{min_bits} bits."
-
-#, python-brace-format
-msgid ""
-"ECC key size ({bits} bits) is below the minimum required {min_bits} bits."
-msgstr ""
-"ECC-sleutelgrootte ({bits} bits) is kleiner dan de minimaal vereiste "
-"{min_bits} bits."
-
-msgid "The signature algorithm is unknown or unsupported by the system."
-msgstr ""
-"Het handtekening-algoritme is onbekend of wordt niet ondersteund door het "
-"systeem."
-
-msgid "Certificate is missing a hashing algorithm for its signature."
-msgstr "Het certificaat mist een hashing-algoritme voor de handtekening."
-
-#, python-brace-format
-msgid "Certificate uses a deprecated hash algorithm ({name})."
-msgstr "Het certificaat gebruikt een verouderd hash-algoritme ({name})."
-
-msgid "End-entity certificate lacks Extended Key Usage extension."
-msgstr "End-entity certificaat mist de 'Extended Key Usage' (EKU) extensie."
-
-msgid ""
-"Certificate contains 'Any Extended Key Usage', which is overly permissive."
-msgstr ""
-"Certificaat bevat 'Any Extended Key Usage', wat overmatig permissief is."
-
-msgid ""
-"Certificate allows both Server Auth and Code Signing. Functional separation "
-"is recommended."
-msgstr ""
-"Certificaat staat zowel Server Auth als Code Signing toe. Functionele "
-"scheiding wordt aanbevolen."
-
-msgid "Could not parse Extended Key Usage extension data."
-msgstr "Kon de 'Extended Key Usage' data niet verwerken."
-
-msgid "Server Authentication"
-msgstr "Server Authenticatie"
-
-msgid "Client Authentication"
-msgstr "Client Authenticatie"
-
-msgid "Code Signing"
-msgstr "Code Ondertekening"
-
-msgid "Email Protection"
-msgstr "E-mailbeveiliging"
-
-msgid "Time Stamping"
-msgstr "Tijdstempeling"
-
-msgid "OCSP Signing"
-msgstr "OCSP Ondertekening"
-
-msgid "IPSec User"
-msgstr "IPSec Gebruiker"
-
-msgid "IPSec Intermediate"
-msgstr "IPSec Intermediate"
-
-msgid "IPSec Tunnel"
-msgstr "IPSec Tunnel"
-
-#, python-brace-format
-msgid "Unknown ({oid})"
-msgstr "Onbekend ({oid})"
-
-#, python-brace-format
-msgid "Validity period ({days} days) exceeds the 398-day limit."
-msgstr "Geldigheidsduur ({days} dagen) overschrijdt de limiet van 398 dagen."
-
-#, python-brace-format
-msgid "Common Name '{cn}' is missing from Subject Alternative Names (SAN)."
-msgstr "Common Name '{cn}' ontbreekt in de Subject Alternative Names (SAN)."
-
-#, python-brace-format
-msgid ""
-"SAN contains a non-FQDN '{name}', which is disallowed for public "
-"certificates."
-msgstr ""
-"SAN bevat een niet-FQDN '{name}', wat niet is toegestaan voor publieke "
-"certificaten."
-
-msgid "Certificate lacks a SAN extension. Relying solely on CN is deprecated."
-msgstr ""
-"Certificaat mist een SAN-extensie. Vertrouwen op alleen de CN is verouderd."
-
-msgid ""
-"Certificate lacks CRL Distribution Points (CDP). Revocation checking may be "
-"limited."
-msgstr ""
-"Certificaat mist CRL-distributiepunten (CDP). Intrekkingscontrole is "
-"mogelijk beperkt."
-
-#, python-brace-format
-msgid ""
-"Path length constraint exceeded. Issuer allows max {limit} intermediate(s)."
-msgstr ""
-"Padlengte-beperking overschreden. Uitgever staat maximaal {limit} tussen-"
-"certificaten toe."
-
-#, python-brace-format
-msgid ""
-"Hostname mismatch: Certificate is valid for '{names}', but you connected to "
-"'{target}'."
-msgstr ""
-"Hostnaam-fout: Certificaat is geldig voor '{names}', maar u bent verbonden "
-"met '{target}'."
-
-#, python-brace-format
-msgid "Netscape Comment found: {comment}"
-msgstr "Netscape Commentaar gevonden: {comment}"
-
-#, python-brace-format
-msgid "Certificate name '{name}' is not permitted by issuer constraints."
-msgstr ""
-"Certificaatnaam '{name}' is niet toegestaan volgens de beperkingen van de "
-"uitgever."
-
-#, python-brace-format
-msgid "Certificate name '{name}' is explicitly excluded by the issuer."
-msgstr "Certificaatnaam '{name}' is expliciet uitgesloten door de uitgever."
 
 msgid "CACHE"
 msgstr "CACHE"
@@ -444,6 +254,206 @@ msgstr ""
 msgid "A circular certificate reference was detected."
 msgstr "Er is een circulaire certificaatverwijzing gedetecteerd."
 
+msgid "SystemProvider"
+msgstr "Systeem-provider"
+
+#, python-brace-format
+msgid "Could not load system truststore: {error}"
+msgstr "Kon systeem-truststore niet laden: {error}"
+
+msgid "Parallel Analysis"
+msgstr "Parallelle analyse"
+
+#, python-brace-format
+msgid "Group failed: {error}"
+msgstr "Groep mislukt: {error}"
+
+msgid "Export"
+msgstr "Export"
+
+msgid "Used OpenSSL CLI fallback to generate real PKCS#7 bundle"
+msgstr "OpenSSL CLI-fallback gebruikt om een echte PKCS#7-bundel te genereren"
+
+msgid "OpenSSL CLI fallback failed, using raw PEM list: {}"
+msgstr "OpenSSL CLI-fallback mislukt, ruwe PEM-lijst wordt gebruikt: {}"
+
+msgid "Trust bundle exported successfully to {}"
+msgstr "Vertrouwensbundel succesvol geëxporteerd naar {}"
+
+msgid "Failed to export trust bundle"
+msgstr "Exporteren van vertrouwensbundel mislukt"
+
+# python-brace-format
+#, python-brace-format
+msgid "{used} of the {total} system certificates used"
+msgstr "{used} van de {total} systeem-certificaten gebruikt"
+
+msgid "System usage"
+msgstr "Systeemgebruik"
+
+#, python-brace-format
+msgid ""
+"The cryptographic signature from issuer '{issuer}' is invalid or could not "
+"be verified."
+msgstr ""
+"De cryptografische handtekening van uitgever '{issuer}' is ongeldig of kon "
+"niet worden geverifieerd."
+
+#, python-brace-format
+msgid "Issuer '{issuer}' is not a CA or lacks keyCertSign usage."
+msgstr "Uitgever '{issuer}' is geen CA of mist de 'keyCertSign' rechten."
+
+#, python-brace-format
+msgid ""
+"The issuer '{issuer}' could not be found in the truststore, making this "
+"chain untrusted."
+msgstr ""
+"De uitgever '{issuer}' is niet gevonden in de truststore, waardoor deze "
+"keten niet wordt vertrouwd."
+
+msgid ""
+"This certificate is untrusted because it or an issuer in its chain has been "
+"revoked."
+msgstr ""
+"Dit certificaat wordt niet vertrouwd omdat het certificaat zelf of een "
+"uitgever in de keten is ingetrokken (revoked)."
+
+msgid ""
+"Certificate lacks Signed Certificate Timestamps (SCT). Not CT-compliant."
+msgstr "Certificaat mist Signed Certificate Timestamps (SCT). Niet CT-conform."
+
+#, python-brace-format
+msgid ""
+"RSA key size ({bits} bits) is below the minimum required {min_bits} bits."
+msgstr ""
+"RSA-sleutelgrootte ({bits} bits) is kleiner dan de minimaal vereiste "
+"{min_bits} bits."
+
+#, python-brace-format
+msgid ""
+"ECC key size ({bits} bits) is below the minimum required {min_bits} bits."
+msgstr ""
+"ECC-sleutelgrootte ({bits} bits) is kleiner dan de minimaal vereiste "
+"{min_bits} bits."
+
+msgid "The signature algorithm is unknown or unsupported by the system."
+msgstr ""
+"Het handtekening-algoritme is onbekend of wordt niet ondersteund door het "
+"systeem."
+
+msgid "Certificate is missing a hashing algorithm for its signature."
+msgstr "Het certificaat mist een hashing-algoritme voor de handtekening."
+
+#, python-brace-format
+msgid "Certificate uses a deprecated hash algorithm ({name})."
+msgstr "Het certificaat gebruikt een verouderd hash-algoritme ({name})."
+
+msgid "End-entity certificate lacks Extended Key Usage extension."
+msgstr "End-entity certificaat mist de 'Extended Key Usage' (EKU) extensie."
+
+msgid ""
+"Certificate contains 'Any Extended Key Usage', which is overly permissive."
+msgstr ""
+"Certificaat bevat 'Any Extended Key Usage', wat overmatig permissief is."
+
+msgid ""
+"Certificate allows both Server Auth and Code Signing. Functional separation "
+"is recommended."
+msgstr ""
+"Certificaat staat zowel Server Auth als Code Signing toe. Functionele "
+"scheiding wordt aanbevolen."
+
+msgid "Could not parse Extended Key Usage extension data."
+msgstr "Kon de 'Extended Key Usage' data niet verwerken."
+
+msgid "Server Authentication"
+msgstr "Server Authenticatie"
+
+msgid "Client Authentication"
+msgstr "Client Authenticatie"
+
+msgid "Code Signing"
+msgstr "Code Ondertekening"
+
+msgid "Email Protection"
+msgstr "E-mailbeveiliging"
+
+msgid "Time Stamping"
+msgstr "Tijdstempeling"
+
+msgid "OCSP Signing"
+msgstr "OCSP Ondertekening"
+
+msgid "IPSec User"
+msgstr "IPSec Gebruiker"
+
+msgid "IPSec Intermediate"
+msgstr "IPSec Intermediate"
+
+msgid "IPSec Tunnel"
+msgstr "IPSec Tunnel"
+
+#, python-brace-format
+msgid "Unknown ({oid})"
+msgstr "Onbekend ({oid})"
+
+#, python-brace-format
+msgid "Validity period ({days} days) exceeds the {limit}-day limit."
+msgstr ""
+"Geldigheidsduur ({days} dagen) overschrijdt de limiet van {limit} dagen."
+
+#, python-brace-format
+msgid "Common Name '{cn}' is missing from Subject Alternative Names (SAN)."
+msgstr "Common Name '{cn}' ontbreekt in de Subject Alternative Names (SAN)."
+
+#, python-brace-format
+msgid ""
+"SAN contains a non-FQDN '{name}', which is disallowed for public "
+"certificates."
+msgstr ""
+"SAN bevat een niet-FQDN '{name}', wat niet is toegestaan voor publieke "
+"certificaten."
+
+msgid "Certificate lacks a SAN extension. Relying solely on CN is deprecated."
+msgstr ""
+"Certificaat mist een SAN-extensie. Vertrouwen op alleen de CN is verouderd."
+
+msgid ""
+"Certificate lacks CRL Distribution Points (CDP). Revocation checking may be "
+"limited."
+msgstr ""
+"Certificaat mist CRL-distributiepunten (CDP). Intrekkingscontrole is "
+"mogelijk beperkt."
+
+#, python-brace-format
+msgid ""
+"Path length constraint exceeded. Issuer allows max {limit} intermediate(s)."
+msgstr ""
+"Padlengte-beperking overschreden. Uitgever staat maximaal {limit} tussen-"
+"certificaten toe."
+
+#, python-brace-format
+msgid ""
+"Hostname mismatch: Certificate is valid for '{names}', but you connected to "
+"'{target}'."
+msgstr ""
+"Hostnaam-fout: Certificaat is geldig voor '{names}', maar u bent verbonden "
+"met '{target}'."
+
+#, python-brace-format
+msgid "Netscape Comment found: {comment}"
+msgstr "Netscape Commentaar gevonden: {comment}"
+
+#, python-brace-format
+msgid "Certificate name '{name}' is not permitted by issuer constraints."
+msgstr ""
+"Certificaatnaam '{name}' is niet toegestaan volgens de beperkingen van de "
+"uitgever."
+
+#, python-brace-format
+msgid "Certificate name '{name}' is explicitly excluded by the issuer."
+msgstr "Certificaatnaam '{name}' is expliciet uitgesloten door de uitgever."
+
 msgid "Unknown JSON format or malformed structure."
 msgstr "Onbekend JSON-formaat of ongeldige structuur."
 
@@ -488,6 +498,10 @@ msgstr "TLS-verbinding opzetten met {host}:{port}"
 #, python-brace-format
 msgid "Failed to fetch certificate from {host}"
 msgstr "Ophalen van certificaat van {host} mislukt"
+
+#, python-brace-format
+msgid "Thread crash while processing {host}"
+msgstr "Thread-crash tijdens het verwerken van {host}"
 
 msgid "Unknown format: {}"
 msgstr "Onbekend formaat: {}"
@@ -606,6 +620,13 @@ msgstr "Vervaldrempel in dagen (standaard: 30)"
 
 msgid "Maximum recursion depth for chain discovery (default: 4)"
 msgstr "Maximale recursiediepte voor keten-ontdekking (standaard: 4)"
+
+msgid ""
+"List of internal TLDs or domains to treat as private (e.g., --internal-"
+"domains lan local)"
+msgstr ""
+"Lijst met interne TLD's of domeinen die als privé moeten worden behandeld "
+"(bijv. --internal-domains lan local)"
 
 msgid "Output & Debugging"
 msgstr "Output & Debugging"
