@@ -58,10 +58,10 @@ test_full_compatibility:
     - ./check_truststore --mock --format json > output_${PYTHON_VERSION}.json
     - python3 -m json.tool output_${PYTHON_VERSION}.json > /dev/null
   artifacts:
-    when: always
+    when: on_failure
     paths:
       - output_*.json
-    expire_in: 1 week
+    expire_in: 2 days
 
 deploy:
   stage: deploy
