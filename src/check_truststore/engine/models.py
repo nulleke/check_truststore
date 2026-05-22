@@ -218,7 +218,7 @@ if PYDANTIC_AVAILABLE:
         summary: Dict[str, Any] = Field(default_factory=dict)
         tree: List["Certificate"] = Field(default_factory=list)
         chain: List["Certificate"] = Field(default_factory=list)
-        ignore_ct: bool = Field(False, exclude=True)
+        disabled_checks: Union[bool, List[str]] = Field(default=False, exclude=True)
 
         model_config = ConfigDict(populate_by_name=True, extra="allow")
 
@@ -379,7 +379,7 @@ else:
             self.summary = kwargs.get("summary", {})
             self.tree = kwargs.get("tree", [])
             self.chain = kwargs.get("chain", [])
-            self.ignore_ct = kwargs.get("ignore_ct", False)
+            self.disabled_checks = kwargs.get("disabled_checks", False)
 
         def finalize(self):
             top_level_nodes = [

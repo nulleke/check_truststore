@@ -110,7 +110,7 @@ class TrustStoreAnalyzer:
             if target_host:
                 current_options['target_hostname'] = target_host
 
-            builder = TrustChainBuilder(repository=local_repo, ignore_ct=getattr(group_config, 'ignore_ct', False), **current_options)
+            builder = TrustChainBuilder(repository=local_repo, disabled_checks=getattr(group_config, 'disabled_checks', False), **current_options)
 
             local_targets = [t.copy() if isinstance(t, dict) else t for t in group_config.targets]
             current_pool = self._resolve_targets_local(local_targets, local_repo)

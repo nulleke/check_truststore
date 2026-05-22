@@ -64,7 +64,7 @@ class PolicyEngine:
     DEPRECATED_HASHES = frozenset({'sha1', 'md5', 'md2', 'md4'})
     DEFAULT_INTERNAL_TLDS = frozenset({'.lan', '.local', '.internal', '.home.arpa', '.node'})
 
-    def __init__(self, ignore_ct=False, **kwargs):
+    def __init__(self, **kwargs):
         """
         Initializes the engine with default security thresholds for 2026.
         """
@@ -75,7 +75,16 @@ class PolicyEngine:
             d if d.startswith('.') else f'.{d}' for d in user_domains
         })
         self.debug = kwargs.get('debug', False)
-        self.ignore_ct = ignore_ct
+        self.disabled_checks = kwargs.get('disabled_checks', False)
+        if isinstance(self.disabled_checks, list):
+            self.disabled_checks = set(self.disabled_checks)
+
+    def _should_ignore(self, check_name: str) -> bool:
+        if self.disabled_checks is True:
+            return True
+        if isinstance(self.disabled_checks, set) and check_name in self.disabled_checks:
+            return True
+        return False
 
     def validate(self, cert: x509.Certificate, issuer: Optional[x509.Certificate] = None, path_depth: Optional[int] = None, target_hostname: Optional[str] = None) -> List[PolicyFinding]:
         """
@@ -161,10 +170,14 @@ class PolicyEngine:
         findings.extend(self._check_eku_compliance(cert, present_oids))
 
         # Checks presence of Signed Certificate Timestamps (SCT)
-        findings.extend(self._check_ct_compliance(cert, present_oids, is_internal))
+        if not self._should_ignore("CT_CHECK"):
+            findings.extend(self._check_ct_compliance(cert, present_oids, is_internal))
+            pass
 
         # Check presence of crl for non root certificates
-        findings.extend(self._check_crl_presence(cert, present_oids, is_internal))
+        if not self._should_ignore("CRL_PRESENCE"):
+            findings.extend(self._check_crl_presence(cert, present_oids, is_internal))
+            pass
 
         # Check presence of a Netscape Comment field
         findings.extend(self._check_netscape_comment(cert, present_oids))
@@ -279,7 +292,7 @@ class PolicyEngine:
         """
         Checks if the certificate contains Signed Certificate Timestamps (SCT).
         """
-        if is_internal or self.ignore_ct or self.is_ca(cert):
+        if is_internal or self.is_ca(cert):
             return []
 
         CT_SCT_OID = x509.ObjectIdentifier("1.3.6.1.4.1.11129.2.4.2")
