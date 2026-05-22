@@ -97,6 +97,10 @@ class TrustStoreAnalyzer:
                     - name (str): The display name of the certificate group.
                     - tree_data (List[Certificate]): The generated root-level trust tree data.
             """
+            if self.debug:
+                with self._log_lock:
+                    INFO.log(_("Processing Group"), group_config.name)
+
             local_repo = CertificateRepository(**self.options)
 
             if self.include_system:
