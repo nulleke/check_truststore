@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: check_truststore 1.2.4\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-21 16:53+0200\n"
+"POT-Creation-Date: 2026-05-22 14:24+0200\n"
 "PO-Revision-Date: 2026-05-07 14:35+0200\n"
 "Last-Translator: Assistant\n"
 "Language-Team: fr\n"
@@ -253,42 +253,6 @@ msgstr ""
 msgid "A circular certificate reference was detected."
 msgstr "Une référence de certificat circulaire a été détectée."
 
-msgid "SystemProvider"
-msgstr "FournisseurSystème"
-
-#, python-brace-format
-msgid "Could not load system truststore: {error}"
-msgstr "Impossible de charger le magasin de confiance du système : {error}"
-
-msgid "Parallel Analysis"
-msgstr "Analyse parallèle"
-
-#, python-brace-format
-msgid "Group failed: {error}"
-msgstr "Échec du groupe : {error}"
-
-msgid "Export"
-msgstr "Exportation"
-
-msgid "Used OpenSSL CLI fallback to generate real PKCS#7 bundle"
-msgstr "Fallback CLI OpenSSL utilisé pour générer un vrai bundle PKCS#7"
-
-msgid "OpenSSL CLI fallback failed, using raw PEM list: {}"
-msgstr "Échec du fallback CLI OpenSSL, utilisation de la liste PEM brute : {}"
-
-msgid "Trust bundle exported successfully to {}"
-msgstr "Bundle de confiance exporté avec succès vers {}"
-
-msgid "Failed to export trust bundle"
-msgstr "Échec de l'exportation du bundle de confiance"
-
-#, python-brace-format
-msgid "{used} of the {total} system certificates used"
-msgstr "{used} des {total} certificats système utilisés"
-
-msgid "System usage"
-msgstr "Utilisation du système"
-
 #, python-brace-format
 msgid ""
 "The cryptographic signature from issuer '{issuer}' is invalid or could not "
@@ -320,7 +284,9 @@ msgstr ""
 
 msgid ""
 "Certificate lacks Signed Certificate Timestamps (SCT). Not CT-compliant."
-msgstr "Le certificat ne contient pas d'horodatages de certificat signés (SCT). Non conforme CT."
+msgstr ""
+"Le certificat ne contient pas d'horodatages de certificat signés (SCT). Non "
+"conforme CT."
 
 #, python-brace-format
 msgid ""
@@ -455,6 +421,45 @@ msgstr ""
 #, python-brace-format
 msgid "Certificate name '{name}' is explicitly excluded by the issuer."
 msgstr "Le nom du certificat '{name}' est explicitement exclu par l'émetteur."
+
+msgid "SystemProvider"
+msgstr "FournisseurSystème"
+
+#, python-brace-format
+msgid "Could not load system truststore: {error}"
+msgstr "Impossible de charger le magasin de confiance du système : {error}"
+
+msgid "Processing Group"
+msgstr "Traitement du groupe"
+
+msgid "Parallel Analysis"
+msgstr "Analyse parallèle"
+
+#, python-brace-format
+msgid "Group failed: {error}"
+msgstr "Échec du groupe : {error}"
+
+msgid "Export"
+msgstr "Exportation"
+
+msgid "Used OpenSSL CLI fallback to generate real PKCS#7 bundle"
+msgstr "Fallback CLI OpenSSL utilisé pour générer un vrai bundle PKCS#7"
+
+msgid "OpenSSL CLI fallback failed, using raw PEM list: {}"
+msgstr "Échec du fallback CLI OpenSSL, utilisation de la liste PEM brute : {}"
+
+msgid "Trust bundle exported successfully to {}"
+msgstr "Bundle de confiance exporté avec succès vers {}"
+
+msgid "Failed to export trust bundle"
+msgstr "Échec de l'exportation du bundle de confiance"
+
+#, python-brace-format
+msgid "{used} of the {total} system certificates used"
+msgstr "{used} des {total} certificats système utilisés"
+
+msgid "System usage"
+msgstr "Utilisation du système"
 
 msgid "Unknown JSON format or malformed structure."
 msgstr "Format JSON inconnu ou structure malformée."
