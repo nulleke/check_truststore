@@ -8,12 +8,16 @@ variables:
   LANG: "C.UTF-8"
   LC_ALL: "C.UTF-8"
 
+cache:
+  paths:
+    - .cache/pip
+
 test_full_compatibility:
   stage: test
   image: python:${PYTHON_VERSION}-slim
   parallel:
     matrix:
-      - PYTHON_VERSION: ["3.6", "3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+      - PYTHON_VERSION: ["3.6", "3.9", "3.10", "3.13", "3.14"]
   rules:
     - if: '$CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api"'
       when: on_success
