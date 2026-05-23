@@ -15,6 +15,7 @@ from .json_renderer import JsonRenderer
 from .status_renderer import StatusRenderer
 from .sarif_renderer import SarifRenderer
 from .graphviz_renderer import GraphvizRenderer
+from .prometheus_renderer import PrometheusRenderer
 
 
 class TrustStoreRenderer:
@@ -32,6 +33,7 @@ class TrustStoreRenderer:
             "sarif": SarifRenderer(),
             "graphviz": GraphvizRenderer(),
             "dot": GraphvizRenderer(),
+            "prom": PrometheusRenderer(),
         }
 
     def render(self, tree_data: List[Any], format_type: str, **kwargs: Any) -> Any:

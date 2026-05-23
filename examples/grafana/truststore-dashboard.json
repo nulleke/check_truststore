@@ -1,0 +1,79 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "panels": [
+    {
+      "title": "Certificate Validity Status",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "targets": [
+        { 
+          "expr": "truststore_cert_valid_status{group=~\"$group\"}", 
+          "format": "table",
+          "instant": true 
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "fingerprint": true, "instance": true, "job": true, "group": true, "serial": true, "Time": true },
+            "renameByName": { "Value": "Status", "common_name": "Certificate" }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "options": { "0": { "color": "red", "text": "Invalid" }, "1": { "color": "green", "text": "Valid" } }, "type": "value" }
+          ]
+        }
+      }
+    },
+    {
+      "title": "Expiration (Days to Expiry)",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 16, "x": 8, "y": 0 },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "instance": true, "job": true, "group": true, "fingerprint": true, "Time": true },
+            "renameByName": { "Value": "Days Remaining", "common_name": "Certificate" }
+          }
+        }
+      ],
+      "targets": [
+        { 
+          "expr": "(truststore_cert_expiry_timestamp_seconds{group=~\"$group\"} - time()) / 86400", 
+          "format": "table",
+          "instant": true 
+        }
+      ]
+    },
+    {
+      "title": "Policy Findings by Level",
+      "type": "bargauge",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "targets": [
+        { 
+          "expr": "sum(truststore_cert_policy_findings_total{group=~\"$group\"}) by (level)", 
+          "format": "time_series",
+          "legendFormat": "{{level}}" 
+        }
+      ]
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "group",
+        "type": "query",
+        "query": "label_values(truststore_cert_valid_status, group)",
+        "refresh": 1,
+        "label": "TrustStore Group"
+      }
+    ]
+  },
+  "title": "TrustStore Health Overview"
+}

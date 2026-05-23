@@ -1,5 +1,3 @@
-Markdown
-
 # Integration Guide: Enterprise TrustStore Monitoring & Automation
 
 This guide provides operational configurations, architectural blueprints, and automated integration patterns to deploy the `check_truststore` engine across enterprise infrastructures.
@@ -8,14 +6,15 @@ This guide provides operational configurations, architectural blueprints, and au
 
 ## Prometheus Monitoring Layer (Alertmanager Integration)
 
-When executed via CLI with the `-f status` flag, `check_truststore` exposes telemetry data blocks. This payload can be funneled into native, left-aligned time-series metrics via the **Prometheus Node Exporter Textfile Collector**.
+`check_truststore` exposes telemetry data via a native Prometheus renderer. This payload is designed to be ingested via the Prometheus Node Exporter Textfile Collector.
 
 ### Automation Exporter Schema (`/etc/cron.d/truststore_exporter`)
 
-Deploy this cron segment to automatically stream evaluated matrix properties into your metric collections every hour without syntax-breaking space indentations:
+Deploy this cron segment to stream evaluated metrics into your collections hourly using an atomic write pattern to ensure data consistency:
 
 ```bash
-0 * * * * root check_truststore https://www.example.lan -s -O -f status | jq -r '.groups | (map(.summary.totalCertificates) | add // 0) as $total | (map(select(.groupStatus == "OK")) | length) as $ok_groups | (map(select(.groupStatus == "WARNING")) | length) as $warning_groups | (map(select(.groupStatus == "ERROR" or .groupStatus == "INVALID")) | length) as $error_groups | "truststore_total_count \($total)\ntruststore_ok_groups \($ok_groups)\ntruststore_warning_groups \($warning_groups)\ntruststore_error_groups \($error_groups)"' > /var/lib/node_exporter/textfile_collector/truststore.prom
+# Update truststore metrics every hour
+0 * * * * root check_truststore https://www.example.lan -f prom > /var/lib/node_exporter/textfile_collector/truststore.prom.tmp && mv /var/lib/node_exporter/textfile_collector/truststore.prom{.tmp,}
 ```
 
 ### Core Alerting Rules Configuration (`prometheus/truststore_alerts.yml`)
@@ -24,26 +23,33 @@ Deploy this cron segment to automatically stream evaluated matrix properties int
 groups:
   - name: TrustStoreSecurityAlerts
     rules:
-      - alert: TrustStoreChainErrorDetected
-        expr: truststore_error_groups > 0
+      - alert: TrustStoreInvalidCertificate
+        expr: truststore_cert_valid_status == 0
         for: 2m
         labels:
           severity: critical
           tier: secops
         annotations:
-          summary: "Untrusted or Revoked Certificate Chain on {{ $labels.instance }}"
-          description: "The check_truststore engine discovered active chain errors (e.g., signature mismatch, OS blacklist violation, or incomplete chains). Immediate remediation required."
+          summary: "Invalid Certificate Detected: {{ $labels.common_name }}"
+          description: "The certificate '{{ $labels.common_name }}' (Serial: {{ $labels.serial }}) is currently reporting an invalid status on {{ $labels.instance }}."
 
-      - alert: TrustStoreCertificatesExpiringSoon
-        expr: truststore_warning_groups > 0
+      - alert: TrustStoreCertificateExpiringSoon
+        expr: (truststore_cert_expiry_timestamp_seconds - time()) / 86400 < 30
         for: 30m
         labels:
           severity: warning
           tier: infrastructure
         annotations:
-          summary: "Expiring trust assets detected on {{ $labels.instance }}"
-          description: "There are currently truststores breaching the defined operational threshold. Renew downstream authorities before validation workflows degrade."
+          summary: "Certificate Expiring Soon: {{ $labels.common_name }}"
+          description: "The certificate '{{ $labels.common_name }}' is expiring in less than 30 days on {{ $labels.instance }}."
 ```
+
+### Visualization (Grafana)
+
+To visualize these metrics, we provide a pre-configured dashboard template. This dashboard includes optimized panels for validity tracking, expiration monitoring, and policy analysis.
+
+*   **Dashboard Location:** [/examples/grafana/truststore-dashboard.json](/examples/grafana/truststore-dashboard.json)
+*   **Deployment:** Import this file directly via the **Grafana Import** interface. The dashboard is designed to auto-populate once the `truststore_*` metrics are ingested by your Prometheus instance.
 
 ## Ansible Automation Platform (AAP) Custom Module [WIP / UNTESTED]
 

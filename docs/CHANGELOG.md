@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.2.5] - 2026-05-23
+
+### 🚀 Highlights
+*   **Native Prometheus Rendering**: Replaced manual shell-scripting and `jq` parsing with a robust, native Prometheus metric renderer. This ensures atomic writes and consistent, high-performance metrics collection via the Node Exporter.
+*   **Production-Grade Grafana Dashboard**: Introduced a comprehensive dashboard template featuring optimized table views, value mappings, and instant queries, providing a professional "NOC-style" overview of TrustStore health.
+
+### Added
+*   **Grafana Dashboard Template**: Added `examples/grafana/truststore-dashboard.json` for plug-and-play visualization of validity status, expiry timelines, and policy findings.
+*   **Enhanced Integration Docs**: Expanded `INTEGRATION.md` with streamlined, step-by-step guides for Prometheus Alertmanager metrics and Grafana visualization setup.
+
+### Changed
+*   **Alerting Granularity**: Updated Prometheus Alertmanager rules to utilize granular certificate labels (`common_name`, `serial`, `instance`). This enables precise alerting per individual certificate, significantly reducing noise compared to group-wide summaries.
+*   **Exporter Automation**: Streamlined the cron-based exporter schedule to utilize atomic file moves (`mv` pattern), preventing data corruption/partial reads by the Node Exporter during collection.
+*   **Documentation Linking**: Added direct repository links to visualization templates within the integration documentation for improved "click-to-deploy" usability.
+
+### Internal
+*   **Renderer Refactoring**: Decoupled all renderers (Prometheus, JSON, SARIF, etc.) into a centralized class-based structure. This encapsulates the rendering logic, simplifies invocation from `cli.py`, and makes it significantly easier for developers to add new output formats in future releases.
+
 ## [v1.2.4] - 2026-05-21
 
 ### 🚀 Highlights

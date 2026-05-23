@@ -100,7 +100,7 @@ class GraphvizRenderer(BaseRenderer):
             return
 
         # Handle generic containers (CertificateGroup)
-        if hasattr(data, "children") and not hasattr(data, "cert_id") and not hasattr(data, "fingerprint"):
+        if hasattr(data, "children") and not hasattr(data, "fingerprint"):
             for child in getattr(data, "children", []):
                 self._build_graph_elements(child, group_idx)
             return
@@ -109,12 +109,9 @@ class GraphvizRenderer(BaseRenderer):
         cert_obj: Optional[Any] = data if (hasattr(data, "cert_id") or hasattr(data, "fingerprint")) else getattr(data, "certificate", None)
 
         if cert_obj:
-            # Use cert_id as primary identifier, fall back to sha256Hash
-            raw_id: str = getattr(cert_obj, "cert_id", None)
-            if not raw_id:
-                fp: str = getattr(cert_obj, "fingerprint", getattr(cert_obj, "sha256_hash", getattr(cert_obj, "sha256Hash", "unknown")))
-                raw_id = f"cert_{fp[:16]}"
-
+            # Use fingerprint as primary identifier
+            fp: str = getattr(cert_obj, "fingerprint", "unknown")
+            raw_id: str = f"cert_{fp[:16]}"
             scoped_id: str = f"g{group_idx}_{raw_id}"
             findings: List[Any] = getattr(data, "findings", [])
 
@@ -155,23 +152,23 @@ class GraphvizRenderer(BaseRenderer):
             children: List[Any] = getattr(data, "children", [])
             for child in children:
                 # Determine child ID for the edge
-                c_raw_id: str = getattr(child, "cert_id", None) or f"cert_{getattr(child, 'sha256_hash', getattr(child, 'sha256Hash', 'unknown'))[:16]}"
-                child_scoped_id: str = f"g{group_idx}_{c_raw_id}"
+                c_fp = getattr(child, "fingerprint", "unknown")
+                c_scoped_id: str = f"g{group_idx}_cert_{c_fp[:16]}"
 
                 # Logic for Green Dashed Edges (Cross-signing / Alternate paths)
                 # If child was already reached, mark this second path as cross-signed
-                if child_scoped_id in self.visited_for_children:
-                    self.edges.add(f'  "{scoped_id}" -> "{child_scoped_id}" [style="dashed", color="#2e7d32", constraint=false, arrowhead=empty];')
+                if c_scoped_id in self.visited_for_children:
+                    self.edges.add(f'  "{scoped_id}" -> "{c_scoped_id}" [style="dashed", color="#2e7d32", constraint=false, arrowhead=empty];')
                 else:
-                    self.edges.add(f'  "{scoped_id}" -> "{child_scoped_id}" [penwidth=1.0];')
-                    self.visited_for_children.add(child_scoped_id)
+                    self.edges.add(f'  "{scoped_id}" -> "{c_scoped_id}" [penwidth=1.0];')
+                    self.visited_for_children.add(c_scoped_id)
                     self._build_graph_elements(child, group_idx)
 
             # PROCESS UPWARD/ALTERNATE EDGES (Parent references)
             parents: List[Any] = getattr(cert_obj, "parents", [])
             for parent in parents:
-                p_raw_id: str = getattr(parent, "cert_id", None) or f"cert_{getattr(parent, 'sha256_hash', getattr(parent, 'sha256Hash', 'unknown'))[:16]}"
-                p_scoped_id: str = f"g{group_idx}_{p_raw_id}"
+                p_fp = getattr(parent, "fingerprint", "unknown")
+                p_scoped_id: str = f"g{group_idx}_cert_{p_fp[:16]}"
 
                 # Ensure we don't draw edges to virtual root containers (Orphans/Cycles)
                 if p_scoped_id != scoped_id and "VIRTUAL" not in p_scoped_id:
