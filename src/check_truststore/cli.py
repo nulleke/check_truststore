@@ -32,8 +32,6 @@ import platform
 import argparse
 import json
 import io
-from pathlib import Path
-from typing import Optional
 
 from check_truststore import __version__
 from check_truststore.engine import (
@@ -44,16 +42,8 @@ from check_truststore.engine import (
     CertificateRepository,
     TrustStoreAnalyzer,
 )
-from check_truststore.providers import (
-    YamlInputProvider,
-    JsonInputProvider,
-    XmlInputProvider,
-    SingleFileInputProvider,
-    DirectoryInputProvider,
-    HttpsInputProvider,
-)
+from check_truststore.providers import TrustStoreProvider
 from check_truststore.renderers import TrustStoreRenderer
-from check_truststore.providers.base import BaseInputProvider
 
 def setup_utf8_output() -> None:
     """
@@ -65,46 +55,6 @@ def setup_utf8_output() -> None:
         if hasattr(sys.stdout, 'buffer'):
             sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
             sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
-
-def get_provider(input_str: str, stdin_content: Optional[str], repo: CertificateRepository, **kwargs) -> Optional[BaseInputProvider]:
-    """
-    Factory logic to determine the correct provider based on input type or content.
-    """
-    if input_str.startswith(("https://", "http://")):
-        return HttpsInputProvider([input_str], repository=repo, **kwargs)
-
-    if input_str == "-":
-        if not stdin_content:
-            return None
-
-        content = stdin_content.lstrip()
-        if content.startswith(("{", "[")):
-            return JsonInputProvider(stdin_content, repository=repo, is_raw_data=True, **kwargs)
-        if content.startswith("<?xml") or "<nmaprun" in content:
-            return XmlInputProvider(stdin_content, repository=repo, is_raw_data=True, **kwargs)
-        if "BEGIN CERTIFICATE" in content:
-            return SingleFileInputProvider(stdin_content, repository=repo, is_raw_data=True, **kwargs)
-        yaml_keywords = ["truststores:", "cert_src_dir:", "cert_chain:"]
-        if any(key in content for key in yaml_keywords):
-            return YamlInputProvider(stdin_content, repository=repo, is_raw_data=True, **kwargs)
-        return None
-
-    path = Path(input_str)
-    if not path.exists():
-        return None
-
-    if path.is_dir():
-        return DirectoryInputProvider(path, repository=repo, recursive=True, **kwargs)
-
-    suffix = path.suffix.lower()
-    if suffix in [".yml", ".yaml"]:
-        return YamlInputProvider(path, repository=repo, **kwargs)
-    if suffix == ".json":
-        return JsonInputProvider(path, repository=repo, **kwargs)
-    if suffix == ".xml":
-        return XmlInputProvider(path, repository=repo, **kwargs)
-
-    return SingleFileInputProvider(path, repository=repo, **kwargs)
 
 def get_version_string():
     app_version = __version__
@@ -215,7 +165,7 @@ def main() -> None:
         output_group.add_argument(
             "-f",
             "--format",
-            choices=["json", "text", "status", "sarif", "dot"],
+            choices=["json", "text", "status", "sarif", "dot", "prom"],
             default="text",
             help=_("Output format"),
         )
@@ -283,21 +233,17 @@ def main() -> None:
             from check_truststore.providers.mock_provider import MockProvider
             analysis_groups.extend(MockProvider(repository=repo).get_groups())
 
+        provider_registry = TrustStoreProvider(
+            repository=repo,
+            stdin_content=stdin_content,
+            **vars(args)
+        )
+
         # Main provider loop
         effective_inputs = args.inputs if args.inputs else ["-"]
-        https_urls = [i for i in effective_inputs if i.startswith(("https://", "http://"))]
-        other_inputs = [i for i in effective_inputs if not i.startswith(("https://", "http://"))]
 
-        if https_urls:
-            provider = HttpsInputProvider(urls=https_urls, repository=repo, **vars(args))
-            groups = provider.get_groups()
-            if groups:
-                analysis_groups.extend(groups)
-            elif args.debug:
-                WARNING.log(", ".join(https_urls), _("No certificates found via this provider."))
-
-        for input_str in other_inputs:
-            provider = get_provider(input_str, stdin_content, repo, **vars(args))
+        for input_str in effective_inputs:
+            provider = provider_registry.resolve(input_str)
 
             if provider:
                 groups = provider.get_groups()

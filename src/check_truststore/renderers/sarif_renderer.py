@@ -111,7 +111,7 @@ class SarifRenderer(BaseRenderer):
                 }
             ],
             "fingerprints": {
-                "sha256_certificate": fp
+                "certificate_fingerprint": fp
             },
             "properties": {
                 "commonName": common_name,

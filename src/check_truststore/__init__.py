@@ -9,7 +9,7 @@ input providers, and rendering results.
 """
 
 __author__ = "Serge van Thillo"
-__version__ = "1.2.4"
+__version__ = "1.2.5"
 
 from .engine import (
     TrustStoreAnalyzer,
@@ -23,14 +23,7 @@ from .providers.base import (
     TrustStoreGroup
 )
 
-from .providers import (
-    YamlInputProvider,
-    JsonInputProvider,
-    XmlInputProvider,
-    DirectoryInputProvider,
-    SingleFileInputProvider,
-    HttpsInputProvider,
-)
+from .providers import TrustStoreProvider
 
 from .renderers import TrustStoreRenderer
 
@@ -41,11 +34,6 @@ __all__ = [
     "CertificateGroup",
     "BaseInputProvider",
     "TrustStoreGroup",
-    "YamlInputProvider",
-    "JsonInputProvider",
-    "XmlInputProvider",
-    "DirectoryInputProvider",
-    "SingleFileInputProvider",
-    "HttpsInputProvider",
+    "TrustStoreProvider",
     "TrustStoreRenderer",
 ]
