@@ -35,7 +35,7 @@ test_full_compatibility:
         - "check_truststore"
       if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH != "main"'
       when: manual
-      allow_failure: true
+      allow_failure: false
   before_script:
     - apt-get update && apt-get install -y gettext
     - |
