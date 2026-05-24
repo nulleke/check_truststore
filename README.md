@@ -6,6 +6,54 @@
 
 A tool for system administrators and security engineers to audit certificate truststores. This utility transforms flat certificate directories into logical hierarchies, making it easy to spot broken chains or expiring certificates.
 
+## 📌 Table of Contents
+
+- [⚡ Quick Start (TL;DR)](#-quick-start-tldr)
+- [✨ Features](#-features)
+- [🛠 Installation & Setup](#-installation--setup)
+  - [PIP Installation](#pip-installation)
+  - [Enterprise Linux (RHEL/AlmaLinux/Rocky)](#enterprise-linux-rhelalmalinuxrocky)
+  - [🐳 Running via Docker/Podman](#-running-via-dockerpodman)
+- [📂 Input Strategies](#-input-strategies)
+  - [YAML Structure (config.yml)](#yaml-structure-configyml)
+  - [JSON Structure (config.json)](#json-structure-configjson)
+  - [File-Based Input](#file-based-input)
+  - [Directory-Based Input](#directory-based-input)
+  - [🛰️ Network Discovery Integration (Nmap)](#️-network-discovery-integration-nmap)
+- [🛠 Usage](#-usage)
+  - [Automatic Detection (Files & Directories)](#automatic-detection-files--directories)
+  - [Live Network Analysis (Nmap Integration)](#live-network-analysis-nmap-integration)
+  - [System Truststores](#system-truststores)
+  - [📥 Supported Input Providers](#-supported-input-providers)
+- [📊 Multiple Outputs](#-multiple-outputs)
+  - [JSON based output](#json-based-output)
+  - [Verbose JSON Output (-v)](#verbose-json-output--v)
+  - [🚦 Detailed Status API (v1.1.2)](#-detailed-status-api-v112)
+  - [Text-Based Hierarchy (Human Readable) (Default)](#text-based-hierarchy-human-readable-default)
+  - [🛡️ SARIF (Static Analysis Results Interchange Format)](#️-sarif-static-analysis-results-interchange-format)
+  - [🎨 Visual PKI Topology (Graphviz)](#-visual-pki-topology-graphviz)
+  - [📈 Prometheus Metrics Support](#-prometheus-metrics-support)
+- [🧠 Core Logic & Identity Strategy](#-core-logic--identity-strategy)
+  - [🏗️ Path Construction & Validation](#️-path-construction--validation)
+  - [🆔 Identity Strategy](#-identity-strategy)
+  - [🛡️ System Truststore Integration](#️-system-truststore-integration)
+- [🔍 Debugging & Scenario Analysis](#-debugging--scenario-analysis)
+  - [Healthy Execution & AIA Discovery](#healthy-execution--aia-discovery)
+  - [Signature & Security Alerts](#signature--security-alerts)
+  - [Missing Files (I/O Errors)](#missing-files-io-errors)
+  - [Missing Root or Intermediate (Untrusted Chain)](#missing-root-or-intermediate-untrusted-chain)
+  - [Redundant Certificates (Duplicate Content)](#redundant-certificates-duplicate-content)
+  - [Invalid or Corrupted PEM](#invalid-or-corrupted-pem)
+  - [Expired or Expiring Soon](#expired-or-expiring-soon)
+- [🧪 Reliability & CI/CD](#-reliability--cicd)
+  - [Local Validation](#local-validation)
+- [📦 Requirements](#-requirements)
+- [🌐 Internationalization (i18n)](#-internationalization-i18n)
+- [💾 Cache Management](#-cache-management)
+  - [Automated Cleanup (Linux / RHEL / Fedora)](#automated-cleanup-linux--rhel--fedora)
+- [🤝 Contributing](#-contributing)
+- [⚖️ License](#️-license)
+
 ## ⚡ Quick Start (TL;DR)
 **Audit your truststores in seconds**:
 1. **Install**: `pip install check-truststore`
@@ -157,26 +205,6 @@ The **XML Provider** allows for seamless integration with network scanning workf
 * **Virtual Path Mapping**: Findings are automatically grouped using a virtual directory structure: `nmap/<ip>/<port>`.
 * **PEM Sanitization**: Automatically fixes XML-escaped characters and standardizes delimiters (e.g., handling `TRUSTED CERTIFICATE` headers).
 
-## 🧪 Reliability & CI/CD
-This project is rigorously tested via **GitLab CI** across a full matrix of Python versions. 
-* **Compatibility Matrix**: Automated tests run on every version from 3.6 to 3.14.
-* **Fallback Validation**: We explicitly test a "No-Pydantic" environment to guarantee that the core logic remains 100% functional even when third-party validation libraries are missing.
-* **Logic Verification**: All date-based logic is validated against current 2026 standards.
-
-### Local Validation
-You can run the full compatibility suite locally using Podman to ensure your changes work across all supported Python versions:
-```bash
-./scripts/run_ci.sh
-```
-
-## 📦 Requirements
-* **Python 3.6+**: (Fully tested from 3.6 up to 3.14)
-* **cryptography**: For X.509 parsing (compatible with legacy and UTC-aware versions).
-* **requests**: For AIA Discovery and fetching missing intermediate certificates.
-* **PyYAML**: For configuration management.
-* **pydantic**: (Optional): v2.0+ for enhanced schema validation. The tool automatically detects and adapts to the available version.
-* **jinja2**: (Optional): Required for using Jinja2-templating within YAML configuration files.
-
 ## 🔍 Advanced Logic & Visual Indicators
 The tool uses **SKI/AKI (Subject/Authority Key Identifier)** to build a cryptographically accurate tree. It uniquely identifies certificates using their Subject Key Identifier (SKI). If the SKI extension is missing, it falls back to a deterministic hash of the public key, ensuring consistent identification (labeled as **ID**) across all views.
 
@@ -193,32 +221,6 @@ The tool uses the following icons to provide a quick overview of certificate hea
 | **❓** | **UNKNOWN** | Missing issuer; signature could not be verified. |
 | **👯** | **COLLISION** | Name collision detected (same Common Name, different ID). |
 | **💻** | **SYSTEM** | Certificate was loaded from the OS truststore. |
-
-## 🧠 Core Logic & Identity Strategy
-* **Smart Deduplication**: To keep reports clean and efficient, the tool uses a dual-layer filtering process. First, it calculates a **SHA-256 fingerprint** for every file. If the exact same certificate (identical binary content) is found in multiple paths, it is processed only once. This prevents redundant entries and circular references in the tree.
-* **Name Collisions [👯]**: Even with ID tracking, name collisions occur (e.g., two different CAs using the same Common Name). The tool detects these based on differing Public Key IDs and flags them. This ensures you can distinguish between them even if they appear identical in the hierarchy.
-* **`EXTERNAL_OR_MISSING_ISSUER` [❓]**: A virtual node for certificates whose issuer (Root or Intermediate) was not found in the provided source directories or the system truststore. The debug log will specify the exact **AKI (Authority Key Identifier)** needed to complete the chain.
-
-### 🏗️ Path Construction & Validation
-
-Unlike simpler tools that rely on filenames or filesystem paths, this analyzer performs deep inspection of the certificate extensions:
-
-* **Authority Key Identifier (AKI) & Subject Key Identifier (SKI)**: The tool uses these extensions (as defined in RFC 5280, Section 4.2.1.1) to bridge certificates. This is the only reliable way to build a chain when multiple certificates share the same Common Name (Name Collisions).
-* **Basic Constraints**: It validates the `cA` boolean and `pathLenConstraint` to ensure that an intermediate certificate is actually authorized to sign other certificates.
-* **Key Usage**: Checks if the `keyCertSign` bit is set for issuers, preventing security flaws where a non-CA certificate is used to sign a chain.
-
-### 🆔 Identity Strategy
-
-* **Persistent Identity (ID)**: The tool uniquely identifies certificates using their **Subject Key Identifier (SKI)**.
-    * If the official SKI extension is present, it is used as the primary identifier.
-    * If the extension is missing (common in legacy or custom test-certs), the tool generates a **deterministic SHA-256 hash** of the public key, adhering to the spirit of RFC 5280's identification requirements.
-    * Result: You get a consistent `(ID: abcdef12)` label across both the table and the hierarchy, allowing you to trace issuer/subject relationships with cryptographic certainty.
-
-## 🛡️ System Truststore Integration
-By default, the tool only analyzes the certificates explicitly defined in your YAML configuration. However, to verify if your local chain is ultimately trusted by the operating system, you can enable system integration.
-
-* **Default**: Disabled.
-* **Behavior**: When enabled, the tool scans common system paths (e.g., `/etc/ssl/certs/ca-certificates.crt` on Linux, the Keychain on macOS, or the Windows Certificate Store) to resolve missing root issuers.
 
 ## 🛠 Usage
 
@@ -272,10 +274,10 @@ check_truststore https://www.example.com --system --online
 | **XML (Nmap)** | `.xml` or `stdin` | Specifically optimized for Nmap `-oX` output; extracts PEM data from XML elements. |
 | **Directory** | Folder path | Scans the filesystem and groups certificates based on directory structure. |
 | **File(s)** | `.pem`, `.crt`, `.p7b` | Processes individual files or raw PEM/PKCS#7 data from stdin. |
-| **HTTPS** | https:// | Fetches the full certificate chain from a live website via TLS. |
+| **HTTPS** | `https://` | Fetches the full certificate chain from a live website via TLS. |
 | **System** | `--system` | Provides access to the native OS root certificate stores. |
 
-## 📊 Output Examples
+## 📊 Multiple Outputs
 The tool provides different views of your truststore health depending on your needs.
 
 ### JSON based output
@@ -557,6 +559,82 @@ check_truststore vars/prod/stores.yml --format dot > topology.dot
 dot -Tpng topology.dot -o topology.png
 ```
 
+### 📈 Prometheus Metrics Support
+
+The `PrometheusRenderer` transforms hierarchical certificate validation tree results into a flattened, OpenMetrics-compliant text exposition format. This enables native time-series tracking and alerting of your trust store health via Prometheus, VictoriaMetrics, or Datadog.
+
+#### Metric Definitions
+
+The renderer exposes the following core gauges, decorated with contextual labels to pinpoint specific certificates:
+
+| Metric Name | Type | Description |
+| :--- | :--- | :--- |
+| `truststore_cert_valid_status` | Gauge | Validity status of the certificate (`1` = Valid, `0` = Invalid). |
+| `truststore_cert_expiry_timestamp_seconds` | Gauge | The certificate expiration date represented as a Unix timestamp (seconds). |
+| `truststore_cert_policy_findings_total` | Gauge | Total number of policy violations discovered, categorized by severity level. |
+
+#### Labels
+
+To ensure high observability without losing structural context, each metric is enriched with the following labels:
+* `group`: The configured name of the certificate group context (e.g., system truststore, specific application path).
+* `common_name`: The Common Name (CN) of the certificate (with quotes automatically sanitized).
+* `serial`: The certificate's serial number.
+* `fingerprint`: The unique fingerprint identifying the certificate, preventing intra-group duplicates.
+* `level`: *(Only applicable to `truststore_cert_policy_findings_total`)* Specifies the severity of the linting rule (`ERROR`, `WARNING`, or `INFO`).
+
+> 💡 **Note on Edge Cases:** Virtual nodes such as Orphan or Cycle indicators (`ORPHAN_NODE_ID`, `CYCLE_NODE_ID`) are skipped automatically during tree traversal, ensuring only authentic certificate data populates your time-series.
+
+#### Example Exposition Output
+
+When scraped or rendered, the output adheres strictly to the Prometheus text-based format:
+
+```text
+# HELP truststore_cert_valid_status Validity status (1 = Valid, 0 = Invalid)
+# TYPE truststore_cert_valid_status gauge
+truststore_cert_valid_status{group="production-api",common_name="example.com",serial="123456789",fingerprint="a1b2c3d4..."} 1
+truststore_cert_valid_status{group="production-api",common_name="Expired Sub-CA",serial="987654321",fingerprint="e5f6g7h8..."} 0
+
+# HELP truststore_cert_expiry_timestamp_seconds Expiration date in unixtime
+# TYPE truststore_cert_expiry_timestamp_seconds gauge
+truststore_cert_expiry_timestamp_seconds{group="production-api",common_name="example.com",serial="123456789",fingerprint="a1b2c3d4..."} 1785243600
+truststore_cert_expiry_timestamp_seconds{group="production-api",common_name="Expired Sub-CA",serial="987654321",fingerprint="e5f6g7h8..."} 1716541200
+
+# HELP truststore_cert_policy_findings_total Policy violations by level
+# TYPE truststore_cert_policy_findings_total gauge
+truststore_cert_policy_findings_total{group="production-api",common_name="example.com",serial="123456789",fingerprint="a1b2c3d4...",level="ERROR"} 0
+truststore_cert_policy_findings_total{group="production-api",common_name="example.com",serial="123456789",fingerprint="a1b2c3d4...",level="WARNING"} 1
+truststore_cert_policy_findings_total{group="production-api",common_name="example.com",serial="123456789",fingerprint="a1b2c3d4...",level="INFO"} 0
+truststore_cert_policy_findings_total{group="production-api",common_name="Expired Sub-CA",serial="987654321",fingerprint="e5f6g7h8...",level="ERROR"} 1
+truststore_cert_policy_findings_total{group="production-api",common_name="Expired Sub-CA",serial="987654321",fingerprint="e5f6g7h8...",level="WARNING"} 0
+truststore_cert_policy_findings_total{group="production-api",common_name="Expired Sub-CA",serial="987654321",fingerprint="e5f6g7h8...",level="INFO"} 2
+```
+
+## 🧠 Core Logic & Identity Strategy
+* **Smart Deduplication**: To keep reports clean and efficient, the tool uses a dual-layer filtering process. First, it calculates a **SHA-256 fingerprint** for every file. If the exact same certificate (identical binary content) is found in multiple paths, it is processed only once. This prevents redundant entries and circular references in the tree.
+* **Name Collisions [👯]**: Even with ID tracking, name collisions occur (e.g., two different CAs using the same Common Name). The tool detects these based on differing Public Key IDs and flags them. This ensures you can distinguish between them even if they appear identical in the hierarchy.
+* **`EXTERNAL_OR_MISSING_ISSUER` [❓]**: A virtual node for certificates whose issuer (Root or Intermediate) was not found in the provided source directories or the system truststore. The debug log will specify the exact **AKI (Authority Key Identifier)** needed to complete the chain.
+
+### 🏗️ Path Construction & Validation
+
+Unlike simpler tools that rely on filenames or filesystem paths, this analyzer performs deep inspection of the certificate extensions:
+
+* **Authority Key Identifier (AKI) & Subject Key Identifier (SKI)**: The tool uses these extensions (as defined in RFC 5280, Section 4.2.1.1) to bridge certificates. This is the only reliable way to build a chain when multiple certificates share the same Common Name (Name Collisions).
+* **Basic Constraints**: It validates the `cA` boolean and `pathLenConstraint` to ensure that an intermediate certificate is actually authorized to sign other certificates.
+* **Key Usage**: Checks if the `keyCertSign` bit is set for issuers, preventing security flaws where a non-CA certificate is used to sign a chain.
+
+### 🆔 Identity Strategy
+
+* **Persistent Identity (ID)**: The tool uniquely identifies certificates using their **Subject Key Identifier (SKI)**.
+    * If the official SKI extension is present, it is used as the primary identifier.
+    * If the extension is missing (common in legacy or custom test-certs), the tool generates a **deterministic SHA-256 hash** of the public key, adhering to the spirit of RFC 5280's identification requirements.
+    * Result: You get a consistent `(ID: abcdef12)` label across both the table and the hierarchy, allowing you to trace issuer/subject relationships with cryptographic certainty.
+
+### 🛡️ System Truststore Integration
+By default, the tool only analyzes the certificates explicitly defined in your YAML configuration. However, to verify if your local chain is ultimately trusted by the operating system, you can enable system integration.
+
+* **Default**: Disabled.
+* **Behavior**: When enabled, the tool scans common system paths (e.g., `/etc/ssl/certs/ca-certificates.crt` on Linux, the Keychain on macOS, or the Windows Certificate Store) to resolve missing root issuers.
+
 ## 🔍 Debugging & Scenario Analysis
 When running with the `--debug` flag, the tool outputs detailed logs to `stderr`. This is essential for understanding the certificate tree construction, network activities, and internal decision-making.
 
@@ -616,6 +694,26 @@ The tool checks the current system time against the certificate's validity windo
 ❌ ERROR        │      │ Expired Server Cert            │ 2026-04-16 07:39
 ```
 
+## 🧪 Reliability & CI/CD
+This project is rigorously tested via **GitLab CI** across a full matrix of Python versions. 
+* **Compatibility Matrix**: Automated tests run on every version from 3.6 to 3.14.
+* **Fallback Validation**: We explicitly test a "No-Pydantic" environment to guarantee that the core logic remains 100% functional even when third-party validation libraries are missing.
+* **Logic Verification**: All date-based logic is validated against current 2026 standards.
+
+### Local Validation
+You can run the full compatibility suite locally using Podman to ensure your changes work across all supported Python versions:
+```bash
+./scripts/run_ci.sh
+```
+
+## 📦 Requirements
+* **Python 3.6+**: (Fully tested from 3.6 up to 3.14)
+* **cryptography**: For X.509 parsing (compatible with legacy and UTC-aware versions).
+* **requests**: For AIA Discovery and fetching missing intermediate certificates.
+* **PyYAML**: For configuration management.
+* **pydantic**: (Optional): v2.0+ for enhanced schema validation. The tool automatically detects and adapts to the available version.
+* **jinja2**: (Optional): Required for using Jinja2-templating within YAML configuration files.
+
 ## 🌐 Internationalization (i18n)
 The tool supports multiple languages via standard `gettext` locales.
 * **Language Selection**: The tool respects the `LANG` environment variable.
@@ -631,7 +729,7 @@ To update or add translations, use the provided utility script:
 ./scripts/translate.sh nl  # Updates Dutch translations
 ```
 
-## Cache Management
+## 💾 Cache Management
 
 The utility caches Authority Information Access (AIA) certificates and Certificate Revocation Lists (CRLs) inside the user's home directory (`~/.cache/truststore_analyzer/`).
 
