@@ -7,7 +7,6 @@ This module provides a unified interface for various output formats.
 It maps format identifiers to their respective renderer implementations.
 """
 
-
 from typing import List, Any
 from .base import BaseRenderer as BaseRenderer
 from .text_renderer import TextRenderer
