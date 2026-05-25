@@ -11,7 +11,7 @@ after the repository cache reset.
 
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
-from typing import List, Dict, Optional, Any, Tuple
+from typing import List, Dict, Optional, Any, Union, Tuple
 
 from cryptography import x509
 from cryptography.x509.oid import NameOID
