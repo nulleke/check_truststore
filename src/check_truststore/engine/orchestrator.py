@@ -11,7 +11,7 @@ trust store groups and generate finalized analysis models.
 import os
 import subprocess
 import tempfile
-from typing import Any, Optional, List, Dict, Set
+from typing import Any, Optional, List, Dict, Set, Tuple
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
@@ -27,13 +27,18 @@ from .logging import _, INFO, WARNING, ERROR
 
 
 class TrustStoreAnalyzer:
+    """High-level orchestrator managing certificate groups and pipelines.
+
+    Coordinates loading tasks, multi-threaded chain resolution, cryptographic
+    verification, telemetry tracking, and platform-agnostic PKCS#7 bundle exports.
     """
-    High-level orchestrator that manages certificate groups and triggers
-    the analysis pipeline.
-    """
-    def __init__(self, groups: List[Any], repository: Optional[CertificateRepository] = None, **kwargs: Any):
-        """
-        Initialize the analyzer with input groups and configuration options.
+    def __init__(self, groups: List[Any], repository: Optional[CertificateRepository] = None, **kwargs: Any) -> None:
+        """Initializes the orchestration engine with asset domains and config contexts.
+
+        Args:
+            groups: List of target configurations or paths to process into tree layers.
+            repository: Optional custom repository instance. Creates a default instance if omitted.
+            **kwargs: Configuration flags forwarded directly into repository and builder scopes.
         """
         self.repo: CertificateRepository = repository or CertificateRepository(**kwargs)
         self.options: Dict[str, Any] = kwargs
@@ -48,8 +53,13 @@ class TrustStoreAnalyzer:
         self._log_lock = Lock()
 
     def analyze(self) -> List[CertificateGroup]:
-        """
-        Executes the analysis pipeline for all configured groups.
+        """Executes structural loading, cryptographic verification, and tree building for all groups.
+
+        Utilizes a thread pool to concurrently isolate and process group data-structures,
+        evaluating them against optional local operating system trust roots and blacklists.
+
+        Returns:
+            A list of fully populated CertificateGroup models enclosing the finalized trees.
         """
         analysis_results: List[CertificateGroup] = []
         system_fingerprints: Set[str] = set()
@@ -75,9 +85,8 @@ class TrustStoreAnalyzer:
                     from .logging import WARNING
                     WARNING.log(_("SystemProvider"), _("Could not load system truststore: {error}").format(error=e))
 
-        def _worker(index: int, group_config: Any):
-            """
-            Worker function executed within parallel threads to analyze a specific certificate group.
+        def _worker(index: int, group_config: Any) -> Tuple[CertificateGroup, str, List[Certificate]]:
+            """Worker function executed within parallel threads to analyze a specific certificate group.
 
             To ensure strict thread isolation and prevent race conditions, this worker
             instantiates a dedicated local CertificateRepository and TrustChainBuilder.
@@ -86,22 +95,22 @@ class TrustStoreAnalyzer:
             the finalized chain to a PKCS#7 bundle.
 
             Args:
-                index (int): The thread or task index, utilized as a unique suffix
-                    for bundle exports to prevent file collision.
-                group_config (Any): The input group configuration object containing
+                index: The thread or task index, utilized as a unique suffix
+                    for bundle exports to prevent file collisions.
+                group_config: The input group configuration object containing
                     the targets and metadata to analyze.
 
             Returns:
-                tuple: A tuple containing:
-                    - group_obj (CertificateGroup): The finalized and summarized analysis model.
+                A tuple containing:
+                    - group_obj (CertificateGroup): The finalized analysis model.
                     - name (str): The display name of the certificate group.
-                    - tree_data (List[Certificate]): The generated root-level trust tree data.
+                    - tree_data (List[Certificate]): The generated root-level trust tree.
             """
             if self.debug:
                 with self._log_lock:
                     INFO.log(_("Processing Group"), group_config.name)
 
-            local_repo = CertificateRepository(**self.options)
+            local_repo: CertificateRepository = CertificateRepository(**self.options)
 
             if self.include_system:
                 for item in system_pool:
@@ -109,20 +118,20 @@ class TrustStoreAnalyzer:
                 for item in blacklist_pool:
                     local_repo._register_cert(item["cert"], item["hash"])
 
-            current_options = self.options.copy()
-            target_host = getattr(group_config, 'target_hostname', None)
+            current_options: Dict[str, Any] = self.options.copy()
+            target_host: Optional[str] = getattr(group_config, 'target_hostname', None)
             if target_host:
                 current_options['target_hostname'] = target_host
 
-            builder = TrustChainBuilder(repository=local_repo, disabled_checks=getattr(group_config, 'disabled_checks', False), **current_options)
+            builder: TrustChainBuilder = TrustChainBuilder(repository=local_repo, disabled_checks=getattr(group_config, 'disabled_checks', False), **current_options)
 
-            local_targets = [t.copy() if isinstance(t, dict) else t for t in group_config.targets]
-            current_pool = self._resolve_targets_local(local_targets, local_repo)
+            local_targets: List[Any] = [t.copy() if isinstance(t, dict) else t for t in group_config.targets]
+            current_pool: List[Dict[str, Any]] = self._resolve_targets_local(local_targets, local_repo)
 
             from .discovery import NetworkResolver
             resolver = NetworkResolver(**current_options)
 
-            tree_data = builder.build(
+            tree_data: List[Certificate] = builder.build(
                 current_pool,
                 authority_pool=system_pool if self.include_system else None,
                 blacklist_pool=blacklist_pool if self.include_system else None,
@@ -130,7 +139,7 @@ class TrustStoreAnalyzer:
                 max_depth=self.max_depth
             )
 
-            group_obj = CertificateGroup(
+            group_obj: CertificateGroup = CertificateGroup(
                 groupName=group_config.name,
                 tree=tree_data,
                 chain=builder.get_flat_chain(),
@@ -161,20 +170,32 @@ class TrustStoreAnalyzer:
         return analysis_results
 
     def export_bundle(self, group: CertificateGroup, output_dir: str, repo: Optional[CertificateRepository] = None, file_suffix: str = "") -> Optional[Path]:
-        """
-        Universal PKCS#7 export compatible with RHEL 8 (Python 3.6) and Fedora 43.
+        """Universal PKCS#7 export compatible with RHEL 8 (Python 3.6) and Fedora 43.
+
+        Attempts to serialize cryptographic certificates cleanly using available
+        PyCa/Cryptography PKCS#7 APIs, falling back seamlessly onto a secure local
+        OpenSSL subprocess execution context if needed.
+
+        Args:
+            group: Finalized CertificateGroup module containing the target chain.
+            output_dir: Local system filesystem directory to house output assets.
+            repo: Optional context-specific CertificateRepository instance.
+            file_suffix: Deduplication differentiator added to the output filename.
+
+        Returns:
+            The resolved Path pointer pointing to the generated archive, or None if failed.
         """
         try:
-            active_repo = repo or self.repo
-            raw_certs = [active_repo.get_cert_by_fingerprint(c.fingerprint) for c in group.chain]
+            active_repo: CertificateRepository = repo or self.repo
+            raw_certs: List[Any] = [active_repo.get_cert_by_fingerprint(c.fingerprint) for c in group.chain]
             raw_certs = [c for c in raw_certs if c is not None]
-            out_path = Path(output_dir)
+            out_path: Path = Path(output_dir)
             out_path.mkdir(parents=True, exist_ok=True)
 
             if not raw_certs:
                 return None
 
-            p7_data = None
+            p7_data: Optional[bytes] = None
             if pkcs7:
                 if hasattr(pkcs7, "serialize_certificates"):
                     try:
@@ -195,16 +216,16 @@ class TrustStoreAnalyzer:
                         pass
 
             if not p7_data:
-                pem_sequence = b"".join([c.public_bytes(serialization.Encoding.PEM) for c in raw_certs])
+                pem_sequence: bytes = b"".join([c.public_bytes(serialization.Encoding.PEM) for c in raw_certs])
                 try:
                     with tempfile.NamedTemporaryFile(delete=False, suffix=".pem") as tmp_in:
                         tmp_in.write(pem_sequence)
-                        tmp_in_name = tmp_in.name
+                        tmp_in_name: str = tmp_in.name
 
                     with tempfile.NamedTemporaryFile(delete=False, suffix=".p7b") as tmp_out:
-                        tmp_out_name = tmp_out.name
+                        tmp_out_name: str = tmp_out.name
 
-                    cmd = ["openssl", "crl2pkcs7", "-nocrl", "-certfile", tmp_in_name, "-out", tmp_out_name]
+                    cmd: List[str] = ["openssl", "crl2pkcs7", "-nocrl", "-certfile", tmp_in_name, "-out", tmp_out_name]
                     subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
 
                     with open(tmp_out_name, "rb") as f:
@@ -227,8 +248,8 @@ class TrustStoreAnalyzer:
             if not p7_data:
                 return None
 
-            safe_name = group.group_name.replace(".", "_").replace(" ", "_")
-            file_path = out_path / f"{safe_name}{file_suffix}_bundle.p7b"
+            safe_name: str = group.group_name.replace(".", "_").replace(" ", "_")
+            file_path: Path = out_path / f"{safe_name}{file_suffix}_bundle.p7b"
 
             with open(file_path, "wb") as f:
                 f.write(p7_data)
@@ -241,17 +262,20 @@ class TrustStoreAnalyzer:
             return None
 
     def _log_system_usage(self, group_name: str, tree: List[Certificate], system_fingerprints: Set[str]) -> None:
+        """Tracks and outputs telemetry indicating how many system roots were utilized in a tree.
+
+        Args:
+            group_name: Context tag identifier for log matching.
+            tree: Hierarchical list structure evaluated for anchor presence.
+            system_fingerprints: Set containing all known OS root certificate fingerprints.
         """
-        Calculates and logs how many certificates in the final tree
-        originated from the system truststore.
-        """
-        used_system_certs = 0
+        used_system_certs: int = 0
         seen_hashes: Set[str] = set()
 
         def traverse(nodes: List[Certificate]) -> None:
             nonlocal used_system_certs
             for node in nodes:
-                h = node.fingerprint
+                h: Optional[str] = node.fingerprint
                 if not h or h in seen_hashes:
                     continue
                 seen_hashes.add(h)
@@ -264,17 +288,24 @@ class TrustStoreAnalyzer:
 
         traverse(tree)
 
-        total_system = len(system_fingerprints)
+        total_system: int = len(system_fingerprints)
 
-        message = _("{used} of the {total} system certificates used").format(
+        message: str = _("{used} of the {total} system certificates used").format(
             used=used_system_certs,
             total=total_system,
         )
         INFO.log(f"[{group_name}] " + _("System usage"), message)
 
     def _resolve_targets_local(self, targets: List[Any], repo: CertificateRepository, is_system: bool = False) -> List[Dict[str, Any]]:
-        """
-        Unifies different target types into a standard metadata format.
+        """Unifies raw multi-type targets (Files, Bytes, PEM, DER) into standardized metadata indexes.
+
+        Args:
+            targets: Mixed tracking collection of certificate pointers.
+            repo: Target CertificateRepository engine context.
+            is_system: Flag determining if these entries behave as trusted anchors.
+
+        Returns:
+            A list of structured dictionary objects matching application metadata schemas.
         """
         resolved: List[Dict[str, Any]] = []
         for t in targets:
@@ -283,7 +314,7 @@ class TrustStoreAnalyzer:
             elif isinstance(t, bytes):
                 resolved.extend(repo.add_der_data(t, is_system=is_system))
             elif isinstance(t, dict) and "cert" in t:
-                c_hash = Certificate.calculate_fingerprint(t["cert"].public_bytes(serialization.Encoding.DER))
+                c_hash: str = Certificate.calculate_fingerprint(t["cert"].public_bytes(serialization.Encoding.DER))
                 repo._register_cert(t["cert"], c_hash)
                 t["hash"] = c_hash
                 resolved.append(t)

@@ -24,6 +24,7 @@ except (ImportError, AttributeError):
 
 ORPHAN_NODE_ID = "EXTERNAL_OR_MISSING_ISSUER"
 CYCLE_NODE_ID = "CIRCULAR_REFERENCE"
+DEPTH_LIMIT_NODE_ID = "DEPTH_LIMIT_REACHED"
 
 class _BaseUniversal:
     """
@@ -34,11 +35,22 @@ class _BaseUniversal:
     @staticmethod
     def _apply_special_logic(data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Interprets special nodes like orphans. If a node is identified as
-        an orphan, it sets default 'invalid' states and a Unix epoch expiry date.
+        Normalizes internal state fields when parsing virtual anchor or structural nodes.
+
+        This method intercepts virtual placeholder nodes (such as missing issuers,
+        discovered cryptographic loops, or hard execution depth cut-offs) and enforces
+        consistent fallback metrics (e.g., historical epoch expiration dates and
+        invalidated status fields) to align them with standard certificate processing pathways.
+
+        Args:
+            data (Dict[str, Any]): The raw state configuration intended for node construction.
+
+        Returns:
+            Dict[str, Any]: A sanitized copy of the configuration containing default fail states
+                            where appropriate.
         """
         cn = data.get("common_name")
-        if cn in [ORPHAN_NODE_ID, CYCLE_NODE_ID]:
+        if cn in [ORPHAN_NODE_ID, CYCLE_NODE_ID, DEPTH_LIMIT_NODE_ID]:
             special = {
                 "is_valid": False,
                 "isValid": False,
@@ -55,11 +67,34 @@ class _BaseUniversal:
 
     def get_audit_status(self) -> Dict[str, Any]:
         """
-        Single Source of Truth to determine the status of a certificate.
+        Evaluates the end-to-end trust state and computes the single source of truth status.
 
-        This implementation filters findings by their severity level.
-        Informational levels ('note' or 'info') are stored but ignored
-        when calculating the final audit state to prevent false positives.
+        This method executes a prioritized evaluation pipeline over the node's properties,
+        upstream graph hierarchy, and attached compliance warnings. It resolves the final
+        health metric into a structured dictionary containing a machine-readable priority code,
+        an identity label, and a human-readable explanation.
+
+        The validation sequence operates in the following strict hierarchy:
+        1. Structural exceptions (Virtual loop, depth limit, or orphan nodes).
+        2. Hard revocation status (OCSP REVOKED signals).
+        3. Operating System / Platform trust blacklists.
+        4. Cryptographic signature and chain integrity verification.
+        5. Upstream inherited errors (broken ancestor paths).
+        6. Temporal validity (expired certificates).
+        7. Filtered policy findings (evaluating 'error' and 'warning' severities).
+        8. Proactive warnings (certificates expiring within the threshold window).
+
+        Note:
+            Informational levels ('note' or 'info') are stored within the model for
+            deep compliance reporting but are explicitly bypassed during this calculation
+            to avoid operational false positives.
+
+        Returns:
+            Dict[str, Any]: A status dictionary with the following keys:
+                - 'code' (int): A severity rank identifier (higher indicates more critical).
+                - 'label' (str): A standard string flag (e.g., 'VALID', 'REVOKED', 'EXPIRING').
+                - 'message' (str): A descriptive summary of the resolved audit decision.
+                - 'level' (str): The high-level log category ('error', 'warning', or 'note').
         """
 
         if getattr(self, "common_name", "") == ORPHAN_NODE_ID:
@@ -70,6 +105,9 @@ class _BaseUniversal:
 
         if getattr(self, "is_in_circular_group", False):
             return {"code": 3, "label": "CIRCULAR_PATH", "message": "Part of a circular trust chain.", "level": "error"}
+
+        if getattr(self, "common_name", "") == DEPTH_LIMIT_NODE_ID:
+            return {"code": 3, "label": "CHAIN_TOO_DEEP", "message": "The certificate chain exceeds the maximum allowed depth.", "level": "error"}
 
         # Critical Security & Integrity (Hard Errors)
         # These represent immediate trust failures.
@@ -133,7 +171,13 @@ class _BaseUniversal:
 
     @property
     def signature_icon(self) -> str:
-        """Returns a visual icon based on the cryptographic signature status."""
+        """
+        Retrieves the graphical Unicode icon reflecting the certificate's cryptographic signature.
+
+        Returns:
+            str: An icon mapped from the unified logging infrastructure indicating
+                 verified lock state, structural breakage, or undetermined status.
+        """
         sig = getattr(self, "signature_valid", None)
         if sig is True:
             return Icons.LOCKED
@@ -143,13 +187,24 @@ class _BaseUniversal:
 
     @property
     def status_label(self) -> str:
-        """Returns the human-readable status label (e.g., VALID, EXPIRED)."""
+        """
+        Retrieves the normalized, upper-case architectural status classification string.
+
+        Returns:
+            str: The audit label string (e.g., 'VALID', 'EXPIRED', 'CHAIN_BROKEN').
+        """
         return self.get_audit_status()["label"]
 
     @property
     def display_name(self) -> str:
         """
-        Returns the common name including the subject serial number if present.
+        Generates a standardized display name for logging and user interface presentation.
+
+        Appends the Subject Serial Number (S/N) to the primary Common Name if present
+        to guarantee unambiguous differentiation between certificates sharing identical identities.
+
+        Returns:
+            str: The formatted descriptive string.
         """
         cn = getattr(self, "common_name", "Unknown")
         sn = getattr(self, "subject_serial", None)
@@ -160,13 +215,13 @@ class _BaseUniversal:
     @staticmethod
     def calculate_fingerprint(raw_der: bytes) -> str:
         """
-        Static utility to calculate a consistent unique identifier for a certificate.
-        Currently uses SHA-256 hex digest of the raw DER encoded data.
+        Computes a globally unique, deterministic identifier from raw certificate content.
 
         Args:
-            raw_der: The raw bytes of the X.509 certificate.
+            raw_der (bytes): The raw, binary DER-encoded representation of an X.509 certificate.
+
         Returns:
-            A hex string representation of the fingerprint.
+            str: A lowercase hexadecimal SHA-256 fingerprint digest string.
         """
         import hashlib
         return hashlib.sha256(raw_der).hexdigest()
@@ -174,12 +229,15 @@ class _BaseUniversal:
     @property
     def fingerprint(self) -> str:
         """
-        Abstracted property to retrieve a unique identifier for this node.
-        Prioritizes the cryptographic SHA-256 hash, but falls back to
-        the internal 'cert_id' for virtual nodes (e.g., orphans, cycles).
+        Abstracted access property to retrieve a unique node identifier.
 
-        This allows the rest of the engine to interact with nodes without
-        worrying if they are real certificates or virtual placeholders.
+        Prioritizes the immutable cryptographic SHA-256 fingerprint for genuine
+        certificates, falling back gracefully to arbitrary 'cert_id' strings for virtual
+        placeholders (orphans, loops). This abstraction allows graph traversal components
+        to operate uniformly without executing continuous type isolation blocks.
+
+        Returns:
+            str: A unique identifier string representing the node.
         """
         fp = getattr(self, "sha256_hash", None)
         if fp:
@@ -189,7 +247,13 @@ class _BaseUniversal:
 
     def to_ansible(self) -> Dict[str, Any]:
         """
-        Helper to export the model in a format compatible with Ansible fact structures.
+        Exports the structural model context into a flat schema compatible with Ansible facts.
+
+        Converts internal complex attributes, Boolean states, UI icons, and temporal fields
+        into standard serialized primitive structures optimized for external automation consumption.
+
+        Returns:
+            Dict[str, Any]: A dictionary populated with platform fact compatible key-value parameters.
         """
         data = self.model_dump()
 
@@ -208,9 +272,23 @@ class _BaseUniversal:
 
 if PYDANTIC_AVAILABLE:
     class CertificateGroup(_BaseUniversal, BaseModel):
-        """
-        A logical collection of certificates (e.g., a file or a system store).
-        Uses Pydantic V2 for strict validation and serialization.
+        """Represents a logical grouping boundary for parsed certificates.
+
+        A group maps a specific tracking context—such as an unparsed file, a
+        systemic trust store, or a directory branch—and retains its structural
+        validation hierarchy, summary metrics, and output rendering metadata.
+
+        Attributes:
+            group_name (str): The unique identifier name of the store or
+              container group.
+            group_status (str): High-level processing indicator state (defaults
+              to 'OK').
+            summary (Dict[str, Any]): Aggregated operational and statistics
+              counters.
+            tree (List[Certificate]): The resolved hierarchical root-level
+              nodes.
+            chain (List[Certificate]): A flat presentation listing of discovered
+              certificates.
         """
 
         group_name: str = Field(..., alias="groupName")
@@ -222,26 +300,40 @@ if PYDANTIC_AVAILABLE:
 
         model_config = ConfigDict(populate_by_name=True, extra="allow")
 
-        def finalize(self):
-            """Prepares the group for rendering by deduplicating and sorting nodes."""
+        def finalize(self) -> None:
+            """Triggers the post-analysis compilation pipeline for the group.
+
+            Deduplicates, processes, and isolates top-level root configurations
+            before sorting them to prepare the internal tree state for
+            consistent UI rendering.
+            """
             self._do_finalize_logic()
 
-        def _do_finalize_logic(self):
-            """
-            Identifies 'top-level' nodes by checking which certificates are
-            not children of others. Ensures the orphan node is sorted to the bottom.
+        def _do_finalize_logic(self) -> None:
+            """Isolates top-level architectural nodes and applies precise
+
+            sorting logic.
+
+            Filters out certificates that possess active parent boundaries to
+            isolate true cryptographic roots and detached structural nodes.
+            Applies a weighted sort ordering to guarantee that verified roots
+            appear at the apex of the visualization, while exceptional virtual
+            anchors (such as structural errors and orphans) are relegated
+            deterministically to the bottom.
             """
             top_level_nodes = [
                 c for c in self.tree
                 if not getattr(c, "parents", [])
                 or getattr(c, "is_root", False)
-                or getattr(c, "common_name", "") in [ORPHAN_NODE_ID, CYCLE_NODE_ID]
+                or getattr(c, "common_name", "") in [ORPHAN_NODE_ID, CYCLE_NODE_ID, DEPTH_LIMIT_NODE_ID]
             ]
 
             # Sorting: Real roots first (alphabetical), Orphans last.
             def sort_weight(node):
                 name = getattr(node, "common_name", "")
                 if name == CYCLE_NODE_ID:
+                    return 3
+                if name == DEPTH_LIMIT_NODE_ID:
                     return 2
                 if name == ORPHAN_NODE_ID:
                     return 1
@@ -256,14 +348,40 @@ if PYDANTIC_AVAILABLE:
                 ),
             )
 
-        def model_dump(self, **kwargs):
-            """Ensures JSON output uses camelCase aliases."""
+        def model_dump(self, **kwargs) -> Dict[str, Any]:
+            """Serializes the group entity and its embedded nodes into a
+
+            JSON-compatible primitive.
+
+            Guarantees correct recursive mapping and enforces camelCase property
+            alias conventions to match API interface specifications.
+            """
             return super().model_dump(by_alias=True)
 
     class Certificate(_BaseUniversal, BaseModel):
-        """
-        Represents a parsed X.509 certificate with validation metadata.
-        Standardizes certificate data across different Python versions.
+        """Represents a normalized entity tracking validation metrics for a
+
+        specific X.509 certificate.
+
+        This class serves as the uniform domain container across the engine,
+        bridging structural cryptography parsing values, local network discovery
+        metadata, and policy infraction listings into a single node capable of
+        participating in recursive trust-graph relations.
+
+        Attributes:
+            common_name (str): Primary Subject Common Name extracted from the
+              certificate identifier.
+            subject_serial (Optional[str]): Subject Serial Number attribute, if
+              present.
+            serial_number (str): The unique certificate serial number string.
+            expiry_date (datetime): The absolute UTC expiration point of the
+              certificate.
+            findings (List[PolicyFinding]): List of cryptographic variations or
+              policy infractions detected.
+            children (List[Certificate]): Downstream certificates issued or
+              signed by this node.
+            parents (List[Certificate]): Upstream certificates recognized as the
+              cryptographic issuer.
         """
 
         common_name: str = Field(..., alias="commonName")
@@ -311,27 +429,79 @@ if PYDANTIC_AVAILABLE:
         @model_validator(mode="before")
         @classmethod
         def validate_node_v2(cls, data: Any) -> Any:
-            """Triggers special data handling (like orphans) before Pydantic validation."""
+            """Pydantic execution hook to intercept data normalization prior to
+
+            structural validation.
+
+            Args:
+                data (Any): Input parameter mapping configuration.
+
+            Returns:
+                Any: The normalized configuration dictionary.
+            """
             return cls._apply_special_logic(data) if isinstance(data, dict) else data
 
-        def add_parent(self, parent: "Certificate"):
+        def add_parent(self, parent: "Certificate") -> None:
+            """Establishes a bilateral upstream cryptographic issuer link within
+
+            the trust graph.
+
+            Verifies that the parent's fingerprint is unique within the existing
+            ancestor collection before appending the reference and automatically
+            updating the parent's child registry.
+
+            Args:
+                parent (Certificate): The authoritative upstream certificate
+                  node.
+            """
             parent_hashes = {p.sha256_hash for p in self.parents}
             if parent.sha256_hash not in parent_hashes:
                 self.parents.append(parent)
                 parent.add_child(self)
 
-        def add_child(self, child: "Certificate"):
+        def add_child(self, child: "Certificate") -> None:
+            """Registers a downstream certificate node signed or issued by this
+
+            instance.
+
+            Prevents duplicate registration by verifying uniqueness against
+            known child fingerprints.
+
+            Args:
+                child (Certificate): The downstream certificate node to attach.
+            """
             child_hashes = {c.sha256_hash for c in self.children}
             if child.sha256_hash not in child_hashes:
                 self.children.append(child)
 
-        def add_finding(self, finding: PolicyFinding):
+        def add_finding(self, finding: PolicyFinding) -> None:
+            """Appends a policy infraction or cryptographic warning finding to
+
+            this node.
+
+            De-duplicates incoming findings based on identical structural codes
+            and error message definitions to ensure clean dashboard output
+            representation.
+
+            Args:
+                finding (PolicyFinding): The populated compliance finding
+                  container.
+            """
             if any(f.code == finding.code and f.message == finding.message for f in self.findings):
                 return
             self.findings.append(finding)
 
-        def model_dump(self, **kwargs):
-            """Custom dump logic to ensure recursive sorting of children."""
+        def model_dump(self, **kwargs) -> Dict[str, Any]:
+            """Executes an advanced serialization sweep over the certificate
+
+            node and its sub-trees.
+
+            Dynamically injects calculated runtime fields (such as comprehensive
+            audit statuses, public key parameters, and structural signature
+            algorithms). Manages recursive loop suppression by truncating
+            children arrays inside circular relationships and enforces strict
+            alphabetical and serial-number ordering across downstream nodes.
+            """
             d = super().model_dump(by_alias=True, **kwargs)
             d["fingerprint"] = self.fingerprint
             d["subjectSerial"] = self.subject_serial
@@ -350,15 +520,19 @@ if PYDANTIC_AVAILABLE:
                 return d
 
             if self.children:
-                sorted_children = sorted(
-                    self.children,
-                    key=lambda x: (
-                        getattr(x, "common_name", "").lower(),
-                        getattr(x, "serial_number", "").lower(),
-                        x.fingerprint.lower(),
-                    ),
-                )
-                d["children"] = [c.model_dump(**kwargs) for c in sorted_children]
+                limit_node = next((c for c in self.children if getattr(c, "common_name", "") == DEPTH_LIMIT_NODE_ID), None)
+                if limit_node:
+                    d["children"] = [limit_node.model_dump(**kwargs)]
+                else:
+                    sorted_children = sorted(
+                        self.children,
+                        key=lambda x: (
+                            getattr(x, "common_name", "").lower(),
+                            getattr(x, "serial_number", "").lower(),
+                            x.fingerprint.lower(),
+                        ),
+                    )
+                    d["children"] = [c.model_dump(**kwargs) for c in sorted_children]
             else:
                 d["children"] = []
 
@@ -367,9 +541,32 @@ if PYDANTIC_AVAILABLE:
 else:
 
     class CertificateGroup(_BaseUniversal):
-        """Fallback implementation of CertificateGroup for environments without Pydantic."""
+        """Represents a logical grouping boundary for parsed certificates.
 
-        def __init__(self, **kwargs):
+        A group maps a specific tracking context—such as an unparsed file, a
+        systemic trust store, or a directory branch—and retains its structural
+        validation hierarchy, summary metrics, and output rendering metadata.
+
+        Attributes:
+            group_name (str): The unique identifier name of the store or
+              container group.
+            group_status (str): High-level processing indicator state (defaults
+              to 'OK').
+            summary (Dict[str, Any]): Aggregated operational and statistics
+              counters.
+            tree (List[Certificate]): The resolved hierarchical root-level
+              nodes.
+            chain (List[Certificate]): A flat presentation listing of discovered
+              certificates.
+        """
+
+        def __init__(self, **kwargs) -> None:
+            """Initializes a certificate tracking group boundary.
+
+            Args:
+                **kwargs: Standard parameters mapped directly to internal group
+                  attributes.
+            """
             self.group_name = kwargs.get(
                 "groupName", kwargs.get("group_name", "unknown")
             )
@@ -381,16 +578,24 @@ else:
             self.chain = kwargs.get("chain", [])
             self.disabled_checks = kwargs.get("disabled_checks", False)
 
-        def finalize(self):
+        def finalize(self) -> None:
+            """Triggers the post-analysis compilation pipeline for the group.
+
+            Deduplicates, processes, and isolates top-level root configurations
+            before sorting them to prepare the internal tree state for
+            consistent UI rendering.
+            """
             top_level_nodes = [
                 c for c in self.tree
                 if not getattr(c, "parents", [])
                 or getattr(c, "is_root", False)
-                or getattr(c, "common_name", "") in [ORPHAN_NODE_ID, CYCLE_NODE_ID]
+                or getattr(c, "common_name", "") in [ORPHAN_NODE_ID, CYCLE_NODE_ID, DEPTH_LIMIT_NODE_ID]
             ]
             def sort_weight(node):
                 name = getattr(node, "common_name", "")
                 if name == CYCLE_NODE_ID:
+                    return 3
+                if name == DEPTH_LIMIT_NODE_ID:
                     return 2
                 if name == ORPHAN_NODE_ID:
                     return 1
@@ -405,7 +610,14 @@ else:
                 ),
             )
 
-        def model_dump(self, **kwargs):
+        def model_dump(self, **kwargs) -> Dict[str, Any]:
+            """Serializes the group entity and its embedded nodes into a
+
+            JSON-compatible primitive.
+
+            Guarantees correct recursive mapping and enforces camelCase property
+            alias conventions to match API interface specifications.
+            """
             return {
                 "groupName": self.group_name,
                 "groupStatus": self.group_status,
@@ -415,9 +627,40 @@ else:
             }
 
     class Certificate(_BaseUniversal):
-        """Fallback implementation of Certificate for environments without Pydantic."""
+        """Represents a normalized entity tracking validation metrics for a
 
-        def __init__(self, **kwargs):
+        specific X.509 certificate.
+
+        This class serves as the uniform domain container across the engine,
+        bridging structural cryptography parsing values, local network discovery
+        metadata, and policy infraction listings into a single node capable of
+        participating in recursive trust-graph relations.
+
+        Attributes:
+            common_name (str): Primary Subject Common Name extracted from the
+              certificate identifier.
+            subject_serial (Optional[str]): Subject Serial Number attribute, if
+              present.
+            serial_number (str): The unique certificate serial number string.
+            expiry_date (datetime): The absolute UTC expiration point of the
+              certificate.
+            findings (List[PolicyFinding]): List of cryptographic variations or
+              policy infractions detected.
+            children (List[Certificate]): Downstream certificates issued or
+              signed by this node.
+            parents (List[Certificate]): Upstream certificates recognized as the
+              cryptographic issuer.
+        """
+
+        def __init__(self, **kwargs) -> None:
+            """Initializes a plain Certificate entity tracking active trust
+
+            metrics.
+
+            Args:
+                **kwargs: Standard parameters mapped directly to internal
+                  certificate attributes.
+            """
             self.findings = []
             self.is_in_circular_group = False
             data = self._apply_special_logic(kwargs)
@@ -476,18 +719,52 @@ else:
                     except ValueError:
                         pass
 
-        def add_parent(self, parent: "Certificate"):
+        def add_parent(self, parent: "Certificate") -> None:
+            """Establishes a bilateral upstream cryptographic issuer link within
+
+            the trust graph.
+
+            Verifies that the parent's fingerprint is unique within the existing
+            ancestor collection before appending the reference and automatically
+            updating the parent's child registry.
+
+            Args:
+                parent (Certificate): The authoritative upstream certificate
+                  node.
+            """
             parent_hashes = {getattr(p, "sha256_hash", "") for p in self.parents}
             if getattr(parent, "sha256_hash", "") not in parent_hashes:
                 self.parents.append(parent)
                 parent.add_child(self)
 
-        def add_child(self, child: "Certificate"):
+        def add_child(self, child: "Certificate") -> None:
+            """Registers a downstream certificate node signed or issued by this
+
+            instance.
+
+            Prevents duplicate registration by verifying uniqueness against
+            known child fingerprints.
+
+            Args:
+                child (Certificate): The downstream certificate node to attach.
+            """
             child_hashes = {getattr(c, "sha256_hash", "") for c in self.children}
             if getattr(child, "sha256_hash", "") not in child_hashes:
                 self.children.append(child)
 
-        def add_finding(self, finding: PolicyFinding):
+        def add_finding(self, finding: PolicyFinding) -> None:
+            """Appends a policy infraction or cryptographic warning finding to
+
+            this node.
+
+            De-duplicates incoming findings based on identical structural codes
+            and error message definitions to ensure clean dashboard output
+            representation.
+
+            Args:
+                finding (PolicyFinding): The populated compliance finding
+                  container.
+            """
             if any(f.code == finding.code and f.message == finding.message for f in self.findings):
                 return
             self.findings.append(finding)
@@ -524,15 +801,19 @@ else:
                 return res
 
             if self.children:
-                sorted_children = sorted(
-                    self.children,
-                    key=lambda x: (
-                        getattr(x, "common_name", "").lower(),
-                        getattr(x, "serial_number", "").lower(),
-                        x.fingerprint.lower(),
-                    ),
-                )
-                res["children"] = [c.model_dump(**kwargs) for c in sorted_children]
+                limit_node = next((c for c in self.children if getattr(c, "common_name", "") == DEPTH_LIMIT_NODE_ID), None)
+                if limit_node:
+                    res["children"] = [limit_node.model_dump(**kwargs)]
+                else:
+                    sorted_children = sorted(
+                        self.children,
+                        key=lambda x: (
+                            getattr(x, "common_name", "").lower(),
+                            getattr(x, "serial_number", "").lower(),
+                            x.fingerprint.lower(),
+                        ),
+                    )
+                    res["children"] = [c.model_dump(**kwargs) for c in sorted_children]
             else:
                 res["children"] = []
             return res

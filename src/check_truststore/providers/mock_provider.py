@@ -26,31 +26,41 @@ from check_truststore.engine.models import Certificate
 
 
 class MockProvider(BaseInputProvider):
-    """
-    Provides mock certificates and groups to simulate various trust chain scenarios.
+    """Provides mock certificates and groups to simulate various trust chain scenarios.
+
+    This provider generates synthetic PKI artifacts, including valid chains, expired
+    certificates, weak cryptographic primitives, and constraint violations,
+    enabling deep-dive validation of the trust tree analysis engine.
 
     Attributes:
-        repository: Reference to the central certificate storage.
-        keys (Dict[str, rsa.RSAPrivateKey]): Cache of generated keys to maintain
-            consistency between issuers and subjects.
+        repository (CertificateRepository): Central certificate storage reference.
+        keys (Dict[Tuple[str, int, str], Any]): Persistent cache of generated keys
+            to maintain linkage consistency between issuers and subjects.
     """
     def __init__(self, repository: Optional[CertificateRepository] = None, **kwargs: Any) -> None:
-        """
-        Initializes the mock provider.
+        """Initializes the mock provider instance.
 
         Args:
-            repository: Optional repository instance for integration testing.
+            repository (Optional[CertificateRepository], optional): Repository instance
+                for integration testing. Defaults to None.
+            **kwargs: Flexible configuration options.
         """
         super().__init__(repository=repository, **kwargs)
         self.keys: Dict[Tuple[str, int, str], Any] = {}
 
-    def _get_key(self, cn: str, key_size: int = 2048, algo: str = "rsa") -> Any:
+    def _get_key(self, cn: str, key_size: int = 2048, algo: str = "rsa") -> Union[rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey]:
+        """Retrieves or generates a persistent private key for a specific context.
+
+        Args:
+            cn (str): Common Name associated with the key.
+            key_size (int): Size of the RSA key.
+            algo (str): Algorithm type ('rsa' or 'ec').
+
+        Returns:
+            Union[rsa.RSAPrivateKey, ec.EllipticCurvePrivateKey]: The generated key object.
         """
-        Retrieves or generates a persistent RSA private key for a specific
-        Common Name and key size.
-        """
-        actual_size = 256 if algo == "ec" else key_size
-        cache_key = (cn, actual_size, algo)
+        actual_size: int = 256 if algo == "ec" else key_size
+        cache_key: Tuple[str, int, str] = (cn, actual_size, algo)
 
         if cache_key not in self.keys:
             if algo == "ec":
@@ -79,19 +89,21 @@ class MockProvider(BaseInputProvider):
         permitted_dns: Optional[List[str]] = None,
         excluded_dns: Optional[List[str]] = None,
     ) -> x509.Certificate:
+        """Fabricates an x509 certificate with specific properties for test scenarios.
+
+        Returns:
+            x509.Certificate: A signed certificate object ready for ingestion.
         """
-        Fabricates an x509 certificate with specific properties for test scenarios.
-        """
-        subject_key = subject_key_override or self._get_key(common_name, key_size, algo=key_type)
+        subject_key: Any = subject_key_override or self._get_key(common_name, key_size, algo=key_type)
 
         if issuer_cn and issuer_cn != common_name:
-            issuer_name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, issuer_cn)])
-            issuer_key = issuer_key_override or self._get_key(issuer_cn, algo=issuer_key_type)
+            issuer_name: x509.Name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, issuer_cn)])
+            issuer_key: Any = issuer_key_override or self._get_key(issuer_cn, algo=issuer_key_type)
         else:
-            issuer_name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, common_name)])
-            issuer_key = subject_key
+            issuer_name: x509.Name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, common_name)])
+            issuer_key: Any = subject_key
 
-        now = datetime.now(timezone.utc)
+        now: datetime = datetime.now(timezone.utc)
         if days_valid < 0:
             not_before = now + timedelta(days=days_valid - 1)
             not_after = now + timedelta(days=days_valid)
@@ -99,7 +111,7 @@ class MockProvider(BaseInputProvider):
             not_before = now - timedelta(days=1)
             not_after = now + timedelta(days=days_valid)
 
-        builder = (
+        builder: x509.CertificateBuilder = (
             x509.CertificateBuilder()
             .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, common_name)]))
             .issuer_name(issuer_name)
@@ -174,7 +186,7 @@ class MockProvider(BaseInputProvider):
 
         # SAN & EKU for Leaf certificates
         if not is_ca:
-            names = [x509.DNSName(common_name)]
+            names: List[x509.DNSName] = [x509.DNSName(common_name)]
             if san_names:
                 names.extend([x509.DNSName(n) for n in san_names])
             builder = builder.add_extension(x509.SubjectAlternativeName(names), critical=False)
@@ -207,7 +219,8 @@ class MockProvider(BaseInputProvider):
             return builder.sign(signing_key, hashes.SHA256(), default_backend())
 
     def get_groups(self) -> List[TrustStoreGroup]:
-        certs = self._generate_test_suite()
+        """Generates the test suite and returns it as a TrustStoreGroup."""
+        certs: List[x509.Certificate] = self._generate_test_suite()
         pool: List[Dict[str, Any]] = []
 
         for cert in certs:

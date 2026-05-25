@@ -21,13 +21,15 @@ class PolicyFinding:
     """
     def __init__(self, level: str, code: str, message: str, label: str, params: Optional[Dict[str, Any]] = None, code_int: int = 4):
         """
-        Initializes a policy finding.
+        Constructs an explicit metadata violation tracking point.
 
         Args:
-            level: Severity level (e.g., 'ERROR', 'WARNING', 'INFO').
-            code: Unique machine-readable identifier for the finding type.
-            message: Human-readable description of the issue.
-            params: Optional metadata for dynamic message formatting.
+            level: Severity tag string ('ERROR', 'WARNING', 'INFO').
+            code: Static standardized machine-readable error token identifier.
+            message: Raw translatable descriptive text payload template.
+            label: Concise short UI label flag.
+            params: Dictionary containing interpolation values for message rendering.
+            code_int: Internal numerical severity weight mapping.
         """
         self.level = level.upper()
         self.code = code
@@ -41,10 +43,16 @@ class PolicyFinding:
         except (KeyError, ValueError):
             self.message = message
 
-    def model_dump(self):
+    def model_dump(self) -> Dict[str, Any]:
         """
-        Returns a dictionary representation of the finding,
-        suitable for JSON serialization or API responses.
+        Serializes the policy finding object into a standard dictionary.
+
+        This representation is designed to be compatible with JSON serialization
+        mechanisms, command-line outputs, and external API responses.
+
+        Returns:
+            A dictionary containing the serialized finding attributes including
+            code, integer code, message, severity level, label, and parameters.
         """
         return {
             "code": self.code,
@@ -64,9 +72,16 @@ class PolicyEngine:
     DEPRECATED_HASHES = frozenset({'sha1', 'md5', 'md2', 'md4'})
     DEFAULT_INTERNAL_TLDS = frozenset({'.lan', '.local', '.internal', '.home.arpa', '.node'})
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         """
-        Initializes the engine with default security thresholds for 2026.
+        Instantiates the validation policy context.
+
+        Args:
+            **kwargs: Configuration options including:
+                - internal_domains (List[str]): User-defined internal TLDs.
+                - debug (bool): Enable verbose tracking for underlying failures.
+                - disabled_checks (Union[bool, List[str]]): Specific checks or
+                  global flags to bypass policy evaluation rules.
         """
         self.min_rsa_bits = 2048
         self.min_ecdsa_bits = 256
@@ -80,6 +95,15 @@ class PolicyEngine:
             self.disabled_checks = set(self.disabled_checks)
 
     def _should_ignore(self, check_name: str) -> bool:
+        """
+        Determines whether a specific rule or check should be bypassed.
+
+        Args:
+            check_name: Machine-readable identifier of the validation rule.
+
+        Returns:
+            True if the check must be ignored, False otherwise.
+        """
         if self.disabled_checks is True:
             return True
         if isinstance(self.disabled_checks, set) and check_name in self.disabled_checks:
@@ -88,14 +112,16 @@ class PolicyEngine:
 
     def validate(self, cert: x509.Certificate, issuer: Optional[x509.Certificate] = None, path_depth: Optional[int] = None, target_hostname: Optional[str] = None) -> List[PolicyFinding]:
         """
-        Performs a comprehensive suite of security checks on a certificate.
+        Performs comprehensive compliance and cryptographic validation on a certificate.
 
         Args:
-            cert: The certificate to be validated.
-            issuer: The signing certificate (if available) to verify the chain of trust.
+            cert: The target X.509 certificate to validate.
+            issuer: Optional matching upstream issuer certificate. If self-signed, cert == issuer.
+            path_depth: Current distance tracking metric from the leaf node.
+            target_hostname: Optional host identifier to cross-reference against SAN designations.
 
         Returns:
-            A list of PolicyFinding objects representing discovered issues.
+            A list containing all discovered PolicyFinding vulnerabilities.
         """
         findings: List[PolicyFinding] = []
         present_oids = {ext.oid for ext in cert.extensions}
@@ -230,12 +256,23 @@ class PolicyEngine:
 
     def is_ca(self, cert: x509.Certificate) -> bool:
         """
-        Determines if a certificate is permitted to act as a Certificate Authority (CA).
+        Determines whether a certificate is authorized to act as a Certificate Authority (CA).
 
-        Note: This method uses a defensive approach by checking OID presence
-        before requesting extension data. This prevents PyO3 runtime panics
-        on legacy environments (Python 3.6) that occur when 'ExtensionNotFound'
-        exceptions are raised from within the Rust-based cryptography layer.
+        This method performs a strict structural check on the certificate's extensions,
+        verifying that Basic Constraints explicitly assert CA status and that Key Usage
+        permits certificate signing.
+
+        To guarantee compatibility across legacy execution environments (such as Python 3.6),
+        this method takes a defensive approach by checking OID presence prior to extraction.
+        This prevents underlying Rust-layer runtime panics (PyO3) that can occur when
+        'ExtensionNotFound' exceptions are propagated through native extensions.
+
+        Args:
+            cert (x509.Certificate): The cryptography X.509 certificate object to evaluate.
+
+        Returns:
+            bool: True if the certificate has valid CA constraints and signing permissions;
+                  False otherwise.
         """
         present_oids = {ext.oid for ext in cert.extensions}
 
@@ -255,8 +292,24 @@ class PolicyEngine:
 
     def is_root_ca(self, cert: x509.Certificate) -> bool:
         """
-        Checks if a certificate is a valid Root CA.
-        A Root CA must be self-signed (by Name and Key) AND have CA permissions.
+        Validates whether a certificate qualifies as a self-signed Root CA.
+
+        A certificate is classified as a Root CA if it fulfills three criteria:
+        1. It possesses valid CA constraints and certificate signing usage capabilities.
+        2. Its Subject and Issuer distinguished names (DN) are structurally identical.
+        3. Its Subject Key Identifier (SKI) perfectly matches its Authority Key Identifier (AKI),
+           confirming identity self-assertion if both extensions are present.
+
+        Like `is_ca`, this method safely queries extensions by verifying OID presence
+        before accessing extension properties, mitigating potential cross-version
+        compatibility issues within python-cryptography.
+
+        Args:
+            cert (x509.Certificate): The cryptography X.509 certificate object to evaluate.
+
+        Returns:
+            bool: True if the certificate is a structurally valid, self-signed Root CA;
+                  False if it is an intermediate CA, leaf certificate, or lacks proper identifiers.
         """
         if not self.is_ca(cert):
             return False
@@ -291,6 +344,14 @@ class PolicyEngine:
     def _check_ct_compliance(self, cert: x509.Certificate, present_oids: Set[Any], is_internal: bool) -> List[PolicyFinding]:
         """
         Checks if the certificate contains Signed Certificate Timestamps (SCT).
+
+        Args:
+            cert: The target X.509 certificate to validate.
+            present_oids: Pre-calculated set of OIDs within the certificate.
+            is_internal: True if the certificate targets internal namespaces.
+
+        Returns:
+            A list containing findings regarding missing Certificate Transparency indicators.
         """
         if is_internal or self.is_ca(cert):
             return []
@@ -311,7 +372,15 @@ class PolicyEngine:
     def _is_internal_domain(self, cert: x509.Certificate, present_oids: Optional[Set[Any]] = None) -> bool:
         """
         Detects if a certificate is intended for internal/private use.
+
         Checks for private TLDs, non-FQDNs, and private IP address ranges.
+
+        Args:
+            cert: The certificate to assess.
+            present_oids: Optional set of predefined OIDs to prevent redundant extraction.
+
+        Returns:
+            True if designated for an internal environment, False otherwise.
         """
         try:
             common_names = cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
@@ -341,6 +410,12 @@ class PolicyEngine:
     def _check_key_strength(self, cert: x509.Certificate) -> List[PolicyFinding]:
         """
         Evaluates the public key size/type against minimum security requirements.
+
+        Args:
+            cert: The target certificate containing the public key to evaluate.
+
+        Returns:
+            A list containing findings if keys do not meet configuration baselines.
         """
         findings: List[PolicyFinding] = []
         pub_key = cert.public_key()
@@ -370,8 +445,15 @@ class PolicyEngine:
     def _check_signature_algorithm(self, cert: x509.Certificate) -> List[PolicyFinding]:
         """
         Checks if the certificate uses secure hashing algorithms for its signature.
+
         Handles deprecated hashes (SHA1/MD5) and cases where the algorithm is
         unsupported or unknown by the underlying system.
+
+        Args:
+            cert: The target certificate to scan.
+
+        Returns:
+            A list containing discovered hashing standard violations.
         """
         findings: List[PolicyFinding] = []
 
@@ -414,8 +496,14 @@ class PolicyEngine:
 
     def _check_eku_compliance(self, cert: x509.Certificate, present_oids: Set[Any]) -> List[PolicyFinding]:
         """
-        Analyzes Extended Key Usage (EKU) to ensure the certificate is
-        purposed correctly and not over-privileged.
+        Analyzes Extended Key Usage (EKU) to ensure the certificate is purposed correctly.
+
+        Args:
+            cert: The end-entity or intermediate certificate.
+            present_oids: Pre-calculated extension map.
+
+        Returns:
+            A list of structural policy warnings based on over-privileging or missing contexts.
         """
         findings: List[PolicyFinding] = []
 
@@ -463,7 +551,7 @@ class PolicyEngine:
                 findings.append(PolicyFinding(
                     level="INFO",
                     code="EKU_PURPOSE",
-                    label="POLICY_VIOLATION",
+                    label="EKU_INFORMATION",
                     message=f"Certificate purpose: {', '.join(readable_usages)}",
                     params={"usages": readable_usages},
                     code_int=0
@@ -483,6 +571,13 @@ class PolicyEngine:
     def _get_eku(self, cert: x509.Certificate, present_oids: Set[Any]) -> List[str]:
         """
         Maps EKU OIDs to human-readable strings.
+
+        Args:
+            cert: Target certificate context.
+            present_oids: Available indexed extensions.
+
+        Returns:
+            A list of translated strings representing active usages.
         """
         try:
             if ExtensionOID.EXTENDED_KEY_USAGE not in present_oids:
@@ -512,7 +607,13 @@ class PolicyEngine:
     def _check_validity_period(self, cert: x509.Certificate, is_internal: bool) -> List[PolicyFinding]:
         """
         Checks if the certificate validity exceeds industry standards (e.g., 398 days).
-        Internal domains are treated with lower severity.
+
+        Args:
+            cert: The certificate context to benchmark.
+            is_internal: Boolean identifying if high thresholds for local setups apply.
+
+        Returns:
+            A list containing life-span duration boundary violations.
         """
         findings: List[PolicyFinding] = []
 
@@ -541,8 +642,18 @@ class PolicyEngine:
 
     def _check_rfc6125_compliance(self, cert: x509.Certificate, present_oids: Set[Any], is_internal: bool) -> List[PolicyFinding]:
         """
-        Verifies compliance with RFC 6125: If the SAN extension is present,
-        the Common Name (CN) must also be included within the SAN list.
+        Verifies compliance with RFC 6125 naming boundaries.
+
+        Ensures that if the SAN extension is present, the Common Name (CN) is
+        replicated within the SAN parameters.
+
+        Args:
+            cert: The target certificate to analyze.
+            present_oids: Pre-calculated extension map.
+            is_internal: True if private rules allow single-label domains.
+
+        Returns:
+            A list of discovered SAN alignment abnormalities.
         """
         findings: List[PolicyFinding] = []
 
@@ -595,8 +706,15 @@ class PolicyEngine:
 
     def _check_crl_presence(self, cert: x509.Certificate, present_oids: Set[Any], is_internal: bool) -> List[PolicyFinding]:
         """
-        Checks for CRL Distribution Points (CDP).
-        Warnings are suppressed for Root certificates (self-signed).
+        Checks for the presence of CRL Distribution Points (CDP).
+
+        Args:
+            cert: Certificate node target.
+            present_oids: Set containing extracted target extension identifiers.
+            is_internal: Exemption tracker for private ecosystems.
+
+        Returns:
+            A list containing findings if revocation anchors are missing.
         """
         findings: List[PolicyFinding] = []
         is_root = self.is_root_ca(cert)
@@ -617,8 +735,14 @@ class PolicyEngine:
     def _check_path_limit(self, cert: x509.Certificate, issuer: x509.Certificate, depth: int) -> List[PolicyFinding]:
         """
         Validates the Basic Constraints pathLenConstraint according to RFC 5280.
-        The pathLenConstraint specifies the maximum number of non-self-issued
-        intermediate certificates that may follow this certificate in a valid chain.
+
+        Args:
+            cert: The actual subject node.
+            issuer: The parent node signing the client.
+            depth: Current hierarchical track layer position index.
+
+        Returns:
+            A list containing findings if validation depth breaks chain policies.
         """
         findings: List[PolicyFinding] = []
 
@@ -645,7 +769,13 @@ class PolicyEngine:
     def _check_hostname_match(self, cert: x509.Certificate, target_host: str) -> List[PolicyFinding]:
         """
         Validates that the certificate is actually valid for the host being accessed.
-        It prioritizes Subject Alternative Names (SAN) over the legacy Common Name.
+
+        Args:
+            cert: End-entity certificate instance.
+            target_host: Incoming fully qualified server target or connection IP address string.
+
+        Returns:
+            A list of errors if identity mismatch is encountered.
         """
         findings: List[PolicyFinding] = []
         target_host_lower = target_host.lower()
@@ -676,7 +806,13 @@ class PolicyEngine:
     def _dns_name_match(self, pattern: str, hostname: str) -> bool:
         """
         Professional RFC 6125 Wildcard Matcher.
-        Reference: RFC 6125 Section 6.4.3
+
+        Args:
+            pattern: The pattern found inside the SAN extension.
+            hostname: Target host requested by the user application.
+
+        Returns:
+            True if matching guidelines succeed, False otherwise.
         """
         if pattern == hostname:
             return True
@@ -700,7 +836,13 @@ class PolicyEngine:
     def _check_netscape_comment(self, cert: x509.Certificate, present_oids: Optional[Set[Any]] = None) -> List[PolicyFinding]:
         """
         Extracts and reports the legacy Netscape Comment extension if present.
-        Often used in older PKI infrastructures to provide administrative info.
+
+        Args:
+            cert: Target parsing structure.
+            present_oids: Optional mapped sequence identifiers.
+
+        Returns:
+            A list containing administrative annotations found inside the raw bytes.
         """
         findings = []
         NETSCAPE_COMMENT_OID = x509.ObjectIdentifier("2.16.840.1.113730.1.13")
@@ -726,8 +868,14 @@ class PolicyEngine:
     def _check_name_constraints(self, cert: x509.Certificate, issuer: x509.Certificate, present_oids: Optional[Set[Any]] = None) -> List[PolicyFinding]:
         """
         Validates Name Constraints (RFC 5280) imposed by the issuer on the subject.
-        Ensures the certificate's identity falls within the permitted subtrees
-        defined by the Certificate Authority.
+
+        Args:
+            cert: Evaluated child element node.
+            issuer: Upstream parent holding constraints boundaries mapping.
+            present_oids: Optional active lookup map.
+
+        Returns:
+            A list containing namespace exclusion violations.
         """
         findings = []
         try:
@@ -791,7 +939,13 @@ class PolicyEngine:
     def _match_dns(self, hostname: str, constraint: str) -> bool:
         """
         Performs DNS subtree matching for Name Constraints.
-        Matches 'safe.lan' and '.safe.lan' against 'safe.lan' and 'www.safe.lan'.
+
+        Args:
+            hostname: Lowercase name under validation.
+            constraint: Domain string definition context.
+
+        Returns:
+            True if compliant with structural constraints layout, False otherwise.
         """
         clean_constraint = constraint.lstrip('.')
 

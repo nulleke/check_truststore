@@ -14,23 +14,32 @@ from .base import BaseRenderer, DateTimeEncoder
 
 
 class JsonRenderer(BaseRenderer):
-    """
-    Renders certificate tree data into a structured JSON string.
-    Supports recursive serialization of nested certificate objects.
+    """Renders certificate tree data into a structured JSON string.
+
+    This renderer supports recursive serialization of complex certificate
+    objects into basic Python primitives, ensuring valid and readable
+    JSON output for downstream processing.
+
+    Attributes:
+        verbosity (int): Inherited from BaseRenderer to control audit detail.
     """
 
     def render(self, tree_data: Any, **kwargs) -> str:
-        """
-        Serializes the tree data to a JSON string.
+        """Serializes the tree data to a JSON string.
 
         Args:
-            tree_data: The result from the TrustStoreAnalyzer.
-            **kwargs: Arguments passed to json.dumps (e.g., indent).
+            tree_data: The result set from the TrustStoreAnalyzer.
+            **kwargs: Optional configuration arguments, including:
+                indent (int): Indentation level for pretty-printing (default: 2).
+                verbosity (int): Level of diagnostic detail to include in the output.
 
         Returns:
             A pretty-printed JSON string.
+
+        Raises:
+            TypeError: If the serialization process encounters non-encodable objects.
         """
-        indent = kwargs.get("indent", 2)
+        indent: int = kwargs.get("indent", 2)
         self.verbosity = kwargs.get("verbosity", 0)
         try:
             # First, convert complex objects to basic Python primitives
@@ -45,9 +54,13 @@ class JsonRenderer(BaseRenderer):
             )
 
     def _to_basic_dict(self, data: Any) -> Any:
-        """
-        Recursively converts custom objects (Certificate, Group) into
-        JSON-serializable dictionaries.
+        """Recursively converts custom objects (Certificate, Group) into serializable dicts.
+
+        Args:
+            data: The object, list of objects, or group to transform.
+
+        Returns:
+            A dictionary or list structure composed of basic Python types.
         """
         # Handle lists (like a list of groups)
         if isinstance(data, list):

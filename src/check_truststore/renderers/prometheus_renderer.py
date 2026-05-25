@@ -14,14 +14,15 @@ from check_truststore.engine import ORPHAN_NODE_ID, CYCLE_NODE_ID
 
 
 class PrometheusRenderer(BaseRenderer):
-    """
-    Transforms hierarchical certificate validation results into Prometheus
+    """Transforms hierarchical certificate validation results into Prometheus
     text exposition format (OpenMetrics compliant).
+
+    This renderer converts internal certificate tree structures into time-series
+    metrics, allowing integration with monitoring stacks like Prometheus/Grafana.
     """
 
     def _get_val(self, obj: Any, key: str, default: Any = None) -> Any:
-        """
-        Safely retrieves a value from an object attribute or dictionary key.
+        """Safely retrieves a value from an object attribute or dictionary key.
 
         Args:
             obj: The object or dictionary to inspect.
@@ -29,15 +30,14 @@ class PrometheusRenderer(BaseRenderer):
             default: The value to return if the key/attribute is missing.
 
         Returns:
-            The retrieved value or the provided default.
+            The retrieved value if it exists, otherwise the provided default.
         """
         if isinstance(obj, dict):
             return obj.get(key, default)
         return getattr(obj, key, default)
 
     def render(self, groups_results: Union[List[Any], Any], **kwargs: Any) -> str:
-        """
-        Main entry point to transform analysis results into Prometheus metrics.
+        """Main entry point to transform analysis results into Prometheus metrics.
 
         Processes certificate groups, aggregates distinct certificate nodes per
         group, and constructs the metric lines with OpenMetrics-compliant headers.
@@ -75,8 +75,7 @@ class PrometheusRenderer(BaseRenderer):
         processed_fps: Set[str],
         lines: List[str]
     ) -> None:
-        """
-        Recursively traverses certificate nodes to flatten data into time-series metrics.
+        """Recursively traverses certificate nodes to flatten data into time-series metrics.
 
         Args:
             nodes: List of certificate nodes to traverse.

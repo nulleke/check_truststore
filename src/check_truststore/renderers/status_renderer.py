@@ -14,12 +14,18 @@ from check_truststore import __version__ as tool_version
 
 
 class StatusRenderer(BaseRenderer):
-    """
-    Renders an audit-focused report including exit codes and status summaries.
-    Optimized for machine-readability and CI/CD pipeline integration.
+    """Renders an audit-focused report including exit codes and status summaries.
+
+    This renderer transforms complex certificate analysis trees into a flat,
+    audit-ready JSON structure, facilitating integration into automated
+    monitoring pipelines and CI/CD security workflows.
+
+    Attributes:
+        API_VERSION (str): Version of the status report schema.
+        EXIT_CODES (Dict[str, int]): Mapping of status labels to shell exit codes.
     """
 
-    API_VERSION = "1.1.2"
+    API_VERSION: str = "1.1.2"
 
     EXIT_CODES: Dict[str, int] = {
         "OK": 0,
@@ -33,8 +39,16 @@ class StatusRenderer(BaseRenderer):
     }
 
     def render(self, tree_data: Union[Any, List[Any]], **kwargs) -> str:
-        """
-        Processes tree data into a flat, audit-ready JSON structure.
+        """Processes tree data into a flat, audit-ready JSON structure.
+
+        Args:
+            tree_data: The result set from the TrustStoreAnalyzer.
+            **kwargs: Additional configuration parameters, including:
+                verbosity (int): Level of audit detail for the final output.
+
+        Returns:
+            A formatted JSON string containing status metadata, group summaries,
+            and individual certificate findings.
         """
         self.verbosity = kwargs.get("verbosity", 0)
 
@@ -44,14 +58,14 @@ class StatusRenderer(BaseRenderer):
             global_max_code: int = 0
             scan_now = datetime.now(timezone.utc)
 
-            groups = tree_data if isinstance(tree_data, list) else [tree_data]
+            groups: List[Any] = tree_data if isinstance(tree_data, list) else [tree_data]
 
             for group in groups:
                 if hasattr(self, "_rendered_fingerprints"):
                     self._rendered_fingerprints.clear()
 
-                g_name = getattr(group, "group_name", "unknown")
-                all_nodes = self._get_sorted_nodes(getattr(group, "chain", []))
+                g_name: str = getattr(group, "group_name", "unknown")
+                all_nodes: List[Any] = self._get_sorted_nodes(getattr(group, "chain", []))
 
                 certificates_report: List[Dict[str, Any]] = []
                 group_max_code: int = 0
@@ -61,8 +75,8 @@ class StatusRenderer(BaseRenderer):
                     if self._should_skip(cert):
                         continue
 
-                    c_name = getattr(cert, "common_name", "")
-                    audit = cert.get_audit_status()
+                    c_name: str = getattr(cert, "common_name", "")
+                    audit: Dict[str, Any] = cert.get_audit_status()
 
                     if audit["code"] == 3:
                         has_incomplete_chain = True
@@ -70,7 +84,7 @@ class StatusRenderer(BaseRenderer):
                     if c_name == ORPHAN_NODE_ID:
                         continue
 
-                    cert_entry = {
+                    cert_entry: Dict[str, Any] = {
                         "commonName": c_name or "Unknown",
                         "serialNumber": getattr(cert, "serial_number", "UNKNOWN"),
                         "signatureValid": getattr(cert, "signature_valid", None),
@@ -87,7 +101,7 @@ class StatusRenderer(BaseRenderer):
                         }]
 
                         # Add raw findings for deep-dive debugging at higher verbosity
-                        raw_findings = getattr(cert, "findings", [])
+                        raw_findings: List[Any] = getattr(cert, "findings", [])
                         if self.verbosity >= 2 and raw_findings:
                             for f in raw_findings:
                                 cert_entry["findings"].append({
@@ -96,12 +110,12 @@ class StatusRenderer(BaseRenderer):
                                     "message": getattr(f, "message", "")
                                 })
 
-                    f_name = getattr(cert, "file_name", "")
+                    f_name: str = getattr(cert, "file_name", "")
                     if not getattr(cert, "is_system_cert", False) and f_name:
                         cert_entry["fileName"] = f_name
 
                     if getattr(cert, "is_system_cert", False):
-                        c_hash = getattr(cert, "fingerprint", cert_entry["commonName"])
+                        c_hash: str = getattr(cert, "fingerprint", cert_entry["commonName"])
                         if c_hash not in system_certs_global:
                             system_certs_global[c_hash] = cert_entry
                     else:
@@ -141,8 +155,13 @@ class StatusRenderer(BaseRenderer):
             return json.dumps({"metadata": {"exitCode": 7}, "error": str(e)}, indent=2)
 
     def _get_label_by_code(self, code: int) -> str:
-        """
-        Reverse lookup to find the status label associated with a specific code.
+        """Reverse lookup to find the status label associated with a specific code.
+
+        Args:
+            code: The integer exit code to resolve.
+
+        Returns:
+            The corresponding label string (e.g., 'WARNING'), or 'OK' if not found.
         """
         for label, c in self.EXIT_CODES.items():
             if c == code:

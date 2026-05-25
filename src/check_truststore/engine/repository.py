@@ -26,7 +26,13 @@ class CertificateRepository:
     Handles the parsing and deduplication of certificates.
     Uses SHA256 hashes to ensure each certificate is only processed once.
     """
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
+        """
+        Instantiates an empty safe tracking repository context.
+
+        Args:
+            **kwargs: Control attributes including debug and force override behaviors.
+        """
         self.options = kwargs
         self.debug = kwargs.get('debug', False)
         self.verbosity = kwargs.get('verbosity', 0)
@@ -35,28 +41,70 @@ class CertificateRepository:
         self.total_scanned_count: int = 0
 
     def __contains__(self, fingerprint: str) -> bool:
+        """
+        Checks if a certificate with the given fingerprint exists in the repository.
+
+        Args:
+            fingerprint: The lowercase SHA-256 hex string of the certificate.
+
+        Returns:
+            True if the certificate is already registered, False otherwise.
+        """
         return fingerprint in self._certs_by_fingerprint
 
-    def _register_cert(self, cert: x509.Certificate, fingerprint: str):
-        """Internal helper to index the binary object."""
+    def _register_cert(self, cert: x509.Certificate, fingerprint: str) -> None:
+        """
+        Saves a distinct parsed certificate into the internal tracking registers.
+
+        Args:
+            cert: Parsed x509.Certificate object reference.
+            fingerprint: Computed unique SHA-256 hex signature.
+        """
         self._certs_by_fingerprint[fingerprint] = cert
 
     def get_cert_by_fingerprint(self, fingerprint: str) -> Optional[x509.Certificate]:
         """
-        Retrieves the binary X.509 object from the repository.
-        Used by the orchestrator for bundle exports.
+        Retrieves a registered cryptography X.509 certificate object by its fingerprint.
+
+        Used by the orchestrator layer for trust bundle exports.
+
+        Args:
+            fingerprint: The lowercase SHA-256 hex string identifying the certificate.
+
+        Returns:
+            The cryptography.x509.Certificate instance if found, or None.
         """
         return self._certs_by_fingerprint.get(fingerprint)
 
     def _get_cert_fingerprint(self, cert: x509.Certificate) -> str:
-        """Helper to get a consistent SHA256 hash from an x509 object."""
+        """
+        Generates a consistent lowercase SHA-256 fingerprint from an X.509 object.
+
+        Args:
+            cert: The cryptography.x509.Certificate object to evaluate.
+
+        Returns:
+            A clean lowercase hex string representing the SHA-256 fingerprint.
+        """
         return Certificate.calculate_fingerprint(
             cert.public_bytes(serialization.Encoding.DER)
         )
 
     def add_der_data(self, content: bytes, source_path: Optional[Path] = None, is_system: bool = False) -> List[Dict[str, Any]]:
         """
-        Parses raw DER bytes (used by Windows Store and AIA discovery).
+        Parses raw binary ASN.1 DER data and registers unique certificates.
+
+        Typically invoked during Windows Certificate Store operations and
+        Authority Information Access (AIA) runtime discovery processes.
+
+        Args:
+            content: Raw binary DER certificate payload bytes.
+            source_path: Optional file path pointer indicating the source origin.
+            is_system: If True, flags the parsed entity as an OS-trusted root.
+
+        Returns:
+            A list containing a single standardized metadata dictionary if the
+            certificate is new and successfully registered, otherwise an empty list.
         """
         try:
             cert = x509.load_der_x509_certificate(content, default_backend())
@@ -82,8 +130,18 @@ class CertificateRepository:
 
     def add_pem_data(self, content: bytes, source_path: Optional[Path] = None, is_system: bool = False) -> List[Dict[str, Any]]:
         """
-        Parses bytes for PEM blocks and adds unique certificates.
-        Supports standard PEM and OpenSSL 'TRUSTED CERTIFICATE' formats.
+        Scans binary content for PEM certificate blocks and extracts unique objects.
+
+        Supports standard RFC 7468 PEM blocks and legacy OpenSSL 'TRUSTED CERTIFICATE'
+        formats. Enforces the global MAX_CERTS_PER_RUN boundary checks.
+
+        Args:
+            content: Raw byte content containing one or multiple text-encoded PEM blocks.
+            source_path: Optional file path pointer mapping back to the filesystem source.
+            is_system: Flags whether extracted certificates qualify as system anchors.
+
+        Returns:
+            A list of standardized metadata dictionaries representing newly loaded nodes.
         """
         new_certs = []
         pattern = b"-----BEGIN (?:TRUSTED )?CERTIFICATE-----.*?-----END (?:TRUSTED )?CERTIFICATE-----"
@@ -128,7 +186,20 @@ class CertificateRepository:
         return new_certs
 
     def add_pkcs7_data(self, content: bytes, source_path: Optional[Path] = None, is_system: bool = False) -> List[Dict[str, Any]]:
-        """Extracts certificates from a PKCS#7 container."""
+        """
+        Extracts individual certificates from a PKCS#7 cryptographic container block.
+
+        Decodes both text-encoded PEM (.p7b, .p7c) and raw binary DER variants.
+        Implements fallback validation protocols if modern cryptography parsing is absent.
+
+        Args:
+            content: Container payload bytes holding target certificate collections.
+            source_path: Optional location context matching the tracking source path.
+            is_system: Flags whether assets extracted behave as trusted terminal anchors.
+
+        Returns:
+            A list of standardized dictionary elements tracking unique extracted entries.
+        """
         new_certs = []
         source_name = source_path.name if source_path else _("PKCS7-container")
         pkcs7_certs = []
@@ -168,7 +239,16 @@ class CertificateRepository:
         return new_certs
 
     def load_from_files(self, paths: List[Path], is_system: bool = False) -> List[Dict[str, Any]]:
-        """Unified file loader for providers to use."""
+        """
+        Evaluates local filesystem paths, identifies formats, and extracts certificate objects.
+
+        Args:
+            paths: List of explicit target paths pointing to disk configurations.
+            is_system: Direct flag identifying if contents qualify as system roots.
+
+        Returns:
+            A list of standardized dictionary records identifying metadata states.
+        """
         collected_certs = []
         for path in paths:
             try:
@@ -193,6 +273,13 @@ class CertificateRepository:
                     ERROR.log(path.name, str(e))
         return collected_certs
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
+        """
+        Resets the repository by clearing all indexed certificates and counters.
+
+        Flushes the internal fingerprint registry mapping and resets the total
+        scanned certificate tracker back to zero. This is typically used between
+        isolated analysis cycles to guarantee a clean environment.
+        """
         self._certs_by_fingerprint.clear()
         self.total_scanned_count = 0

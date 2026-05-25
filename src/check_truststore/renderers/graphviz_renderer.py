@@ -13,19 +13,24 @@ from .base import BaseRenderer
 
 
 class GraphvizRenderer(BaseRenderer):
-    """
-    Renders certificate tree data into a Graphviz DOT string.
-    Supports cross-signing by allowing multiple edges to point to the same node
-    while preventing redundant sub-tree rendering.
+    """Renders certificate tree data into a Graphviz DOT string.
+
+    This renderer manages complex graph construction, allowing for cross-signing
+    path visualization by differentiating between standard hierarchy edges
+    and secondary cross-sign pathways.
+
+    Attributes:
+        nodes (Dict[str, str]): Cache of generated node definitions for DOT output.
+        edges (Set[str]): Set of unique edge strings to prevent duplicate links.
+        visited_for_children (Set[str]): Tracked node IDs to detect cross-signing cycles.
     """
 
     def render(self, tree_data: Union[Any, List[Any]], **kwargs: Any) -> str:
-        """
-        Main rendering entry point to generate DOT output.
+        """Main rendering entry point to generate DOT output.
 
         Args:
-            tree_data: A single group or a list of certificate groups/trees.
-            **kwargs: Configuration options like 'verbosity'.
+            tree_data: A single certificate group or a list of groups to visualize.
+            **kwargs: Renderer-specific configuration parameters (e.g., 'verbosity').
 
         Returns:
             A formatted string in Graphviz DOT format.
@@ -81,13 +86,11 @@ class GraphvizRenderer(BaseRenderer):
         return "\n".join(dot_lines)
 
     def _build_graph_elements(self, data: Any, group_idx: int = 0) -> None:
-        """
-        Recursively traverses the tree and populates node and edge sets.
-        Uses group_idx to namespace node IDs, preventing overlap between subgraphs.
+        """Recursively traverses the tree and populates node and edge sets.
 
         Args:
-            data: The current certificate node or list of nodes.
-            group_idx: Numerical index of the current subgraph.
+            data: The current certificate node or list of nodes to process.
+            group_idx: Numerical index of the current subgraph for ID namespacing.
         """
         if isinstance(data, list):
             for item in data:
@@ -180,8 +183,14 @@ class GraphvizRenderer(BaseRenderer):
                         self.edges.add(f'{edge_str} [style="dashed", color="#2e7d32", constraint=false, arrowhead=empty];')
 
     def _create_html_label(self, cert: Any, findings: List[Any]) -> str:
-        """
-        Generates an HTML-based label for Graphviz nodes including metadata.
+        """Generates an HTML-based label for Graphviz nodes including metadata.
+
+        Args:
+            cert: The certificate object to extract data from.
+            findings: List of associated audit findings.
+
+        Returns:
+            A formatted HTML table string for the Graphviz node label.
         """
         cn: str = getattr(cert, "common_name", getattr(cert, "commonName", "Unknown CN"))
         expiry: Any = getattr(cert, "expiry_date", getattr(cert, "expiryDate", None))

@@ -14,8 +14,20 @@ from check_truststore.engine import CertificateRepository, ERROR, INFO, _
 
 
 class HttpsInputProvider(BaseInputProvider):
-    """
-    Handles parallel discovery of certificates by connecting to multiple live HTTPS hosts.
+    """Handles parallel discovery of certificates by connecting to multiple live HTTPS hosts.
+
+    This provider parses a single or list of URL targets, spins up a concurrent
+    worker thread pool to handle network I/O blockages efficiently, and formats
+    the raw peer certificates into unique hostname-isolated TrustStoreGroup nodes.
+
+    Attributes:
+        max_workers (int): Maximum thread pool size allocated for concurrent sockets.
+        targets_to_fetch (List[Dict[str, Any]]): Normalized endpoint targets
+            containing keys 'hostname' (str) and 'port' (int).
+        repository (CertificateRepository): Inherited central asset identification mapping store.
+        options (Dict[str, Any]): Dictionary containing configuration arguments.
+        debug (bool): If True, enables diagnostic traces and deep error reporting.
+        verbosity (int): Numeric modifier adjusting logging output volume.
     """
 
     def __init__(
@@ -24,9 +36,16 @@ class HttpsInputProvider(BaseInputProvider):
         repository: Optional[CertificateRepository] = None,
         max_workers: int = 10,
         **kwargs: Any,
-    ):
-        """
-        Initializes the HTTPS provider with a list of target URLs.
+    ) -> None:
+        """Initializes the HTTPS provider with a list of target endpoint URLs.
+
+        Args:
+            urls (Union[str, List[str]]): A single URL string or a sequence of
+                endpoint strings (e.g., 'https://example.com:443').
+            repository (Optional[CertificateRepository], optional): Shared index
+                repository for certificate discovery. Defaults to None.
+            max_workers (int, optional): Thread pool allocation cap metric. Defaults to 10.
+            **kwargs: Flexible configuration choices passed down to BaseInputProvider.
         """
         super().__init__(repository=repository, **kwargs)
         self.max_workers: int = max_workers
@@ -46,8 +65,7 @@ class HttpsInputProvider(BaseInputProvider):
             self.targets_to_fetch.append({"hostname": hostname, "port": port})
 
     def _fetch_single_certificate(self, hostname: str, port: int) -> Optional[bytes]:
-        """
-        Establishes a network connection to a single remote host and retrieves its TLS certificate.
+        """Establishes a network connection to a single remote host and retrieves its TLS certificate.
 
         This method executes inside an independent worker thread of the ThreadPoolExecutor
         to achieve concurrent network I/O. It configures a default SSL context with
@@ -60,7 +78,7 @@ class HttpsInputProvider(BaseInputProvider):
 
         Returns:
             Optional[bytes]: The raw binary certificate data if successful; None if the
-                             connection times out, encounters an SSL error, or fails.
+                connection times out, encounters an SSL error, or fails.
         """
         try:
             context: ssl.SSLContext = ssl.create_default_context()
@@ -83,9 +101,15 @@ class HttpsInputProvider(BaseInputProvider):
             return None
 
     def get_groups(self) -> List[TrustStoreGroup]:
-        """
-        Fetches certificates from all hosts in parallel, then safely processes
-        them sequentially on the main thread.
+        """Fetches certificates from all hosts in parallel, then safely processes them on the main thread.
+
+        Coordinates thread execution using a context-managed ThreadPoolExecutor, maps asynchronously
+        completed futures back to target descriptions, and runs serialization logic sequentially
+        on the main thread to prevent thread-unsafe updates to the shared Repository instance.
+
+        Returns:
+            List[TrustStoreGroup]: A list of generated trust group wrappers tracking the
+                discovered leaf certificates mapped to their originating host targets.
         """
         groups: List[TrustStoreGroup] = []
         raw_results: List[Dict[str, Any]] = []
@@ -99,7 +123,7 @@ class HttpsInputProvider(BaseInputProvider):
             for future in as_completed(future_to_host):
                 target = future_to_host[future]
                 try:
-                    bin_cert = future.result()
+                    bin_cert: Optional[bytes] = future.result()
                     if bin_cert:
                         raw_results.append({
                             "hostname": target["hostname"],
@@ -113,9 +137,9 @@ class HttpsInputProvider(BaseInputProvider):
                     )
 
         for result in raw_results:
-            hostname = result["hostname"]
-            port = result["port"]
-            bin_cert = result["bin_cert"]
+            hostname: str = result["hostname"]
+            port: int = result["port"]
+            bin_cert: bytes = result["bin_cert"]
 
             group_name: str = f"HTTPS: {hostname}"
             targets: List[Dict[str, Any]] = []
