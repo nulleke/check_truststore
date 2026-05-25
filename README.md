@@ -25,6 +25,8 @@ A tool for system administrators and security engineers to audit certificate tru
   - [Live Network Analysis (Nmap Integration)](#live-network-analysis-nmap-integration)
   - [System Truststores](#system-truststores)
   - [📥 Supported Input Providers](#-supported-input-providers)
+  - [🗣️ Verbosity Levels](#-verbosity-levels)
+  - [📄 Format Control](#-format-control)
 - [📊 Multiple Outputs](#-multiple-outputs)
   - [JSON based output](#json-based-output)
   - [Verbose JSON Output (-v)](#verbose-json-output--v)
@@ -37,6 +39,8 @@ A tool for system administrators and security engineers to audit certificate tru
   - [🏗️ Path Construction & Validation](#️-path-construction--validation)
   - [🆔 Identity Strategy](#-identity-strategy)
   - [🛡️ System Truststore Integration](#️-system-truststore-integration)
+  - [🚀 Force Mode](#-force-mode)
+  - [🛡️ Maximum Chain Depth Validation](#-maximum-chain-depth-validation)
 - [🔍 Debugging & Scenario Analysis](#-debugging--scenario-analysis)
   - [Healthy Execution & AIA Discovery](#healthy-execution--aia-discovery)
   - [Signature & Security Alerts](#signature--security-alerts)
@@ -276,6 +280,19 @@ check_truststore https://www.example.com --system --online
 | **File(s)** | `.pem`, `.crt`, `.p7b` | Processes individual files or raw PEM/PKCS#7 data from stdin. |
 | **HTTPS** | `https://` | Fetches the full certificate chain from a live website via TLS. |
 | **System** | `--system` | Provides access to the native OS root certificate stores. |
+
+### 🗣️ Verbosity Levels
+The text-based output can be increased for deeper diagnostics:
+* `-v`: **Informative**. Shows the full paths of the read certificate files in addition to the tree structure.
+* `-vv`: **Debug**. Displays the full **Subject** and **Issuer** Distinguished Names (DNs) for each certificate.
+* `-vvv`: **Trace**. Outputs the full raw certificate attributes, including X509v3 extensions (e.g., AIA and CDP URLs) for every analyzed object.
+
+### 📄 Format Control
+Use the `--format` flag to force the desired output type:
+* `--format text`: (Default) Human-readable tree structure.
+* `--format json`: Compact JSON output.
+* `--format status`: Detailed "Deep Inspection" JSON for monitoring systems (v1.1.2+).
+* `--format dot`: Generates a Graphviz-compatible DOT file for visualization.
 
 ## 📊 Multiple Outputs
 The tool provides different views of your truststore health depending on your needs.
@@ -634,6 +651,17 @@ By default, the tool only analyzes the certificates explicitly defined in your Y
 
 * **Default**: Disabled.
 * **Behavior**: When enabled, the tool scans common system paths (e.g., `/etc/ssl/certs/ca-certificates.crt` on Linux, the Keychain on macOS, or the Windows Certificate Store) to resolve missing root issuers.
+
+### 🚀 Force Mode
+Using the `--force` flag bypasses the tool's built-in resource protections:
+* **No Limits**: The maximum number of certificates per scan (`1000`) is ignored.
+* **Large Files**: Files exceeding the standard `10MB` limit are processed instead of skipped.
+* **Use Case**: Use this only when auditing large, complex truststores where you are certain the system has sufficient memory to handle the full dataset.
+
+### 🛡️ Maximum Chain Depth Validation
+To prevent resource exhaustion and ensure compliance with security policies, the analyzer supports a configurable chain depth limit.
+
+* **`--max-depth N`**: (Default: `4`). If a chain exceeds the specified `N` levels (Root + Intermediates + Leaf). The analyzer stops processing that specific path. This enforces strict PKI hierarchies and prevents circular reference exploits.
 
 ## 🔍 Debugging & Scenario Analysis
 When running with the `--debug` flag, the tool outputs detailed logs to `stderr`. This is essential for understanding the certificate tree construction, network activities, and internal decision-making.
