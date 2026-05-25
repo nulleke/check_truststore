@@ -11,15 +11,24 @@ validates signatures and metadata throughout the chain.
 from pathlib import Path
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
-from typing import Any, Optional, List, Dict, Union, Set
+from typing import Any, Optional, List, Dict, Union, Set, Tuple
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
-from .models import ORPHAN_NODE_ID, CYCLE_NODE_ID, Certificate
+from .models import ORPHAN_NODE_ID, CYCLE_NODE_ID, DEPTH_LIMIT_NODE_ID, Certificate
 from .policy import PolicyEngine, PolicyFinding
 from .repository import CertificateRepository
 from .logging import _, OK, EXPIRING, WARNING, MISSING, ERROR, COLLISION, SYSTEM, AIA, REVOKED, Icons as Icons
 
-def N_(message):
+def N_(message: str) -> str:
+    """
+    Marker function for i18n gettext string extraction without immediate translation.
+
+    Args:
+        message: The raw string message to be translated later.
+
+    Returns:
+        The unchanged message string.
+    """
     return message
 
 class TrustChainBuilder:
@@ -27,7 +36,13 @@ class TrustChainBuilder:
     Main logic for assembling flat certificates into a hierarchical tree.
     It matches Authority Key Identifiers (AKI) to Subject Key Identifiers (SKI).
     """
-    def __init__(self, repository: CertificateRepository, **kwargs):
+    def __init__(self, repository: CertificateRepository, **kwargs) -> None:
+        """Initializes the trust chain builder with a repository and options.
+
+        Args:
+            repository: Centralized registry holding pre-parsed certificate maps.
+            **kwargs: Arbitrary configuration options such as threshold, debug, and verbosity.
+        """
         self.repo = repository
         self.options = kwargs
         self.threshold = kwargs.get('threshold', 30)
@@ -48,13 +63,17 @@ class TrustChainBuilder:
         resolver: Optional[Any] = None,
         max_depth: int = 4
     ) -> List[Certificate]:
-        """
-        Main entry point for tree construction.
+        """Main entry point for tree construction.
 
-        :param raw_certs_meta: Certificaten die de gebruiker expliciet wil scannen.
-        :param authority_pool: Systeem- of extra certificaten (alleen gebruiken als nodig).
-        :param resolver: Optionele NetworkResolver voor AIA/OCSP.
-        :param max_depth: Maximale diepte voor recursie.
+        Args:
+            raw_certs_meta: Certificates that the user explicitly wants to scan.
+            authority_pool: System or auxiliary anchor certificates used as root fallback pools.
+            blacklist_pool: Explicit untrusted certificate definitions.
+            resolver: Optional NetworkResolver engine instance for AIA and OCSP routing.
+            max_depth: Maximum path validation lookup recursion limit.
+
+        Returns:
+            A optimized list of calculated parent-level root Certificate tree instances.
         """
         for item in raw_certs_meta:
             self._process_metadata(item)
@@ -78,25 +97,29 @@ class TrustChainBuilder:
 
         return tree_result
 
-    def _process_metadata(self, item: Dict[str, Any]):
-        """Extracts X509 fields and prepares the internal mapping for chain building."""
-        cert = item["cert"]
-        c_hash = item["hash"]
+    def _process_metadata(self, item: Dict[str, Any]) -> None:
+        """Extracts X509 fields and prepares the internal mapping for chain building.
+
+        Args:
+            item: Structural entry holding target x509 instances and processing context attributes.
+        """
+        cert: x509.Certificate = item["cert"]
+        c_hash: str = item["hash"]
         if hasattr(self.repo, "_register_cert"):
             self.repo._register_cert(cert, c_hash)
-        path = item["path"]
-        is_system_cert = item.get("is_system_cert", False)
-        is_blacklisted = item.get("is_blacklisted", False)
-        is_aia_cert = item.get("is_aia_cert", False)
+        path: Path = item["path"]
+        is_system_cert: bool = item.get("is_system_cert", False)
+        is_blacklisted: bool = item.get("is_blacklisted", False)
+        is_aia_cert: bool = item.get("is_aia_cert", False)
 
-        ski = self._get_extension(cert, x509.ExtensionOID.SUBJECT_KEY_IDENTIFIER)
-        cn = self._get_common_name(cert)
-        subject_sn = self._get_subject_serial(cert)
+        ski: Optional[str] = self._get_extension(cert, x509.ExtensionOID.SUBJECT_KEY_IDENTIFIER)
+        cn: str = self._get_common_name(cert)
+        subject_sn: Optional[str] = self._get_subject_serial(cert)
 
         if ski:
             cert_id = ski
         else:
-            pk_bytes = cert.public_key().public_bytes(
+            pk_bytes: bytes = cert.public_key().public_bytes(
                 encoding=serialization.Encoding.DER,
                 format=serialization.PublicFormat.SubjectPublicKeyInfo
             )
@@ -108,8 +131,8 @@ class TrustChainBuilder:
             else:
                 cn = f"{_('Unknown')} ({cert_id[:8]})"
 
-        aki = self._get_extension(cert, x509.ExtensionOID.AUTHORITY_KEY_IDENTIFIER)
-        is_root = self.policy_engine.is_root_ca(cert)
+        aki: Optional[str] = self._get_extension(cert, x509.ExtensionOID.AUTHORITY_KEY_IDENTIFIER)
+        is_root: bool = self.policy_engine.is_root_ca(cert)
 
         if aki and aki != cert_id:
             if aki not in self.parents_map[cert_id]:
@@ -131,7 +154,7 @@ class TrustChainBuilder:
             else:
                 return
 
-        formatted_serial = self._get_serial_number(cert)
+        formatted_serial: str = self._get_serial_number(cert)
 
         self.raw_certs[cert_id] = cert
         self.name_count[cn] += 1
@@ -148,18 +171,18 @@ class TrustChainBuilder:
             else cert.not_valid_before.replace(tzinfo=timezone.utc)
         )
         start_date = start_date.replace(microsecond=0)
-        now = datetime.now(timezone.utc)
-        sans = (
+        now: datetime = datetime.now(timezone.utc)
+        sans: List[str] = (
             self._get_extension(cert, x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME) or []
         )
-        display_file_name = "" if is_system_cert else path.name
+        display_file_name: str = "" if is_system_cert else path.name
 
-        aia_issuers = self._get_extension(cert, x509.ExtensionOID.AUTHORITY_INFORMATION_ACCESS, "issuers") or []
-        ocsp_urls = self._get_extension(cert, x509.ExtensionOID.AUTHORITY_INFORMATION_ACCESS, "ocsp") or []
+        aia_issuers: List[str] = self._get_extension(cert, x509.ExtensionOID.AUTHORITY_INFORMATION_ACCESS, "issuers") or []
+        ocsp_urls: List[str] = self._get_extension(cert, x509.ExtensionOID.AUTHORITY_INFORMATION_ACCESS, "ocsp") or []
 
         from cryptography.hazmat.primitives.asymmetric import rsa, ec, dsa, ed25519
         pk = cert.public_key()
-        pk_info = {"algorithm": "Unknown", "bits": 0}
+        pk_info: Dict[str, Union[str, int]] = {"algorithm": "Unknown", "bits": 0}
 
         if isinstance(pk, rsa.RSAPublicKey):
             pk_info["algorithm"] = "RSA"
@@ -174,10 +197,10 @@ class TrustChainBuilder:
             pk_info["algorithm"] = "DSA"
             pk_info["bits"] = pk.key_size
 
-        sig_alg_oid = cert.signature_algorithm_oid
-        sig_alg = getattr(sig_alg_oid, "_name", str(sig_alg_oid))
+        sig_alg_oid: x509.ObjectIdentifier = cert.signature_algorithm_oid
+        sig_alg: str = getattr(sig_alg_oid, "_name", str(sig_alg_oid))
 
-        cert_obj = Certificate(
+        cert_obj: Certificate = Certificate(
             commonName=cn,
             subjectSerial=subject_sn,
             serialNumber=formatted_serial,
@@ -224,20 +247,26 @@ class TrustChainBuilder:
 
         self.cert_data[cert_id] = cert_obj
 
-    def _sanitize_parent_map(self, relevant_skis: Set[str]):
-        visited = set()
-        path = []
+    def _sanitize_parent_map(self, relevant_skis: Set[str]) -> None:
+        """
+        Prunes parent links that fall outside the collection of relevant rendering keys.
+
+        Args:
+            relevant_skis: Set of SKI hashes actively included in the target tree execution.
+        """
+        visited: Set[str] = set()
+        path: List[str] = []
         self.circular_skis = set()
 
         def check_cycle(ski):
             if ski in path:
-                idx = path.index(ski)
-                cycle_participants = path[idx:]
+                idx: int = path.index(ski)
+                cycle_participants: List[str] = path[idx:]
                 for member in cycle_participants:
                     self.circular_skis.add(member)
 
                 if self.debug:
-                    msg = _("Circular chain detected: {path}").format(
+                    msg: str = _("Circular chain detected: {path}").format(
                         path=" -> ".join([s[:8] for s in cycle_participants])
                     )
                     WARNING.log(_("CYCLE_BREAKER"), msg)
@@ -264,18 +293,22 @@ class TrustChainBuilder:
             check_cycle(ski)
 
     def get_analysis_summary(self) -> Dict[str, Any]:
-        """Calculates statistics only for the chains relevant to user-loaded certificates."""
-        target_skis = {
+        """Calculates statistics only for the chains relevant to user-loaded certificates.
+
+        Returns:
+            A metadata summary containing metrics and unidentified upstream authority trackers.
+        """
+        target_skis: Set[str] = {
             ski for ski, cert in self.cert_data.items() if not cert.is_system_cert
         }
-        relevant_skis = set()
+        relevant_skis: Set[str] = set()
         for ski in target_skis:
-            curr = ski
+            curr: Optional[str] = ski
             while curr and curr in self.cert_data:
                 relevant_skis.add(curr)
                 curr = self.parent_map.get(curr)
 
-        stats = {
+        stats: Dict[str, int] = {
             "ok": 0,
             "warning": 0,
             "error": 0,
@@ -293,10 +326,10 @@ class TrustChainBuilder:
             else:
                 stats["ok"] += 1
 
-        known_skis = set(self.cert_data.keys())
-        missing = []
+        known_skis: Set[str] = set(self.cert_data.keys())
+        missing: List[Dict[str, str]] = []
         for c_id in relevant_skis:
-            aki = self.parent_map.get(c_id)
+            aki: Optional[str] = self.parent_map.get(c_id)
             if aki and aki not in known_skis and aki != ORPHAN_NODE_ID:
                 missing.append(
                     {
@@ -310,22 +343,22 @@ class TrustChainBuilder:
 
     def _log_debug_summary(self):
         """Prints a flat list of all relevant certificates with their status and ID."""
-        target_skis = {
+        target_skis: Set[str] = {
             ski for ski, cert in self.cert_data.items() if not cert.is_system_cert
         }
-        relevant_skis = set()
+        relevant_skis: Set[str] = set()
 
         for ski in target_skis:
-            curr = ski
+            curr: Optional[str] = ski
             while curr and curr in self.cert_data:
                 relevant_skis.add(curr)
                 curr = self.parent_map.get(curr)
 
-        unique_relevant = list(relevant_skis)
+        unique_relevant: List[str] = list(relevant_skis)
 
-        def sort_key(ski):
-            obj = self.cert_data[ski]
-            sig_order = (
+        def sort_key(ski: str) -> Tuple[int, str]:
+            obj: Certificate = self.cert_data[ski]
+            sig_order: int = (
                 0
                 if obj.signature_valid is True
                 else (1 if obj.signature_valid is None else 2)
@@ -335,12 +368,12 @@ class TrustChainBuilder:
         unique_relevant.sort(key=sort_key)
 
         for ski in unique_relevant:
-            cert_obj = self.cert_data[ski]
+            cert_obj: Certificate = self.cert_data[ski]
             cert_obj.is_collision = self.name_count[cert_obj.common_name] > 1
 
-            current_label = None
-            is_untrusted = self.parent_map.get(ski) == ORPHAN_NODE_ID
-            ocsp_status = getattr(cert_obj, "ocsp_status", None)
+            current_label: Optional[str] = None
+            is_untrusted: bool = self.parent_map.get(ski) == ORPHAN_NODE_ID
+            ocsp_status: Optional[str] = getattr(cert_obj, "ocsp_status", None)
 
             if cert_obj.signature_valid is False and not is_untrusted:
                 st = ERROR
@@ -360,17 +393,17 @@ class TrustChainBuilder:
             else:
                 st = OK
 
-            sig_icon = cert_obj.signature_icon
-            coll_icon = COLLISION.ICON if cert_obj.is_collision else ""
-            ocsp_icon = ""
+            sig_icon: str = cert_obj.signature_icon
+            coll_icon: str = COLLISION.ICON if cert_obj.is_collision else ""
+            ocsp_icon: str = ""
             if ocsp_status == "GOOD":
                 ocsp_icon = Icons.OCSP_OK
             elif ocsp_status == "REVOKED":
                 ocsp_icon = Icons.REVOKED
 
-            combined_extra = f"{sig_icon}{ocsp_icon}{coll_icon}"
+            combined_extra: str = f"{sig_icon}{ocsp_icon}{coll_icon}"
 
-            log_name = (
+            log_name: str = (
                 f"{cert_obj.common_name} (ID: {cert_obj.cert_id[:8]})"
                 if cert_obj.is_collision
                 else cert_obj.common_name
@@ -383,10 +416,10 @@ class TrustChainBuilder:
                 extra_icon=combined_extra,
             )
 
-        known_skis = set(self.cert_data.keys())
-        missing_issuers = defaultdict(list)
+        known_skis: Set[str] = set(self.cert_data.keys())
+        missing_issuers: Dict[str, List[str]] = defaultdict(list)
         for c_id in relevant_skis:
-            aki = self.parent_map.get(c_id)
+            aki: Optional[str] = self.parent_map.get(c_id)
             if aki and aki not in known_skis and aki != ORPHAN_NODE_ID:
                 missing_issuers[aki].append(self.cert_data[c_id].common_name)
 
@@ -400,16 +433,20 @@ class TrustChainBuilder:
             )
 
     def get_flat_chain(self) -> List[Certificate]:
-        """Returns a flat list of unique certificates involved in all active chains."""
-        target_skis = {
+        """Returns a flat list of unique certificates involved in all active chains.
+
+        Returns:
+            A lexicographically sorted collection of unique validation nodes.
+        """
+        target_skis: Set[str] = {
             ski
             for ski, cert in self.cert_data.items()
             if not getattr(cert, "is_system_cert", False)
         }
 
-        relevant_skis = set()
+        relevant_skis: Set[str] = set()
         for ski in target_skis:
-            curr = ski
+            curr: Optional[str] = ski
             while curr and curr in self.cert_data:
                 relevant_skis.add(curr)
                 curr = self.parent_map.get(curr)
@@ -421,17 +458,22 @@ class TrustChainBuilder:
         return sorted(flat_list, key=lambda x: x.common_name.lower())
 
     def _create_tree(self, resolver: Optional[Any] = None, max_depth: int = 4) -> List[Certificate]:
-        """
-        The core recursive algorithm.
-        It filters certificates to only show chains that lead to a user-provided cert.
+        """The core recursive orchestration algorithm mapping mathematical paths to node trees.
+
+        Args:
+            resolver: Optional NetworkResolver used for down-stream runtime revocation evaluations.
+            max_depth: User-enforced restriction specifying the maximum validation path length.
+
+        Returns:
+            An optimized list of root certificates populated with children and policy findings.
         """
         # Identify all SKIs that are part of a target chain
-        target_skis = {
+        target_skis: Set[str] = {
             ski for ski, cert in self.cert_data.items() if not cert.is_system_cert
         }
-        relevant_skis = set()
+        relevant_skis: Set[str] = set()
 
-        def collect_all_relevant(ski):
+        def collect_all_relevant(ski: str) -> None:
             if ski in relevant_skis or ski not in self.cert_data:
                 return
             relevant_skis.add(ski)
@@ -445,22 +487,24 @@ class TrustChainBuilder:
         self._sanitize_parent_map(relevant_skis)
 
         # Build a lookup for children to allow recursive traversal
-        children_by_parent = defaultdict(list)
+        children_by_parent: Dict[str, List[str]] = defaultdict(list)
         for ski in relevant_skis:
-            p_skis = self.parents_map.get(ski, [])
+            p_skis: List[str] = self.parents_map.get(ski, [])
             for p_ski in p_skis:
                 if p_ski and p_ski in relevant_skis and p_ski != ski:
                     children_by_parent[p_ski].append(ski)
 
-        node_cache = {}
+        node_cache: Dict[str, Certificate] = {}
 
         # Recursive function to build Node objects
         def to_node(ski: str, parent_status: str = "VALID", depth: int = 0, max_depth: int = 4) -> Certificate:
             if depth > max_depth:
-                return self._create_virtual_node("LOOP_LIMIT_REACHED")
+                if self.debug:
+                    ERROR.log(_("CHAIN_TOO_DEEP"), _("Chain limit reached | Depth > {depth}").format(depth=max_depth))
+                return self._create_virtual_node(DEPTH_LIMIT_NODE_ID)
 
-            cert_info = self.cert_data[ski]
-            p_skis = self.parents_map.get(ski, [])
+            cert_info: Certificate = self.cert_data[ski]
+            p_skis: List[str] = self.parents_map.get(ski, [])
 
             if len(p_skis) > 1:
                 p_skis.sort(
@@ -472,7 +516,7 @@ class TrustChainBuilder:
                 reverse=True
             )
 
-            is_untrusted = False
+            is_untrusted: bool = False
             for p_ski in p_skis:
                 if p_ski in self.cert_data:
                     parent_obj = self.cert_data[p_ski]
@@ -502,19 +546,19 @@ class TrustChainBuilder:
                 ))
 
             if raw_cert:
-                primary_parent_ski = p_skis[0] if p_skis else None
-                is_root = getattr(cert_info, "is_root", False)
-                issuer_raw = raw_cert if is_root else self.raw_certs.get(primary_parent_ski)
+                primary_parent_ski: Optional[str] = p_skis[0] if p_skis else None
+                is_root: bool = getattr(cert_info, "is_root", False)
+                issuer_raw: Optional[x509.Certificate] = raw_cert if is_root else self.raw_certs.get(primary_parent_ski)
 
-                validation_kwargs = {}
-                child_skis = children_by_parent.get(ski, [])
+                validation_kwargs: Dict[str, Any] = {}
+                child_skis: List[str] = children_by_parent.get(ski, [])
 
                 if not child_skis and not cert_info.is_system_cert:
-                    target_host = self.options.get("target_hostname")
+                    target_host: Optional[str] = self.options.get("target_hostname")
                     if target_host:
                         validation_kwargs["target_hostname"] = target_host
 
-                findings = self.policy_engine.validate(raw_cert, issuer=issuer_raw, path_depth=depth, **validation_kwargs)
+                findings: List[PolicyFinding] = self.policy_engine.validate(raw_cert, issuer=issuer_raw, path_depth=depth, **validation_kwargs)
 
                 for finding in findings:
                     if finding.level == "ERROR":
@@ -526,7 +570,7 @@ class TrustChainBuilder:
                 cert_info.signature_valid = not any(f.code == "SIG_INVALID" for f in findings)
 
                 if resolver and not is_root and cert_info.signature_valid:
-                    status = resolver.check_ocsp_status(raw_cert, issuer_raw, provided_urls=cert_info.aia_ocsp_urls)
+                    status: str = resolver.check_ocsp_status(raw_cert, issuer_raw, provided_urls=cert_info.aia_ocsp_urls)
                     cert_info.ocsp_status = status
 
             # Inherit 'invalidity' from parents (Chain of trust)
@@ -559,7 +603,7 @@ class TrustChainBuilder:
 
             # Recurse for children
             child_skis = children_by_parent.get(ski, [])
-            sorted_child_skis = sorted(
+            sorted_child_skis: List[str] = sorted(
                 child_skis,
                 key=lambda x: (
                     self.cert_data[x].common_name,
@@ -569,7 +613,7 @@ class TrustChainBuilder:
                 ),
             )
 
-            processed_children = []
+            processed_children: List[Certificate] = []
             for c_ski in sorted_child_skis:
                 child_node = to_node(c_ski, cert_info.status_label, depth + 1, max_depth=max_depth)
                 processed_children.append(child_node)
@@ -578,14 +622,14 @@ class TrustChainBuilder:
             return cert_info
 
         # Find Roots and Orphans to start the tree
-        trusted_tree = []
-        orphan_skis = []
+        trusted_tree: List[Certificate] = []
+        orphan_skis: List[str] = []
 
-        cycle_skis = [ski for ski in relevant_skis if ski in self.circular_skis]
-        roots = [ski for ski in relevant_skis if self.parent_map.get(ski) not in relevant_skis]
+        cycle_skis: List[str] = [ski for ski in relevant_skis if ski in self.circular_skis]
+        roots: List[str] = [ski for ski in relevant_skis if self.parent_map.get(ski) not in relevant_skis]
 
         for r_ski in sorted(roots, key=lambda x: (self.cert_data[x].common_name.lower(), self.cert_data[x].fingerprint.lower())):
-            p_id = self.parent_map.get(r_ski)
+            p_id: Optional[str] = self.parent_map.get(r_ski)
             if p_id is None or p_id == r_ski:
                 trusted_tree.append(to_node(r_ski, max_depth=max_depth))
             elif p_id == CYCLE_NODE_ID:
@@ -594,11 +638,11 @@ class TrustChainBuilder:
                 orphan_skis.append(r_ski)
 
         if orphan_skis:
-            ext_node = self._create_virtual_node(ORPHAN_NODE_ID)
-            processed_orphans = []
+            ext_node: Certificate = self._create_virtual_node(ORPHAN_NODE_ID)
+            processed_orphans: List[Certificate] = []
 
             for o in sorted(orphan_skis, key=lambda x: (self.cert_data[x].common_name.lower(), self.cert_data[x].fingerprint.lower())):
-                child_node = to_node(o, max_depth=max_depth)
+                child_node: Certificate = to_node(o, max_depth=max_depth)
                 child_node.add_parent(ext_node)
                 processed_orphans.append(child_node)
 
@@ -606,14 +650,14 @@ class TrustChainBuilder:
             trusted_tree.append(ext_node)
 
         if cycle_skis:
-            cycle_root = self._create_virtual_node(CYCLE_NODE_ID)
-            processed_cycles = []
+            cycle_root: Certificate = self._create_virtual_node(CYCLE_NODE_ID)
+            processed_cycles: List[Certificate] = []
 
-            unique_cycle_skis = list(dict.fromkeys(cycle_skis))
+            unique_cycle_skis: List[str] = list(dict.fromkeys(cycle_skis))
             for c_ski in sorted(unique_cycle_skis, key=lambda x: (self.cert_data[x].common_name.lower(), self.cert_data[x].fingerprint.lower())):
                 if c_ski in node_cache:
                     del node_cache[c_ski]
-                node = to_node(c_ski, parent_status="INVALID", max_depth=max_depth)
+                node: Certificate = to_node(c_ski, parent_status="INVALID", max_depth=max_depth)
                 node.children = []
                 node.is_in_circular_group = True
 
@@ -627,32 +671,35 @@ class TrustChainBuilder:
         return trusted_tree
 
     def _get_common_name(self, cert) -> str:
+        """Helper to safely extract the Common Name attribute or fallback to Organization."""
         try:
             names = cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
             if names:
-                return names[0].value
+                return str(names[0].value)
             orgs = cert.subject.get_attributes_for_oid(x509.NameOID.ORGANIZATION_NAME)
             if orgs:
-                return orgs[0].value
+                return str(orgs[0].value)
             return ""
         except Exception:
             return ""
 
     def _get_subject_serial(self, cert: x509.Certificate) -> Optional[str]:
+        """Safely extracts hardware/subject serial tracking identifiers."""
         try:
             from cryptography.x509.oid import NameOID
             serials = cert.subject.get_attributes_for_oid(NameOID.SERIAL_NUMBER)
             if serials:
-                return serials[0].value
+                return str(serials[0].value)
 
             org_ids = cert.subject.get_attributes_for_oid(x509.ObjectIdentifier("2.5.4.97"))
             if org_ids:
-                return org_ids[0].value
+                return str(org_ids[0].value)
         except Exception:
             return None
 
     def _get_serial_number(self, cert: x509.Certificate) -> str:
-        s = format(cert.serial_number, "X")
+        """Formats the integer certificate serial number into a colon-delimited hex format."""
+        s: str = format(cert.serial_number, "X")
         if len(s) % 2 != 0:
             s = "0" + s
         return ":".join(s[i : i + 2] for i in range(0, len(s), 2))
@@ -661,7 +708,7 @@ class TrustChainBuilder:
         self, cert: x509.Certificate, oid: x509.ObjectIdentifier, sub_type: Optional[str] = None
     ) -> Optional[Union[str, List[str]]]:
         """Extracts and formats specific X509 extensions like SKI, AKI, or SAN."""
-        present_oids = [e.oid for e in cert.extensions]
+        present_oids: List[x509.ObjectIdentifier] = [e.oid for e in cert.extensions]
 
         if oid not in present_oids:
             if oid == x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME:
@@ -669,14 +716,14 @@ class TrustChainBuilder:
             return None
 
         try:
-            ext = cert.extensions.get_extension_for_oid(oid)
+            ext: x509.Extension[Any] = cert.extensions.get_extension_for_oid(oid)
 
             if oid == x509.ExtensionOID.SUBJECT_KEY_IDENTIFIER:
-                return ext.value.digest.hex()
+                return str(ext.value.digest.hex())
 
             if oid == x509.ExtensionOID.AUTHORITY_KEY_IDENTIFIER:
                 return (
-                    ext.value.key_identifier.hex() if ext.value.key_identifier else None
+                    str(ext.value.key_identifier.hex()) if ext.value.key_identifier else None
                 )
 
             if oid == x509.ExtensionOID.SUBJECT_ALTERNATIVE_NAME:
@@ -689,10 +736,10 @@ class TrustChainBuilder:
             if oid == x509.ExtensionOID.AUTHORITY_INFORMATION_ACCESS:
                 from cryptography.x509.oid import AuthorityInformationAccessOID
                 if sub_type == "issuers":
-                    return [ad.access_location.value for ad in ext.value
+                    return [str(ad.access_location.value) for ad in ext.value
                             if ad.access_method == AuthorityInformationAccessOID.CA_ISSUERS]
                 if sub_type == "ocsp":
-                    return [ad.access_location.value for ad in ext.value
+                    return [str(ad.access_location.value) for ad in ext.value
                             if ad.access_method == AuthorityInformationAccessOID.OCSP]
 
         except Exception:
@@ -707,14 +754,14 @@ class TrustChainBuilder:
         Iteratively identifies missing issuers and attempts to fetch them via AIA.
         Leverages the parallel resolver to discover all possible paths (cross-signing).
         """
-        depth = 0
+        depth: int = 0
         while depth < max_depth:
-            current_skis = set(self.cert_data.keys())
-            processed_in_round = set()
+            current_skis: Set[str] = set(self.cert_data.keys())
+            processed_in_round: Set[str] = set()
 
             missing_issuers_map: Dict[str, Certificate] = {}
             for cert_id, cert_obj in self.cert_data.items():
-                aki = self.parent_map.get(cert_id)
+                aki: Optional[str] = self.parent_map.get(cert_id)
 
                 if aki and aki != ORPHAN_NODE_ID and aki not in current_skis:
                     if cert_obj.aia_ca_issuers:
@@ -723,7 +770,7 @@ class TrustChainBuilder:
             if not missing_issuers_map:
                 break
 
-            found_new_in_this_round = False
+            found_new_in_this_round: bool = False
 
             for cert_id, cert_obj in missing_issuers_map.items():
                 new_issuers: List[x509.Certificate] = resolver.resolve_via_aia_urls(
@@ -732,14 +779,14 @@ class TrustChainBuilder:
                 )
 
                 for new_x509 in new_issuers:
-                    c_hash = Certificate.calculate_fingerprint(
+                    c_hash: str = Certificate.calculate_fingerprint(
                         new_x509.public_bytes(serialization.Encoding.DER)
                     )
 
                     if c_hash in self.repo or c_hash in processed_in_round:
                         continue
 
-                    meta = {
+                    meta: Dict[str, Any] = {
                         "cert": new_x509,
                         "path": Path(f"AIA-Discovery-{cert_obj.cert_id[:8]}"),
                         "hash": c_hash,
@@ -762,9 +809,16 @@ class TrustChainBuilder:
             depth += 1
 
     def _create_virtual_node(self, name: str) -> Certificate:
-        """Creates a dummy node for grouping orphans (missing/external roots)."""
-        epoch_date = datetime(1970, 1, 1, tzinfo=timezone.utc)
-        node=Certificate(
+        """Creates an execution placeholder node for grouping orphaned or restricted hierarchies.
+
+        Args:
+            name: The unique virtual label identifier (e.g., ORPHAN_NODE_ID, CYCLE_NODE_ID).
+
+        Returns:
+            An invalid placeholder Certificate instance configured with specific findings.
+        """
+        epoch_date: datetime = datetime(1970, 1, 1, tzinfo=timezone.utc)
+        node: Certificate = Certificate(
             commonName=name,
             serialNumber="N/A",
             certId=f"VIRTUAL_{name}",
@@ -782,6 +836,15 @@ class TrustChainBuilder:
                 code="CHAIN_INCOMPLETE",
                 label="UNTRUSTED",
                 message=N_("The chain is broken; an issuer (Root or Intermediate) was not found."),
+                code_int=3
+            ))
+
+        if name == DEPTH_LIMIT_NODE_ID:
+            node.add_finding(PolicyFinding(
+                level="ERROR",
+                code="CHAIN_TOO_DEEP",
+                label="UNTRUSTED",
+                message=N_("The certificate chain exceeds the maximum allowed depth."),
                 code_int=3
             ))
 

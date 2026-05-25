@@ -19,7 +19,7 @@ from .orchestrator import TrustStoreAnalyzer  # noqa: E402
 from .repository import CertificateRepository  # noqa: E402
 from .builder import TrustChainBuilder  # noqa: E402
 from .logging import OK, INFO, WARNING, MISSING, ERROR, COLLISION, SYSTEM, AIA, REVOKED, _, Icons as Icons  # noqa: E402
-from .models import Certificate, CertificateGroup, ORPHAN_NODE_ID, CYCLE_NODE_ID  # noqa: E402
+from .models import Certificate, CertificateGroup, ORPHAN_NODE_ID, CYCLE_NODE_ID, DEPTH_LIMIT_NODE_ID  # noqa: E402
 
 __all__ = [
     "TrustStoreAnalyzer",
@@ -39,5 +39,6 @@ __all__ = [
     "_",
     "ORPHAN_NODE_ID",
     "CYCLE_NODE_ID",
+    "DEPTH_LIMIT_NODE_ID",
     "Icons",
 ]

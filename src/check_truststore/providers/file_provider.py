@@ -13,9 +13,21 @@ from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
 from check_truststore.engine import CertificateRepository
 
 class SingleFileInputProvider(BaseInputProvider):
-    """
-    Handles the discovery and grouping of a single certificate source.
-    Supports both filesystem paths and raw certificate strings (stdin).
+    """Handles the discovery and grouping of a single certificate source.
+
+    Supports both lazy-loaded filesystem paths and directly evaluated raw
+    certificate blocks, making it highly suitable for handling piped data streams
+    via standard input (stdin).
+
+    Attributes:
+        input_source (Union[Path, str, bytes]): The raw payload block, string
+            stream, or target filesystem path.
+        is_raw_data (bool): Flag indicating if the input source represents actual
+            certificate bytes/strings rather than a location on disk.
+        repository (CertificateRepository): Inherited central asset identification mapping store.
+        options (Dict[str, Any]): Dictionary containing configuration arguments.
+        debug (bool): If True, enables diagnostic traces and deep error reporting.
+        verbosity (int): Numeric modifier adjusting logging output volume.
     """
 
     def __init__(
@@ -24,34 +36,41 @@ class SingleFileInputProvider(BaseInputProvider):
         repository: Optional[CertificateRepository] = None,
         is_raw_data: bool = False,
         **kwargs: Any,
-    ):
-        """
-        Initializes the file provider.
+    ) -> None:
+        """Initializes the single file or stream provider interface.
 
         Args:
-            input_source: Path to the certificate file or raw PEM/PKCS#7 data.
-            repository: Shared CertificateRepository instance.
-            is_raw_data: Set to True if input_source contains raw certificate data.
+            input_source (Union[Path, str, bytes]): Path to the certificate file
+                or raw PEM/PKCS#7 cryptographic data blocks.
+            repository (Optional[CertificateRepository], optional): Shared index
+                repository for certificate discovery. Defaults to None.
+            is_raw_data (bool, optional): Explicit indicator to treat input_source
+                as plain textual/binary data streams. Defaults to False.
+            **kwargs: Flexible configuration choices passed down to BaseInputProvider.
         """
         super().__init__(repository=repository, **kwargs)
-        self.input_source = input_source
-        self.is_raw_data = is_raw_data
+        self.input_source: Union[Path, str, bytes] = (
+            Path(input_source) if (isinstance(input_source, (str, Path)) and not is_raw_data) else input_source
+        )
+        self.is_raw_data: bool = is_raw_data
 
     def get_groups(self) -> List[TrustStoreGroup]:
-        """
-        Packs the input into a TrustStoreGroup for analysis.
+        """Packs the single input source into an executable TrustStoreGroup structure.
 
-        Uses Lazy Loading (Path) for files to ensure group isolation,
-        but Direct Registration (Dict) for raw data as no file exists.
+        Uses Lazy Loading (via `Path`) for local files to optimize system memory
+        boundaries, but applies Direct Registration (yielding metadata mappings via
+        `Dict`) for transient data blocks since no concrete file exists on disk.
 
         Returns:
-            A list containing a TrustStoreGroup or an empty list if loading fails.
+            List[TrustStoreGroup]: A single-item list containing the generated
+                trust group context, or an empty list if data tracking or local
+                file lookup fails.
         """
-        group_name = "Stdin Input"
+        group_name: str = "Stdin Input"
         targets: List[Union[Path, Dict[str, Any]]] = []
 
         if self.is_raw_data:
-            content = self.input_source
+            content: Union[str, bytes] = self.input_source
             if isinstance(content, str):
                 content = content.encode('utf-8')
 

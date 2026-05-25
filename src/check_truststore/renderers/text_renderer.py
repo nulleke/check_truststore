@@ -18,25 +18,31 @@ from check_truststore.engine import (
     COLLISION,
     ORPHAN_NODE_ID,
     CYCLE_NODE_ID,
+    DEPTH_LIMIT_NODE_ID,
 )
 from .base import BaseRenderer
 
 
 class TextRenderer(BaseRenderer):
-    """
-    Generates a human-readable tree representation of the certificate analysis.
-    Uses Unicode connectors to visualize the relationship between issuers and subjects.
+    """Generates a human-readable tree representation of the certificate analysis.
+
+    Uses Unicode connectors to visualize the relationship between issuers and
+    subjects, providing immediate insights into trust chain integrity,
+    expiration status, and policy violations.
     """
 
     def render(self, groups_results: List[Any], **kwargs) -> str:
-        """
-        Main entry point for rendering the text report.
+        """Main entry point for rendering the text report.
 
         Args:
-            groups_results: List of CertificateGroup objects or dictionaries.
+            groups_results: List of CertificateGroup objects or dictionaries
+                containing analysis data.
             **kwargs:
-                system (bool): Whether to emphasize system certificates.
-                verbosity (int): Level of detail to include in the output.
+                system (bool): Whether to emphasize system certificates in output.
+                verbosity (int): Level of detail (0-3) to include in the output.
+
+        Returns:
+            A formatted multi-line string representing the certificate hierarchy.
         """
         _("SIG_INVALID")
         _("NO_TRUST")
@@ -46,7 +52,7 @@ class TextRenderer(BaseRenderer):
         _("COMMENT")
         self.now = datetime.now(timezone.utc)
 
-        output = ["", _("Certificate Hierarchy:")]
+        output: List[str] = ["", _("Certificate Hierarchy:")]
         self.include_system = kwargs.get("system", False)
         self.verbosity = kwargs.get("verbosity", 0)
 
@@ -72,6 +78,14 @@ class TextRenderer(BaseRenderer):
         return "\n".join(output)
 
     def _render_icon_block(self, icon: str) -> str:
+        """Wraps status icons in brackets, handling double-width alignment.
+
+        Args:
+            icon: The icon identifier to render.
+
+        Returns:
+            The bracketed icon string.
+        """
         if not icon:
             return ""
 
@@ -85,32 +99,39 @@ class TextRenderer(BaseRenderer):
             return f"[{icon}]"
 
     def _recursive_render(self, nodes: List[Any], indent: str = "") -> str:
+        """Recursively builds the tree string using ASCII connectors.
+
+        Args:
+            nodes: List of certificate nodes to traverse at the current depth.
+            indent: The string indentation prefix for the current tree level.
+
+        Returns:
+            A nested string representing the tree structure.
         """
-        Recursively builds the tree string using ASCII connectors.
-        """
-        lines = []
+        lines: List[str] = []
 
         for i, n in enumerate(self._get_sorted_nodes(nodes)):
             if self._should_skip(n):
                 continue
 
             # Extract attributes safely
-            audit = n.get_audit_status()
-            raw_name = getattr(n, "display_name", _("Unknown"))
-            is_system_cert = getattr(n, "is_system_cert", False)
-            is_aia_cert = getattr(n, "is_aia_cert", False)
-            is_collision = getattr(n, "is_collision", False)
-            is_orphan = getattr(n, "is_orphan", False) or raw_name == ORPHAN_NODE_ID
-            is_cycle = getattr(n, 'is_in_circular_group', False) or raw_name == CYCLE_NODE_ID
+            audit: Dict[str, Any] = n.get_audit_status()
+            raw_name: str = getattr(n, "display_name", _("Unknown"))
+            is_system_cert: bool = getattr(n, "is_system_cert", False)
+            is_aia_cert: bool = getattr(n, "is_aia_cert", False)
+            is_collision: bool = getattr(n, "is_collision", False)
+            is_orphan: bool = getattr(n, "is_orphan", False) or raw_name == ORPHAN_NODE_ID
+            is_cycle: bool = getattr(n, 'is_in_circular_group', False) or raw_name == CYCLE_NODE_ID
+            is_depth_limit: bool = raw_name == DEPTH_LIMIT_NODE_ID
 
-            expiry = getattr(n, "expiry_date", None)
-            ocsp_status = getattr(n, "ocsp_status", "UNKNOWN")
+            expiry: Any = getattr(n, "expiry_date", None)
+            ocsp_status: str = getattr(n, "ocsp_status", "UNKNOWN")
 
-            is_special_placeholder = raw_name in [ORPHAN_NODE_ID, CYCLE_NODE_ID]
+            is_special_placeholder = raw_name in [ORPHAN_NODE_ID, CYCLE_NODE_ID, DEPTH_LIMIT_NODE_ID]
 
             # Build status icons
-            icons = []
-            if is_orphan or is_cycle:
+            icons: List[str] = []
+            if is_orphan or is_cycle or is_depth_limit:
                 icons.append(Icons.UNKNOWN)
             else:
                 if audit["code"] == 0:
@@ -137,7 +158,7 @@ class TextRenderer(BaseRenderer):
                 if is_collision:
                     icons.append(COLLISION.ICON)
 
-            icon_str = "".join([self._render_icon_block(ico) for ico in icons])
+            icon_str: str = "".join([self._render_icon_block(ico) for ico in icons])
 
             # Process errors and naming
             error_label = ""
@@ -148,6 +169,8 @@ class TextRenderer(BaseRenderer):
                 name = _("EXTERNAL ISSUER / MISSING ROOT")
             elif is_special_placeholder and is_cycle:
                 name = _("CIRCULAR REFERENCE")
+            elif is_special_placeholder and is_depth_limit:
+                name = _("MAXIMUM DEPTH LIMIT REACHED")
             else:
                 name = raw_name
 
@@ -155,18 +178,20 @@ class TextRenderer(BaseRenderer):
                 cid = getattr(n, "cert_id", "???")
                 name = f"{name} (ID: {cid[:8]})"
 
-            eku_display = ""
+            eku_display: str = ""
             if self.verbosity >= 2:
                 findings = getattr(n, "findings", [])
                 eku_finding = next((f for f in findings if getattr(f, "code", "") == "EKU_PURPOSE"), None)
                 if eku_finding:
                     usages = eku_finding.params.get("usages", [])
-                    translated_usages = [_(u) for u in usages]
-                    eku_text = ", ".join(translated_usages)
+                    if isinstance(usages, list):
+                        eku_text = ", ".join([_(u) for u in usages])
+                    else:
+                        eku_text = _(str(usages))
                     eku_display = f" [{_('Usage')}: {eku_text}]"
 
             # Optional SAN display
-            san_display = ""
+            san_display: str = ""
             if self.verbosity >= 1:
                 san_names = getattr(n, "san_names", [])
                 extra_sans = [s for s in san_names if s != raw_name]
@@ -179,7 +204,7 @@ class TextRenderer(BaseRenderer):
                         san_display = f"({_('ALT')}: {', '.join(extra_sans)})"
 
             # Date formatting
-            date_str = ""
+            date_str: str = ""
             if expiry and not is_special_placeholder:
                 ds = (
                     expiry.strftime("%Y-%m-%d")

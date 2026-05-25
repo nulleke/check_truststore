@@ -5,28 +5,39 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 """
 
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Set
 
 from .base import BaseRenderer
 from check_truststore import __version__ as tool_version
 
 class SarifRenderer(BaseRenderer):
-    """
-    Renders audit results in the industry-standard SARIF format.
-    This allows the TrustStore Analyzer to act as a security linter.
+    """Renders audit results in the industry-standard SARIF format.
+
+    This renderer maps internal certificate validation findings into the
+    SARIF 2.1.0 schema, enabling integration with security dashboarding tools.
+
+    Attributes:
+        SARIF_SCHEMA (str): URL to the official SARIF JSON schema.
+        SARIF_VERSION (str): The version of the SARIF standard used.
     """
 
     SARIF_SCHEMA = "https://schemastore.azurewebsites.net/schemas/json/sarif-2.1.0-rtm.5.json"
     SARIF_VERSION = "2.1.0"
 
     def render(self, tree_data: Any, **kwargs) -> str:
-        """
-        Converts the certificate tree data into a SARIF log.
+        """Converts the certificate tree data into a SARIF log.
+
+        Args:
+            tree_data: The result set from the TrustStoreAnalyzer.
+            **kwargs: Additional configuration parameters (unused by this renderer).
+
+        Returns:
+            A formatted JSON string compliant with the SARIF 2.1.0 specification.
         """
         try:
-            groups = tree_data if isinstance(tree_data, list) else [tree_data]
-            results = []
-            processed_fingerprints = set()
+            groups: List[Any] = tree_data if isinstance(tree_data, list) else [tree_data]
+            results: List[Dict[str, Any]] = []
+            processed_fingerprints: Set[str] = set()
 
             for group in groups:
                 for cert in self._get_sorted_nodes(getattr(group, "chain", [])):
@@ -36,11 +47,11 @@ class SarifRenderer(BaseRenderer):
                     if getattr(cert, "is_system_cert", False):
                         continue
 
-                    fingerprint = getattr(cert, "fingerprint", getattr(cert, "serial_number", None))
+                    fingerprint: Optional[str] = getattr(cert, "fingerprint", getattr(cert, "serial_number", None))
                     if fingerprint in processed_fingerprints:
                         continue
 
-                    audit = cert.get_audit_status()
+                    audit: Dict[str, Any] = cert.get_audit_status()
 
                     if audit["code"] == 0:
                         continue
@@ -74,20 +85,26 @@ class SarifRenderer(BaseRenderer):
             return json.dumps({"error": f"SARIF rendering failed: {str(e)}"}, indent=2)
 
     def _create_result(self, cert: Any, audit: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Maps a certificate finding to a SARIF result object.
-        """
-        rule_id = f"TSA-{audit['code']:03d}"
-        file_path = getattr(cert, "file_name", "unknown_location")
-        fp = getattr(cert, "fingerprint", "")
-        common_name = getattr(cert, "common_name", "Unknown")
+        """Maps a certificate finding to a SARIF result object.
 
-        params = audit.get("params", {}).copy()
+        Args:
+            cert: The certificate node containing the finding.
+            audit: A dictionary containing the audit code, message, and labels.
+
+        Returns:
+            A dictionary structured according to the SARIF 'result' object.
+        """
+        rule_id: str = f"TSA-{audit['code']:03d}"
+        file_path: str = getattr(cert, "file_name", "unknown_location")
+        fp: str = getattr(cert, "fingerprint", "")
+        common_name: str = getattr(cert, "common_name", "Unknown")
+
+        params: Dict[str, Any] = audit.get("params", {}).copy()
         if "{issuer}" in audit['message'] and "issuer" not in params:
             parent = getattr(cert, "parent", None)
             params["issuer"] = getattr(parent, "common_name", "Unknown Issuer") if parent else "Unknown Issuer"
         try:
-            message_text = audit['message'].format(**params)
+            message_text: str = audit['message'].format(**params)
         except (KeyError, ValueError):
             message_text = audit['message']
 
@@ -121,10 +138,15 @@ class SarifRenderer(BaseRenderer):
         }
 
     def _map_level(self, label: str) -> str:
+        """Maps internal labels to SARIF severity levels (error, warning, note).
+
+        Args:
+            label: The internal audit label string.
+
+        Returns:
+            The corresponding SARIF level string.
         """
-        Maps internal labels to SARIF severity levels (error, warning, note).
-        """
-        mapping = {
+        mapping: Dict[str, str] = {
             "OK": "note",
             "WARNING": "warning",
             "EXPIRING": "warning",
@@ -139,8 +161,10 @@ class SarifRenderer(BaseRenderer):
         return mapping.get(label, "warning")
 
     def _get_rule_definitions(self) -> List[Dict[str, Any]]:
-        """
-        Returns static definitions for the TSA rules.
+        """Returns static definitions for the TSA rule set.
+
+        Returns:
+            A list of dictionary definitions for the SARIF 'rule' property.
         """
         return [
             {
