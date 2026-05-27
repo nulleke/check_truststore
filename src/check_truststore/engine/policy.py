@@ -91,6 +91,7 @@ class PolicyEngine:
         })
         self.debug = kwargs.get('debug', False)
         self.disabled_checks = kwargs.get('disabled_checks', False)
+        self.max_policy_depth = kwargs.get('max_depth', 4)
         if isinstance(self.disabled_checks, list):
             self.disabled_checks = set(self.disabled_checks)
 
@@ -169,6 +170,7 @@ class PolicyEngine:
 
             if path_depth is not None:
                 findings.extend(self._check_path_limit(cert, issuer, path_depth))
+                findings.extend(self._check_excessive_depth(path_depth))
 
         elif not self.is_root_ca(cert):
             issuer_cn_attribs = cert.issuer.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
@@ -198,12 +200,10 @@ class PolicyEngine:
         # Checks presence of Signed Certificate Timestamps (SCT)
         if not self._should_ignore("CT_CHECK"):
             findings.extend(self._check_ct_compliance(cert, present_oids, is_internal))
-            pass
 
         # Check presence of crl for non root certificates
         if not self._should_ignore("CRL_PRESENCE"):
             findings.extend(self._check_crl_presence(cert, present_oids, is_internal))
-            pass
 
         # Check presence of a Netscape Comment field
         findings.extend(self._check_netscape_comment(cert, present_oids))
@@ -225,11 +225,15 @@ class PolicyEngine:
         Returns:
             True if the signature is valid, False otherwise.
         """
+        hash_algo = cert_to_check.signature_hash_algorithm
+
+        if hash_algo is None:
+            return False
+
         try:
             issuer_public_key = issuer_cert.public_key()
             signature = cert_to_check.signature
             data = cert_to_check.tbs_certificate_bytes
-            hash_algo = cert_to_check.signature_hash_algorithm
 
             if isinstance(issuer_public_key, rsa.RSAPublicKey):
                 issuer_public_key.verify(
@@ -245,13 +249,10 @@ class PolicyEngine:
                 issuer_public_key.verify(signature, data)
                 return True
 
-        except UnsupportedAlgorithm:
-            if self.debug:
-                 from .logging import WARNING
-                 WARNING.log("SIG_CHECK", f"Unsupported algorithm: {cert_to_check.signature_hash_algorithm.name if hash_algo else 'Unknown'}")
+        except (UnsupportedAlgorithm, InvalidSignature):
             return False
 
-        except InvalidSignature:
+        except Exception:
             return False
 
     def is_ca(self, cert: x509.Certificate) -> bool:
@@ -721,15 +722,14 @@ class PolicyEngine:
 
         if not is_root:
             if ExtensionOID.CRL_DISTRIBUTION_POINTS not in present_oids:
-                if not is_root:
-                    level = "INFO" if is_internal else "WARNING"
-                    findings.append(PolicyFinding(
-                        level=level,
-                        code="CRL_MISSING",
-                        label="POLICY_VIOLATION",
-                        message=N_("Certificate lacks CRL Distribution Points (CDP). Revocation checking may be limited."),
-                        code_int=0 if is_internal else 2
-                    ))
+                level = "INFO" if is_internal else "WARNING"
+                findings.append(PolicyFinding(
+                    level=level,
+                    code="CRL_MISSING",
+                    label="POLICY_VIOLATION",
+                    message=N_("Certificate lacks CRL Distribution Points (CDP). Revocation checking may be limited."),
+                    code_int=0 if is_internal else 2
+                ))
         return findings
 
     def _check_path_limit(self, cert: x509.Certificate, issuer: x509.Certificate, depth: int) -> List[PolicyFinding]:
@@ -764,6 +764,29 @@ class PolicyEngine:
                     code_int=4
                 ))
 
+        return findings
+
+    def _check_excessive_depth(self, depth: int) -> List[PolicyFinding]:
+        """
+        Validate the certificate chain depth against defined security policies.
+
+        Args:
+            depth (int): The current depth of the certificate chain.
+
+        Returns:
+            List[PolicyFinding]: A list containing a 'CHAIN_TOO_DEEP' warning
+                                 if the depth exceeds the allowed maximum.
+        """
+        findings: List[PolicyFinding] = []
+
+        if depth > self.max_policy_depth:
+            findings.append(PolicyFinding(
+                level="WARNING",
+                code="CHAIN_TOO_DEEP",
+                label="POLICY_VIOLATION",
+                message=N_("The certificate chain exceeds the maximum allowed depth."),
+                code_int=2
+            ))
         return findings
 
     def _check_hostname_match(self, cert: x509.Certificate, target_host: str) -> List[PolicyFinding]:

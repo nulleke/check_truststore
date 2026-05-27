@@ -659,9 +659,9 @@ Using the `--force` flag bypasses the tool's built-in resource protections:
 * **Use Case**: Use this only when auditing large, complex truststores where you are certain the system has sufficient memory to handle the full dataset.
 
 ### 🛡️ Maximum Chain Depth Validation
-To prevent resource exhaustion and ensure compliance with security policies, the analyzer supports a configurable chain depth limit. This limit is especially for network aia discovery lomitations.
+To prevent resource exhaustion and ensure compliance with security policies, the analyzer supports a configurable chain depth limit. This limit is especially for network aia discovery limitations. For other input sources when the max-depth is larger then allowed the policy will generate an additional warning.
 
-* **`--max-depth N`**: (Default: `4`). If a chain exceeds the specified `N` levels (Root + Intermediates + Leaf). The analyzer stops processing that specific path. This enforces strict PKI hierarchies and prevents circular reference exploits.
+* **`--max-depth N`**: (Default: `4`). If a chain exceeds the specified `N` levels (Root + Intermediates + Leaf). The analyzer stops processing that specific path. This enforces strict PKI hierarchies and prevents circular reference exploits. This is intended for aia lookups where the depth exceeds the commonly used maximum depth of 4.
 
 ## 🔍 Debugging & Scenario Analysis
 When running with the `--debug` flag, the tool outputs detailed logs to `stderr`. This is essential for understanding the certificate tree construction, network activities, and internal decision-making.

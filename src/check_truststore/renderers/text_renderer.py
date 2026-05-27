@@ -9,7 +9,7 @@ display.
 """
 
 from datetime import datetime, timezone
-from typing import List, Any
+from typing import List, Any, Dict
 from check_truststore.engine import (
     _,
     Icons,

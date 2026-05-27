@@ -54,6 +54,7 @@ class TrustChainBuilder:
         self.name_count: Dict[str, int] = defaultdict(int)
         self.policy_engine = PolicyEngine(**kwargs)
         self.parents_map: Dict[str, List[str]] = defaultdict(list)
+        self.depth_limited_skis: Set[str] = set()
 
     def build(
         self,
@@ -498,10 +499,8 @@ class TrustChainBuilder:
 
         # Recursive function to build Node objects
         def to_node(ski: str, parent_status: str = "VALID", depth: int = 0, max_depth: int = 4) -> Certificate:
-            if depth > max_depth:
-                if self.debug:
-                    ERROR.log(_("CHAIN_TOO_DEEP"), _("Chain limit reached | Depth > {depth}").format(depth=max_depth))
-                return self._create_virtual_node(DEPTH_LIMIT_NODE_ID)
+            if depth > (max_depth + 2):
+                return self._create_virtual_node("DUMMY")
 
             cert_info: Certificate = self.cert_data[ski]
             p_skis: List[str] = self.parents_map.get(ski, [])
@@ -624,6 +623,7 @@ class TrustChainBuilder:
         # Find Roots and Orphans to start the tree
         trusted_tree: List[Certificate] = []
         orphan_skis: List[str] = []
+        depth_limit_skis: List[str] = []
 
         cycle_skis: List[str] = [ski for ski in relevant_skis if ski in self.circular_skis]
         roots: List[str] = [ski for ski in relevant_skis if self.parent_map.get(ski) not in relevant_skis]
@@ -634,6 +634,8 @@ class TrustChainBuilder:
                 trusted_tree.append(to_node(r_ski, max_depth=max_depth))
             elif p_id == CYCLE_NODE_ID:
                 cycle_skis.append(r_ski)
+            elif r_ski in self.depth_limited_skis:
+                depth_limit_skis.append(r_ski)
             else:
                 orphan_skis.append(r_ski)
 
@@ -648,6 +650,18 @@ class TrustChainBuilder:
 
             ext_node.children = processed_orphans
             trusted_tree.append(ext_node)
+
+        if depth_limit_skis:
+            limit_root: Certificate = self._create_virtual_node(DEPTH_LIMIT_NODE_ID)
+            processed_limits: List[Certificate] = []
+
+            for limits in sorted(depth_limit_skis, key=lambda x: (self.cert_data[x].common_name.lower(), self.cert_data[x].fingerprint.lower())):
+                child_node: Certificate = to_node(limits, max_depth=max_depth)
+                child_node.add_parent(limit_root)
+                processed_limits.append(child_node)
+
+            limit_root.children = processed_limits
+            trusted_tree.append(limit_root)
 
         if cycle_skis:
             cycle_root: Certificate = self._create_virtual_node(CYCLE_NODE_ID)
@@ -807,6 +821,16 @@ class TrustChainBuilder:
             if not found_new_in_this_round:
                 break
             depth += 1
+
+        if depth >= max_depth:
+            if self.debug:
+                ERROR.log(_("CHAIN_TOO_DEEP"), _("Chain limit reached | Depth > {depth}").format(depth=max_depth))
+            final_skis: Set[str] = set(self.cert_data.keys())
+            for cert_id, cert_obj in self.cert_data.items():
+                aki = self.parent_map.get(cert_id)
+                if aki and aki != ORPHAN_NODE_ID and aki not in final_skis:
+                    if cert_obj.aia_ca_issuers:
+                        self.depth_limited_skis.add(cert_id)
 
     def _create_virtual_node(self, name: str) -> Certificate:
         """Creates an execution placeholder node for grouping orphaned or restricted hierarchies.

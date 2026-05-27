@@ -4,9 +4,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: check_truststore 1.2.4\n"
+"Project-Id-Version: check_truststore 1.2.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-22 14:24+0200\n"
+"POT-Creation-Date: 2026-05-27 08:42+0200\n"
 "PO-Revision-Date: 2026-05-07 14:35+0200\n"
 "Last-Translator: Assistant\n"
 "Language-Team: fr\n"
@@ -15,40 +15,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
-
-msgid "Invalid DER structure"
-msgstr "Structure DER invalide"
-
-#, python-brace-format
-msgid "Maximum certificate limit ({limit}) reached."
-msgstr "Limite maximale de certificats ({limit}) atteinte."
-
-msgid "Skipping duplicate certificate (already loaded)"
-msgstr "Saut du certificat en double (déjà chargé)"
-
-msgid "DUPLICATE"
-msgstr "DOUBLON"
-
-msgid "Invalid certificate structure"
-msgstr "Structure de certificat invalide"
-
-msgid "PKCS7-container"
-msgstr "Conteneur-PKCS7"
-
-msgid "Legacy cryptography detected, falling back."
-msgstr "Cryptographie obsolète détectée, mode de repli activé."
-
-#, python-brace-format
-msgid "Failed to parse PKCS7: {error}"
-msgstr "Échec de l'analyse du PKCS7 : {error}"
-
-#, python-brace-format
-msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
-msgstr "Limite maximale de certificats ({limit}) atteinte. Arrêt de l'analyse."
-
-#, python-brace-format
-msgid "File too large ({size:.1f}MB)"
-msgstr "Fichier trop volumineux ({size:.1f} Mo)"
 
 msgid "CACHE"
 msgstr "CACHE"
@@ -184,6 +150,79 @@ msgstr "Échec de la vérification CRL"
 msgid "Could not save CRL to cache"
 msgstr "Impossible de sauvegarder la CRL dans le cache"
 
+msgid "SystemProvider"
+msgstr "FournisseurSystème"
+
+#, python-brace-format
+msgid "Could not load system truststore: {error}"
+msgstr "Impossible de charger le magasin de confiance du système : {error}"
+
+msgid "Processing Group"
+msgstr "Traitement du groupe"
+
+msgid "Parallel Analysis"
+msgstr "Analyse parallèle"
+
+#, python-brace-format
+msgid "Group failed: {error}"
+msgstr "Échec du groupe : {error}"
+
+msgid "Export"
+msgstr "Exportation"
+
+msgid "Used OpenSSL CLI fallback to generate real PKCS#7 bundle"
+msgstr "Fallback CLI OpenSSL utilisé pour générer un vrai bundle PKCS#7"
+
+msgid "OpenSSL CLI fallback failed, using raw PEM list: {}"
+msgstr "Échec du fallback CLI OpenSSL, utilisation de la liste PEM brute : {}"
+
+msgid "Trust bundle exported successfully to {}"
+msgstr "Bundle de confiance exporté avec succès vers {}"
+
+msgid "Failed to export trust bundle"
+msgstr "Échec de l'exportation du bundle de confiance"
+
+#, python-brace-format
+msgid "{used} of the {total} system certificates used"
+msgstr "{used} des {total} certificats système utilisés"
+
+msgid "System usage"
+msgstr "Utilisation du système"
+
+msgid "Invalid DER structure"
+msgstr "Structure DER invalide"
+
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached."
+msgstr "Limite maximale de certificats ({limit}) atteinte."
+
+msgid "Skipping duplicate certificate (already loaded)"
+msgstr "Saut du certificat en double (déjà chargé)"
+
+msgid "DUPLICATE"
+msgstr "DOUBLON"
+
+msgid "Invalid certificate structure"
+msgstr "Structure de certificat invalide"
+
+msgid "PKCS7-container"
+msgstr "Conteneur-PKCS7"
+
+msgid "Legacy cryptography detected, falling back."
+msgstr "Cryptographie obsolète détectée, mode de repli activé."
+
+#, python-brace-format
+msgid "Failed to parse PKCS7: {error}"
+msgstr "Échec de l'analyse du PKCS7 : {error}"
+
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
+msgstr "Limite maximale de certificats ({limit}) atteinte. Arrêt de l'analyse."
+
+#, python-brace-format
+msgid "File too large ({size:.1f}MB)"
+msgstr "Fichier trop volumineux ({size:.1f} Mo)"
+
 msgid "Serial"
 msgstr "Série"
 
@@ -245,10 +284,20 @@ msgstr "AIA : {name}"
 msgid "Successfully discovered issuer via AIA"
 msgstr "Émetteur découvert avec succès via AIA"
 
+msgid "CHAIN_TOO_DEEP"
+msgstr "CHAINE_TROP_PROFONDE"
+
+#, python-brace-format
+msgid "Chain limit reached | Depth > {depth}"
+msgstr "Limite de chaîne atteinte | Profondeur > {depth}"
+
 msgid "The chain is broken; an issuer (Root or Intermediate) was not found."
 msgstr ""
 "La chaîne est rompue ; un émetteur (racine ou intermédiaire) n'a pas été "
 "trouvé."
+
+msgid "The certificate chain exceeds the maximum allowed depth."
+msgstr "La chaîne de certificats dépasse la profondeur maximale autorisée."
 
 msgid "A circular certificate reference was detected."
 msgstr "Une référence de certificat circulaire a été détectée."
@@ -422,44 +471,17 @@ msgstr ""
 msgid "Certificate name '{name}' is explicitly excluded by the issuer."
 msgstr "Le nom du certificat '{name}' est explicitement exclu par l'émetteur."
 
-msgid "SystemProvider"
-msgstr "FournisseurSystème"
+#, python-brace-format
+msgid "Initiating TLS connection to {host}:{port}"
+msgstr "Initialisation de la connexion TLS vers {host}:{port}"
 
 #, python-brace-format
-msgid "Could not load system truststore: {error}"
-msgstr "Impossible de charger le magasin de confiance du système : {error}"
-
-msgid "Processing Group"
-msgstr "Traitement du groupe"
-
-msgid "Parallel Analysis"
-msgstr "Analyse parallèle"
+msgid "Failed to fetch certificate from {host}"
+msgstr "Échec de la récupération du certificat depuis {host}"
 
 #, python-brace-format
-msgid "Group failed: {error}"
-msgstr "Échec du groupe : {error}"
-
-msgid "Export"
-msgstr "Exportation"
-
-msgid "Used OpenSSL CLI fallback to generate real PKCS#7 bundle"
-msgstr "Fallback CLI OpenSSL utilisé pour générer un vrai bundle PKCS#7"
-
-msgid "OpenSSL CLI fallback failed, using raw PEM list: {}"
-msgstr "Échec du fallback CLI OpenSSL, utilisation de la liste PEM brute : {}"
-
-msgid "Trust bundle exported successfully to {}"
-msgstr "Bundle de confiance exporté avec succès vers {}"
-
-msgid "Failed to export trust bundle"
-msgstr "Échec de l'exportation du bundle de confiance"
-
-#, python-brace-format
-msgid "{used} of the {total} system certificates used"
-msgstr "{used} des {total} certificats système utilisés"
-
-msgid "System usage"
-msgstr "Utilisation du système"
+msgid "Thread crash while processing {host}"
+msgstr "Crash du thread lors du traitement de {host}"
 
 msgid "Unknown JSON format or malformed structure."
 msgstr "Format JSON inconnu ou structure malformée."
@@ -498,18 +520,6 @@ msgstr "Le groupe ne contient aucun certificat valide."
 msgid "EMPTY_GROUP"
 msgstr "GROUPE_VIDE"
 
-#, python-brace-format
-msgid "Initiating TLS connection to {host}:{port}"
-msgstr "Initialisation de la connexion TLS vers {host}:{port}"
-
-#, python-brace-format
-msgid "Failed to fetch certificate from {host}"
-msgstr "Échec de la récupération du certificat depuis {host}"
-
-#, python-brace-format
-msgid "Thread crash while processing {host}"
-msgstr "Crash du thread lors du traitement de {host}"
-
 msgid "Unknown format: {}"
 msgstr "Format inconnu : {}"
 
@@ -545,6 +555,9 @@ msgstr "ÉMETTEUR EXTERNE / ROOT MANQUANT"
 
 msgid "CIRCULAR REFERENCE"
 msgstr "RÉFÉRENCE CIRCULAIRE"
+
+msgid "MAXIMUM DEPTH LIMIT REACHED"
+msgstr "LIMITE DE PROFONDEUR MAXIMALE ATTEINTE"
 
 msgid "Usage"
 msgstr "Utilisation"
