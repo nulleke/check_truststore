@@ -5,9 +5,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: check_truststore 1.2.4\n"
+"Project-Id-Version: check_truststore 1.2.5\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-22 14:24+0200\n"
+"POT-Creation-Date: 2026-05-27 08:42+0200\n"
 "PO-Revision-Date: 2026-04-13 11:08+0200\n"
 "Last-Translator: Serge van Thillo <nulleke76@gmail.com>\n"
 "Language-Team: Dutch <vertaling@vrijschrift.org>\n"
@@ -16,40 +16,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-
-msgid "Invalid DER structure"
-msgstr "Ongeldige DER structuur"
-
-#, python-brace-format
-msgid "Maximum certificate limit ({limit}) reached."
-msgstr "Maximale certificaatlimiet ({limit}) bereikt."
-
-msgid "Skipping duplicate certificate (already loaded)"
-msgstr "Duplicaat certificaat overgeslagen (reeds geladen)"
-
-msgid "DUPLICATE"
-msgstr "DUPLICAAT"
-
-msgid "Invalid certificate structure"
-msgstr "Ongeldige certificaat structuur"
-
-msgid "PKCS7-container"
-msgstr "PKCS7-container"
-
-msgid "Legacy cryptography detected, falling back."
-msgstr "Verouderde cryptografie gedetecteerd, fallback wordt uitgevoerd."
-
-#, python-brace-format
-msgid "Failed to parse PKCS7: {error}"
-msgstr "Parsen van PKCS7 mislukt: {error}"
-
-#, python-brace-format
-msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
-msgstr "Maximale certificaatlimiet ({limit}) bereikt. Scan wordt gestopt."
-
-#, python-brace-format
-msgid "File too large ({size:.1f}MB)"
-msgstr "Bestand te groot ({size:.1f}MB)."
 
 msgid "CACHE"
 msgstr "CACHE"
@@ -185,6 +151,80 @@ msgstr "CRL-controle mislukt"
 msgid "Could not save CRL to cache"
 msgstr "Kon CRL niet opslaan in cache"
 
+msgid "SystemProvider"
+msgstr "Systeem-provider"
+
+#, python-brace-format
+msgid "Could not load system truststore: {error}"
+msgstr "Kon systeem-truststore niet laden: {error}"
+
+msgid "Processing Group"
+msgstr "Groep verwerken"
+
+msgid "Parallel Analysis"
+msgstr "Parallelle analyse"
+
+#, python-brace-format
+msgid "Group failed: {error}"
+msgstr "Groep mislukt: {error}"
+
+msgid "Export"
+msgstr "Export"
+
+msgid "Used OpenSSL CLI fallback to generate real PKCS#7 bundle"
+msgstr "OpenSSL CLI-fallback gebruikt om een echte PKCS#7-bundel te genereren"
+
+msgid "OpenSSL CLI fallback failed, using raw PEM list: {}"
+msgstr "OpenSSL CLI-fallback mislukt, ruwe PEM-lijst wordt gebruikt: {}"
+
+msgid "Trust bundle exported successfully to {}"
+msgstr "Vertrouwensbundel succesvol geëxporteerd naar {}"
+
+msgid "Failed to export trust bundle"
+msgstr "Exporteren van vertrouwensbundel mislukt"
+
+# python-brace-format
+#, python-brace-format
+msgid "{used} of the {total} system certificates used"
+msgstr "{used} van de {total} systeem-certificaten gebruikt"
+
+msgid "System usage"
+msgstr "Systeemgebruik"
+
+msgid "Invalid DER structure"
+msgstr "Ongeldige DER structuur"
+
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached."
+msgstr "Maximale certificaatlimiet ({limit}) bereikt."
+
+msgid "Skipping duplicate certificate (already loaded)"
+msgstr "Duplicaat certificaat overgeslagen (reeds geladen)"
+
+msgid "DUPLICATE"
+msgstr "DUPLICAAT"
+
+msgid "Invalid certificate structure"
+msgstr "Ongeldige certificaat structuur"
+
+msgid "PKCS7-container"
+msgstr "PKCS7-container"
+
+msgid "Legacy cryptography detected, falling back."
+msgstr "Verouderde cryptografie gedetecteerd, fallback wordt uitgevoerd."
+
+#, python-brace-format
+msgid "Failed to parse PKCS7: {error}"
+msgstr "Parsen van PKCS7 mislukt: {error}"
+
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
+msgstr "Maximale certificaatlimiet ({limit}) bereikt. Scan wordt gestopt."
+
+#, python-brace-format
+msgid "File too large ({size:.1f}MB)"
+msgstr "Bestand te groot ({size:.1f}MB)."
+
 msgid "Serial"
 msgstr "S/N"
 
@@ -247,9 +287,19 @@ msgstr "AIA: {name}"
 msgid "Successfully discovered issuer via AIA"
 msgstr "Uitgever succesvol gevonden via AIA"
 
+msgid "CHAIN_TOO_DEEP"
+msgstr "KETEN_TE_DIEP"
+
+#, python-brace-format
+msgid "Chain limit reached | Depth > {depth}"
+msgstr "Ketenlimiet bereikt | Diepte > {depth}"
+
 msgid "The chain is broken; an issuer (Root or Intermediate) was not found."
 msgstr ""
 "De keten is verbroken; een uitgever (Root of Intermediate) is niet gevonden."
+
+msgid "The certificate chain exceeds the maximum allowed depth."
+msgstr "De certificaatketen overschrijdt de maximaal toegestane diepte."
 
 msgid "A circular certificate reference was detected."
 msgstr "Er is een circulaire certificaatverwijzing gedetecteerd."
@@ -417,45 +467,17 @@ msgstr ""
 msgid "Certificate name '{name}' is explicitly excluded by the issuer."
 msgstr "Certificaatnaam '{name}' is expliciet uitgesloten door de uitgever."
 
-msgid "SystemProvider"
-msgstr "Systeem-provider"
+#, python-brace-format
+msgid "Initiating TLS connection to {host}:{port}"
+msgstr "TLS-verbinding opzetten met {host}:{port}"
 
 #, python-brace-format
-msgid "Could not load system truststore: {error}"
-msgstr "Kon systeem-truststore niet laden: {error}"
-
-msgid "Processing Group"
-msgstr "Groep verwerken"
-
-msgid "Parallel Analysis"
-msgstr "Parallelle analyse"
+msgid "Failed to fetch certificate from {host}"
+msgstr "Ophalen van certificaat van {host} mislukt"
 
 #, python-brace-format
-msgid "Group failed: {error}"
-msgstr "Groep mislukt: {error}"
-
-msgid "Export"
-msgstr "Export"
-
-msgid "Used OpenSSL CLI fallback to generate real PKCS#7 bundle"
-msgstr "OpenSSL CLI-fallback gebruikt om een echte PKCS#7-bundel te genereren"
-
-msgid "OpenSSL CLI fallback failed, using raw PEM list: {}"
-msgstr "OpenSSL CLI-fallback mislukt, ruwe PEM-lijst wordt gebruikt: {}"
-
-msgid "Trust bundle exported successfully to {}"
-msgstr "Vertrouwensbundel succesvol geëxporteerd naar {}"
-
-msgid "Failed to export trust bundle"
-msgstr "Exporteren van vertrouwensbundel mislukt"
-
-# python-brace-format
-#, python-brace-format
-msgid "{used} of the {total} system certificates used"
-msgstr "{used} van de {total} systeem-certificaten gebruikt"
-
-msgid "System usage"
-msgstr "Systeemgebruik"
+msgid "Thread crash while processing {host}"
+msgstr "Thread-crash tijdens het verwerken van {host}"
 
 msgid "Unknown JSON format or malformed structure."
 msgstr "Onbekend JSON-formaat of ongeldige structuur."
@@ -494,18 +516,6 @@ msgstr "Groep heeft GEEN geldige certificaten."
 msgid "EMPTY_GROUP"
 msgstr "LEGE_GROEP"
 
-#, python-brace-format
-msgid "Initiating TLS connection to {host}:{port}"
-msgstr "TLS-verbinding opzetten met {host}:{port}"
-
-#, python-brace-format
-msgid "Failed to fetch certificate from {host}"
-msgstr "Ophalen van certificaat van {host} mislukt"
-
-#, python-brace-format
-msgid "Thread crash while processing {host}"
-msgstr "Thread-crash tijdens het verwerken van {host}"
-
 msgid "Unknown format: {}"
 msgstr "Onbekend formaat: {}"
 
@@ -541,6 +551,9 @@ msgstr "EXTERNE UITGEVER / ONBEKENDE ROOT"
 
 msgid "CIRCULAR REFERENCE"
 msgstr "CIRCULAIRE VERWIJZING"
+
+msgid "MAXIMUM DEPTH LIMIT REACHED"
+msgstr "MAXIMALE DIEPTELIMIET BEREIKT"
 
 msgid "Usage"
 msgstr "Gebruik"
