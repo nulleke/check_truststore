@@ -22,9 +22,6 @@ jobs:
         run: |
           apt-get update && apt-get install -y git gettext
 
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Setup Environment (Legacy 3.6)
         if: matrix.python-version == '3.6'
         run: |
