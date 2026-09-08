@@ -10,7 +10,7 @@ on:
 jobs:
   test_full_compatibility:
     name: Test Python ${{ matrix.python-version }}
-    runs-on: self-hosted # Of het label dat je aan je gitea-runner hebt meegegeven
+    runs-on: alma-host
     container:
       image: python:${{ matrix.python-version }}-slim
     strategy:
