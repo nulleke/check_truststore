@@ -27,11 +27,18 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Set up Python 3.6 (Legacy)
+      - name: Set up Python 3.6 (Legacy - Manual)
         if: matrix.python-version == '3.6'
-        uses: deadsnakes/action@v3.1.0
-        with:
-          python-version: '3.6'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y software-properties-common curl
+          sudo add-apt-repository -y ppa:deadsnakes/ppa
+          sudo apt-get update
+          sudo apt-get install -y python3.6 python3.6-distutils
+          curl https://bootstrap.pypa.io/pip/3.6/get-pip.py -o get-pip.py
+          sudo python3.6 get-pip.py
+          sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.6 1
+          python --version
 
       - name: Install system dependencies (Gettext)
         run: |
