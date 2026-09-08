@@ -11,32 +11,36 @@ jobs:
   test_full_compatibility:
     name: Test Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
-    container:
-      image: python:${{ matrix.python-version }}-slim
     strategy:
       matrix:
         python-version: ["3.6", "3.9", "3.10", "3.13", "3.14"]
 
     steps:
-      - name: Install system dependencies (Git & Gettext)
-        run: |
-          apt-get -o Acquire::Check-Valid-Until=false update && apt-get install -y git gettext
-
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install system dependencies (Gettext)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gettext
 
       - name: Setup Environment (Legacy 3.6)
         if: matrix.python-version == '3.6'
         run: |
           echo ">>> Environment: Legacy (3.6)"
-          python3 -m pip install --quiet --upgrade "pip<22.0"
+          python -m pip install --quiet --upgrade "pip<22.0"
           pip install "cryptography<3.5" PyYAML requests
 
       - name: Setup Environment (Modern)
         if: matrix.python-version != '3.6'
         run: |
           echo ">>> Environment: Modern (${{ matrix.python-version }})"
-          python3 -m pip install --quiet --upgrade pip
+          python -m pip install --quiet --upgrade pip
           pip install -e ".[all]"
 
       - name: Compile Translations
@@ -54,7 +58,7 @@ jobs:
           chmod +x check_truststore
           ./check_truststore --mock --format text -d
           ./check_truststore --mock --format json > output_${{ matrix.python-version }}.json
-          python3 -m json.tool output_${{ matrix.python-version }}.json > /dev/null
+          python -m json.tool output_${{ matrix.python-version }}.json > /dev/null
 
       - name: Upload Artifacts on Failure
         uses: actions/upload-artifact@v4
@@ -63,4 +67,3 @@ jobs:
           name: output-json-${{ matrix.python-version }}
           path: output_*.json
           retention-days: 2
-          
