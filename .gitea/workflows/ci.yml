@@ -10,7 +10,7 @@ on:
 jobs:
   test_full_compatibility:
     name: Test Python ${{ matrix.python-version }}
-    runs-on: alma-host
+    runs-on: ubuntu-latest
     container:
       image: python:${{ matrix.python-version }}-slim
     strategy:
@@ -18,17 +18,12 @@ jobs:
         python-version: ["3.6", "3.9", "3.10", "3.13", "3.14"]
 
     steps:
-      steps:
       - name: Install system dependencies (Git & Gettext)
         run: |
           apt-get update && apt-get install -y git gettext
-    
+
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Install system dependencies
-        run: |
-          apt-get update && apt-get install -y gettext git
 
       - name: Setup Environment (Legacy 3.6)
         if: matrix.python-version == '3.6'
@@ -68,3 +63,4 @@ jobs:
           name: output-json-${{ matrix.python-version }}
           path: output_*.json
           retention-days: 2
+          
