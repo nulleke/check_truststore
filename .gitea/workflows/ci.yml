@@ -22,9 +22,16 @@ jobs:
           GIT_SSL_NO_VERIFY: "true"
 
       - name: Set up Python ${{ matrix.python-version }}
+        if: matrix.python-version != '3.6'
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Set up Python 3.6 (Legacy)
+        if: matrix.python-version == '3.6'
+        uses: deadsnakes/action@v3.1.0
+        with:
+          python-version: '3.6'
 
       - name: Install system dependencies (Gettext)
         run: |
