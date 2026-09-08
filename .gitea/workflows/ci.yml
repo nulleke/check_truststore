@@ -1,0 +1,65 @@
+name: CI Checks
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  test_full_compatibility:
+    name: Test Python ${{ matrix.python-version }}
+    runs-on: self-hosted # Of het label dat je aan je gitea-runner hebt meegegeven
+    container:
+      image: python:${{ matrix.python-version }}-slim
+    strategy:
+      matrix:
+        python-version: ["3.6", "3.9", "3.10", "3.13", "3.14"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          apt-get update && apt-get install -y gettext git
+
+      - name: Setup Environment (Legacy 3.6)
+        if: matrix.python-version == '3.6'
+        run: |
+          echo ">>> Environment: Legacy (3.6)"
+          python3 -m pip install --quiet --upgrade "pip<22.0"
+          pip install "cryptography<3.5" PyYAML requests
+
+      - name: Setup Environment (Modern)
+        if: matrix.python-version != '3.6'
+        run: |
+          echo ">>> Environment: Modern (${{ matrix.python-version }})"
+          python3 -m pip install --quiet --upgrade pip
+          pip install -e ".[all]"
+
+      - name: Compile Translations
+        run: |
+          echo ">>> Compiling Translations inside src structure"
+          find src/check_truststore/locale -name "*.po" | while read po_file; do
+            mo_file="${po_file%.po}.mo"
+            echo "Compiling $po_file -> $mo_file"
+            msgfmt "$po_file" -o "$mo_file"
+          done
+
+      - name: Run Analyzer
+        run: |
+          echo ">>> Running Analyzer on Python ${{ matrix.python-version }}"
+          chmod +x check_truststore
+          ./check_truststore --mock --format text -d
+          ./check_truststore --mock --format json > output_${{ matrix.python-version }}.json
+          python3 -m json.tool output_${{ matrix.python-version }}.json > /dev/null
+
+      - name: Upload Artifacts on Failure
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: output-json-${{ matrix.python-version }}
+          path: output_*.json
+          retention-days: 2
