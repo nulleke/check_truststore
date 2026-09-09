@@ -165,7 +165,7 @@ def main() -> None:
         output_group.add_argument(
             "-f",
             "--format",
-            choices=["json", "text", "status", "sarif", "dot", "prom"],
+            choices=["json", "text", "status", "sarif", "dot", "prom", "zabbix"],
             default="text",
             help=_("Output format"),
         )

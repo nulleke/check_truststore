@@ -16,6 +16,7 @@ from .prometheus_renderer import PrometheusRenderer
 from .sarif_renderer import SarifRenderer
 from .status_renderer import StatusRenderer
 from .text_renderer import TextRenderer
+from .zabbix_renderer import ZabbixRenderer
 
 
 class TrustStoreRenderer:
@@ -34,6 +35,7 @@ class TrustStoreRenderer:
             "graphviz": GraphvizRenderer(),
             "dot": GraphvizRenderer(),
             "prom": PrometheusRenderer(),
+            "zabbix": ZabbixRenderer(),
         }
 
     def render(self, tree_data: List[Any], format_type: str, **kwargs: Any) -> Any:
