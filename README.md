@@ -255,7 +255,7 @@ You can scan multiple domains, entire subnets, or specific ports, and even mix p
 nmap -p 443 --script ssl-cert example.com -oX - | check_truststore - --system --online
 
 # Advanced: Scan entire subnets across multiple ports AND check a specific HTTPS site simultaneously
-nmap --script ssl-cert -p 443,636,8006,8443 192.168.200.0/24 10.192.99.0/24 -oX - | check_truststore - [https://www.thillo.lan](https://www.thillo.lan) -s -O
+nmap --script ssl-cert -p 443,636,8006,8443 192.168.1.0/24 10.192.0.0/24 -oX - | check_truststore - https://www.example.lan -s -O
 ```
 
 ### System Truststores
