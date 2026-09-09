@@ -20,11 +20,33 @@ class ZabbixRenderer(BaseRenderer):
     """Transforms certificate validation results into deduplicated Zabbix LLD JSON."""
 
     def _get_val(self, obj: Any, key: str, default: Any = None) -> Any:
+        """Safely retrieves a value from an object attribute or dictionary key.
+
+        Args:
+            obj: The object or dictionary to inspect.
+            key: The attribute name or dictionary key to retrieve.
+            default: The value to return if the key/attribute is missing.
+
+        Returns:
+            The retrieved value if it exists, otherwise the provided default.
+        """
         if isinstance(obj, dict):
             return obj.get(key, default)
         return getattr(obj, key, default)
 
     def render(self, groups_results: Union[List[Any], Any], **kwargs: Any) -> str:
+        """Main entry point to transform analysis results into Zabbix LLD JSON.
+
+        Processes certificate groups, deduplicates shared certificates globally
+        across all target groups, and formats the output into an LLD-compliant JSON payload.
+
+        Args:
+            groups_results: A list of CertificateGroup objects or a single instance.
+            **kwargs: Arbitrary keyword arguments (unused).
+
+        Returns:
+            A string containing the formatted Zabbix Low Level Discovery JSON payload.
+        """
         groups: List[Any] = groups_results if isinstance(groups_results, list) else [groups_results]
 
         cert_registry: Dict[str, Dict[str, Any]] = {}
@@ -58,6 +80,16 @@ class ZabbixRenderer(BaseRenderer):
         processed_fps: Set[str],
         cert_registry: Dict[str, Dict[str, Any]]
     ) -> None:
+        """Recursively traverses certificate nodes, normalizes metrics, and updates the global registry.
+
+        Args:
+            nodes: List of certificate nodes to traverse.
+            target_host: The clean hostname or target identification.
+            group_name: The operational group context name.
+            depth: The depth level in the trust hierarchy (0 = Root).
+            processed_fps: Set tracking fingerprints to prevent intra-group duplicates.
+            cert_registry: Central dictionary storing unique certificates globally by fingerprint.
+        """
         if not nodes:
             return
 
@@ -77,14 +109,10 @@ class ZabbixRenderer(BaseRenderer):
             elif not self._get_val(node, "children", []):
                 cert_type = "Leaf"
 
-            is_valid: int = 1 if self._get_val(node, "is_valid") else 0
+            audit_status = node.get_audit_status() if hasattr(node, "get_audit_status") else {}
+            audit_level = audit_status.get("level", "note").lower()
 
-            expiry_dt: Any = self._get_val(node, "expiry_date")
-            expiry_ts = 0
-            if isinstance(expiry_dt, date) and not isinstance(expiry_dt, datetime):
-                expiry_dt = datetime(expiry_dt.year, expiry_dt.month, expiry_dt.day, tzinfo=timezone.utc)
-            if isinstance(expiry_dt, datetime):
-                expiry_ts = int(expiry_dt.timestamp())
+            is_valid: int = 0 if audit_level == "error" else (1 if self._get_val(node, "is_valid") else 0)
 
             findings: List[Any] = self._get_val(node, "findings") or []
             levels: Dict[str, int] = {"ERROR": 0, "WARNING": 0, "INFO": 0}
@@ -92,6 +120,16 @@ class ZabbixRenderer(BaseRenderer):
                 lvl = str(self._get_val(f, "level", "INFO")).upper()
                 if lvl in levels:
                     levels[lvl] += 1
+
+            if audit_level == "error" and levels["ERROR"] == 0:
+                levels["ERROR"] = 1
+
+            expiry_dt: Any = self._get_val(node, "expiry_date")
+            expiry_ts = 0
+            if isinstance(expiry_dt, date) and not isinstance(expiry_dt, datetime):
+                expiry_dt = datetime(expiry_dt.year, expiry_dt.month, expiry_dt.day, tzinfo=timezone.utc)
+            if isinstance(expiry_dt, datetime):
+                expiry_ts = int(expiry_dt.timestamp())
 
             if fp in cert_registry:
                 existing_groups = cert_registry[fp]["groups"]
