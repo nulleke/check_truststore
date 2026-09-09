@@ -7,7 +7,7 @@ Renders the certificate trust analysis results into the Prometheus text expositi
 format, enabling native time-series tracking of trust store health.
 """
 
-from datetime import datetime
+from datetime import date, datetime, timezone
 from typing import Any, Dict, List, Set, Union
 
 from check_truststore.engine import CYCLE_NODE_ID, ORPHAN_NODE_ID
@@ -64,16 +64,34 @@ class PrometheusRenderer(BaseRenderer):
 
         for group in groups:
             processed_fingerprints: Set[str] = set()
-            group_name: str = self._get_val(group, "group_name") or self._get_val(group, "name") or "default"
+            raw_group_name: str = self._get_val(group, "group_name") or self._get_val(group, "name") or "default"
+
+            provider = ""
+            port = ""
+            target = raw_group_name
+
+            if ": " in raw_group_name:
+                prov_part, target_part = raw_group_name.split(": ", 1)
+                provider = prov_part.strip().upper()  
+                target = target_part.strip()
+
+            if ":" in target:
+                target_parts = target.rsplit(":", 1)
+                if target_parts[-1].isdigit():
+                    target = target_parts[0]
+                    port = target_parts[-1]
+
             root_nodes: List[Any] = self._get_val(group, "tree", [])
-            self._traverse_and_render_metrics(root_nodes, group_name, processed_fingerprints, lines)
+            self._traverse_and_render_metrics(root_nodes, target, provider, port, processed_fingerprints, lines)
 
         return "\n".join(lines) + "\n"
 
     def _traverse_and_render_metrics(
         self,
         nodes: List[Any],
-        group_name: str,
+        target: str,
+        provider: str,
+        port: str,
         processed_fps: Set[str],
         lines: List[str]
     ) -> None:
@@ -81,7 +99,9 @@ class PrometheusRenderer(BaseRenderer):
 
         Args:
             nodes: List of certificate nodes to traverse.
-            group_name: The name of the group context for label decoration.
+            target: The clean hostname or target identification.
+            provider: The protocol or method used (e.g., HTTPS, NMAP).
+            port: The targeted port number.
             processed_fps: Set tracking fingerprints to prevent intra-group duplicates.
             lines: Mutable list of lines collecting the resulting Prometheus metrics.
         """
@@ -94,7 +114,7 @@ class PrometheusRenderer(BaseRenderer):
             serial: str = str(self._get_val(node, "serial_number") or "N/A")
 
             if cn in [ORPHAN_NODE_ID, CYCLE_NODE_ID] or not fp:
-                self._traverse_and_render_metrics(self._get_val(node, "children", []), group_name, processed_fps, lines)
+                self._traverse_and_render_metrics(self._get_val(node, "children", []), target, provider, port, processed_fps, lines)
                 continue
 
             if fp in processed_fps:
@@ -104,17 +124,28 @@ class PrometheusRenderer(BaseRenderer):
             clean_cn = str(cn).replace("\"", "")
             clean_serial = str(serial).replace("\"", "")
 
-            labels: str = (
-                f'group="{group_name}",'
-                f'common_name="{clean_cn}",'
-                f'serial="{clean_serial}",'
+            label_parts: List[str] = [
+                f'group="{target}"',
+                f'common_name="{clean_cn}"',
+                f'serial="{clean_serial}"',
                 f'fingerprint="{fp}"'
-            )
+            ]
+
+            if provider:
+                label_parts.append(f'provider="{provider}"')
+
+            if port:
+                label_parts.append(f'port="{port}"')
+
+            labels: str = ",".join(label_parts)
 
             is_valid: int = 1 if self._get_val(node, "is_valid") else 0
             lines.append(f'truststore_cert_valid_status{{{labels}}} {is_valid}')
 
             expiry_dt: Any = self._get_val(node, "expiry_date")
+            if isinstance(expiry_dt, date) and not isinstance(expiry_dt, datetime):
+                expiry_dt = datetime(expiry_dt.year, expiry_dt.month, expiry_dt.day, tzinfo=timezone.utc)
+            
             if isinstance(expiry_dt, datetime):
                 lines.append(f'truststore_cert_expiry_timestamp_seconds{{{labels}}} {expiry_dt.timestamp():.0f}')
 
@@ -128,4 +159,4 @@ class PrometheusRenderer(BaseRenderer):
             for lvl, count in levels.items():
                 lines.append(f'truststore_cert_policy_findings_total{{{labels},level="{lvl}"}} {count}')
 
-            self._traverse_and_render_metrics(self._get_val(node, "children", []), group_name, processed_fps, lines)
+            self._traverse_and_render_metrics(self._get_val(node, "children", []), target, provider, port, processed_fps, lines)

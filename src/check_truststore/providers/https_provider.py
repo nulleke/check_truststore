@@ -141,7 +141,11 @@ class HttpsInputProvider(BaseInputProvider):
             port: int = result["port"]
             bin_cert: bytes = result["bin_cert"]
 
-            group_name: str = f"HTTPS: {hostname}"
+            if port != 443:
+                group_name: str = f"HTTPS: {hostname}:{port}"
+            else:
+                group_name: str = f"HTTPS: {hostname}"
+
             targets: List[Dict[str, Any]] = []
             source_path_obj = Path(f"https://{hostname}:{port}")
 
