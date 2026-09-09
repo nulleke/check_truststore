@@ -202,7 +202,7 @@ Designed for comprehensive truststore audits. The tool recursively scans directo
 * **Behavior**: It automatically links intermediates to roots found within the same or other provided directories to reconstruct the full PKI topology using RFC 5280 logic.
 
 ### 🛰️ Network Discovery Integration (Nmap)
-The **XML Provider** allows for seamless integration with network scanning workflows. It is specifically optimized to parse Nmap XML output (`-oX`), automatically extracting certificates discovered by the `ssl-cert` script.
+The **XML Provider** allows for seamless integration with network scanning workflows. It is specifically optimized to parse Nmap XML output (`-oX`), automatically extracting certificates discovered by Nmap's default, built-in `ssl-cert` script. Because `ssl-cert` ships standard with Nmap, no custom Nmap plugins are required to use this feature.
 
 #### Features
 * **Automatic Extraction**: Scans Nmap XML for PEM-encoded certificates in host script results.
@@ -246,11 +246,16 @@ check_truststore vars/prd/stores.yml --env prd
 ```
 
 ### Live Network Analysis (Nmap Integration)
-Thanks to the `XmlInputProvider`, you can pipe network scan results directly into the analyzer. The tool extracts certificates from the Nmap XML output and reconstructs the full chain via **AIA**.
+Thanks to the `XmlInputProvider`, you can pipe network scan results directly into the analyzer. By leveraging Nmap's standard `--script ssl-cert`, the tool extracts all discovered certificates from the XML output (`-oX -`) and reconstructs the full chains via **AIA**.
+
+You can scan multiple domains, entire subnets, or specific ports, and even mix piped network data with explicit URLs in a single command:
 
 ```bash
-# Scan multiple domains and validate the full chain live
-nmap -p 443 --script ssl-cert example.com next.example.com -oX - | check_truststore - --system --online
+# Scan a single domain and validate the full chain live
+nmap -p 443 --script ssl-cert example.com -oX - | check_truststore - --system --online
+
+# Advanced: Scan entire subnets across multiple ports AND check a specific HTTPS site simultaneously
+nmap --script ssl-cert -p 443,636,8006,8443 192.168.200.0/24 10.192.99.0/24 -oX - | check_truststore - [https://www.thillo.lan](https://www.thillo.lan) -s -O
 ```
 
 ### System Truststores
