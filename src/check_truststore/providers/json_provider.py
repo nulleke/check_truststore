@@ -9,9 +9,11 @@ Optimized for lazy loading to ensure group isolation.
 
 import json
 from pathlib import Path
-from typing import List, Optional, Union, Dict, Any
+from typing import Any, Dict, List, Optional, Union
+
+from check_truststore.engine import WARNING, CertificateRepository, _
 from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
-from check_truststore.engine import CertificateRepository, _, WARNING
+
 
 class JsonInputProvider(BaseInputProvider):
     """Parses JSON configurations to discover and group certificates.

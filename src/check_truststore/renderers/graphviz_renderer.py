@@ -8,7 +8,8 @@ Optimized for visualizing Directed Acyclic Graphs (DAG), specifically
 useful for cross-signed certificates and complex trust paths.
 """
 
-from typing import Any, Set, List, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Union
+
 from .base import BaseRenderer
 
 
@@ -80,7 +81,7 @@ class GraphvizRenderer(BaseRenderer):
             dot_lines.append('  }')
 
         # Add edges at the root level to ensure proper global layout calculation
-        dot_lines.extend(sorted(list(self.edges)))
+        dot_lines.extend(sorted(self.edges))
         dot_lines.append('}')
 
         return "\n".join(dot_lines)

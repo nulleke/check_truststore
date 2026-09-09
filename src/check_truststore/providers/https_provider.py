@@ -6,11 +6,12 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 
 import socket
 import ssl
-from pathlib import Path
-from typing import List, Optional, Any, Dict, Union
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
+
+from check_truststore.engine import ERROR, INFO, CertificateRepository, _
 from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
-from check_truststore.engine import CertificateRepository, ERROR, INFO, _
 
 
 class HttpsInputProvider(BaseInputProvider):
@@ -90,9 +91,8 @@ class HttpsInputProvider(BaseInputProvider):
                     host=hostname, port=port
                 ))
 
-            with socket.create_connection((hostname, port), timeout=5) as sock:
-                with context.wrap_socket(sock, server_hostname=hostname) as ssock:
-                    return ssock.getpeercert(binary_form=True)
+            with socket.create_connection((hostname, port), timeout=5) as sock, context.wrap_socket(sock, server_hostname=hostname) as ssock:
+                return ssock.getpeercert(binary_form=True)
         except Exception as e:
             ERROR.log(
                 _("Failed to fetch certificate from {host}").format(host=hostname),

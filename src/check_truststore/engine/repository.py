@@ -8,14 +8,15 @@ It acts as a central registry for certificates discovered by various providers.
 """
 
 import re
-from typing import Any, Optional, List, Dict
 from pathlib import Path
-from cryptography import x509
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.backends import default_backend
-from .logging import _, WARNING, ERROR
-from .models import Certificate
+from typing import Any, Dict, List, Optional
 
+from cryptography import x509
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+
+from .logging import ERROR, WARNING, _
+from .models import Certificate
 
 MAX_CERTS_PER_RUN = 1000
 MAX_FILE_SIZE_MB = 10
@@ -125,7 +126,7 @@ class CertificateRepository:
         except Exception as e:
             if self.debug:
                 name = source_path.name if source_path else "raw-der"
-                ERROR.log(name, f"{_('Invalid DER structure')}: {str(e)}")
+                ERROR.log(name, f"{_('Invalid DER structure')}: {e!s}")
             return []
 
     def add_pem_data(self, content: bytes, source_path: Optional[Path] = None, is_system: bool = False) -> List[Dict[str, Any]]:
@@ -181,7 +182,7 @@ class CertificateRepository:
             except Exception as e:
                 if self.debug:
                     name = source_path.name if source_path else "stdin"
-                    ERROR.log(name, f"{_('Invalid certificate structure')}: {str(e)}")
+                    ERROR.log(name, f"{_('Invalid certificate structure')}: {e!s}")
 
         return new_certs
 

@@ -8,28 +8,31 @@ and validating revocation status via OCSP (Online Certificate Status Protocol)
 and CRL (Certificate Revocation List).
 """
 
+import concurrent.futures
+import hashlib
 import os
+import socket
 import tempfile
 import time
-import socket
-import hashlib
-import requests
-import concurrent.futures
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 from urllib.parse import urlparse
+
+import requests
 from cryptography import x509
 from cryptography.x509 import ocsp
-from cryptography.x509.oid import ExtensionOID, AuthorityInformationAccessOID
+from cryptography.x509.oid import AuthorityInformationAccessOID, ExtensionOID
+
 try:
     from cryptography.x509.ocsp import OCSPNonce
 except ImportError:
     OCSPNonce = getattr(x509, "OCSPNonce", None)
-from cryptography.hazmat.primitives import hashes
+from typing import List, Optional, Set
+
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
-from typing import Optional, List, Set
-from .logging import INFO, WARNING, ERROR, _
+from cryptography.hazmat.primitives import hashes, serialization
+
+from .logging import ERROR, INFO, WARNING, _
 from .models import Certificate
 
 
@@ -140,7 +143,6 @@ class NetworkResolver:
                     if self.debug:
                         INFO.log(_("AIA_CACHE"), _("Cache hit for AKI {aki}, skipping network.").format(aki=aki[:8]), label=_("CACHE"))
                     return cached
-            pass
 
         if self.online and self.no_cache and self.debug:
             INFO.log(_("AIA_FETCH"), _("Bypassing cache due to --no-cache flag"), label=_("AUDIT"))
@@ -625,17 +627,16 @@ class NetworkResolver:
             cache_path = self.ocsp_cache / f"crl_{url_hash}.der"
             crl_data: Optional[x509.CertificateRevocationList] = None
 
-            if not self.no_cache:
-                if self._is_cache_fresh(cache_path, self.ocsp_cache_ttl_hours):
-                    with open(cache_path, "rb") as f:
-                        temp_crl = x509.load_der_x509_crl(f.read(), default_backend())
-                        next_update = self._get_next_update(temp_crl)
+            if not self.no_cache and self._is_cache_fresh(cache_path, self.ocsp_cache_ttl_hours):
+                with open(cache_path, "rb") as f:
+                    temp_crl = x509.load_der_x509_crl(f.read(), default_backend())
+                    next_update = self._get_next_update(temp_crl)
 
-                        if next_update > datetime.now(timezone.utc):
-                            if self.debug:
-                                msg = _("Using cached CRL for")
-                                INFO.log(_("CRL_CACHE"), f"{msg}: {urlparse(url).hostname}", label=_("CACHE"))
-                            crl_data = temp_crl
+                    if next_update > datetime.now(timezone.utc):
+                        if self.debug:
+                            msg = _("Using cached CRL for")
+                            INFO.log(_("CRL_CACHE"), f"{msg}: {urlparse(url).hostname}", label=_("CACHE"))
+                        crl_data = temp_crl
 
             if crl_data is None:
                 if not self.online or url in self.processed_urls:

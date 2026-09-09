@@ -597,6 +597,8 @@ To ensure high observability without losing structural context, each metric is e
 * `common_name`: The Common Name (CN) of the certificate (with quotes automatically sanitized).
 * `serial`: The certificate's serial number.
 * `fingerprint`: The unique fingerprint identifying the certificate, preventing intra-group duplicates.
+* `provider`: *(Optional)* The name of the input provider for HTTPS or NMAP.
+* `port`: *(Optional)* The scanned port or the port for HTTPS (If not default 443)/
 * `level`: *(Only applicable to `truststore_cert_policy_findings_total`)* Specifies the severity of the linting rule (`ERROR`, `WARNING`, or `INFO`).
 
 > 💡 **Note on Edge Cases:** Virtual nodes such as Orphan or Cycle indicators (`ORPHAN_NODE_ID`, `CYCLE_NODE_ID`) are skipped automatically during tree traversal, ensuring only authentic certificate data populates your time-series.

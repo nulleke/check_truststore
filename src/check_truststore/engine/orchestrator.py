@@ -11,19 +11,21 @@ trust store groups and generate finalized analysis models.
 import os
 import subprocess
 import tempfile
-from typing import Any, Optional, List, Dict, Set, Tuple
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 from threading import Lock
+from typing import Any, Dict, List, Optional, Set, Tuple
+
 from cryptography.hazmat.primitives import serialization
+
 try:
     from cryptography.hazmat.primitives.serialization import pkcs7
 except ImportError:
     pkcs7 = None
-from .repository import CertificateRepository
-from .models import Certificate, CertificateGroup
 from .builder import TrustChainBuilder
-from .logging import _, INFO, WARNING, ERROR
+from .logging import ERROR, INFO, WARNING, _
+from .models import Certificate, CertificateGroup
+from .repository import CertificateRepository
 
 
 class TrustStoreAnalyzer:

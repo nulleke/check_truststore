@@ -6,11 +6,12 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 
 import json
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Union
+from typing import Any, ClassVar, Dict, List, Union
 
-from check_truststore.engine import ORPHAN_NODE_ID
-from .base import BaseRenderer, DateTimeEncoder
 from check_truststore import __version__ as tool_version
+from check_truststore.engine import ORPHAN_NODE_ID
+
+from .base import BaseRenderer, DateTimeEncoder
 
 
 class StatusRenderer(BaseRenderer):
@@ -27,7 +28,7 @@ class StatusRenderer(BaseRenderer):
 
     API_VERSION: str = "1.1.2"
 
-    EXIT_CODES: Dict[str, int] = {
+    EXIT_CODES: ClassVar[Dict[str, int]] = {
         "OK": 0,
         "WARNING": 1,
         "EXPIRED": 2,
@@ -119,10 +120,8 @@ class StatusRenderer(BaseRenderer):
                         if c_hash not in system_certs_global:
                             system_certs_global[c_hash] = cert_entry
                     else:
-                        if audit["code"] > group_max_code:
-                            group_max_code = audit["code"]
-                        if audit["code"] > global_max_code:
-                            global_max_code = audit["code"]
+                        group_max_code = max(group_max_code, audit["code"])
+                        global_max_code = max(global_max_code, audit["code"])
                         certificates_report.append(cert_entry)
 
                 report_groups.append({

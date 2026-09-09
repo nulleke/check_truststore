@@ -7,8 +7,10 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 import json
 from typing import Any, Dict, List, Optional, Set
 
-from .base import BaseRenderer
 from check_truststore import __version__ as tool_version
+
+from .base import BaseRenderer
+
 
 class SarifRenderer(BaseRenderer):
     """Renders audit results in the industry-standard SARIF format.
@@ -82,7 +84,7 @@ class SarifRenderer(BaseRenderer):
             return json.dumps(sarif_log, indent=2)
 
         except Exception as e:
-            return json.dumps({"error": f"SARIF rendering failed: {str(e)}"}, indent=2)
+            return json.dumps({"error": f"SARIF rendering failed: {e!s}"}, indent=2)
 
     def _create_result(self, cert: Any, audit: Dict[str, Any]) -> Dict[str, Any]:
         """Maps a certificate finding to a SARIF result object.

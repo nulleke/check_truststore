@@ -8,8 +8,8 @@ ANSI color-coded output, and Unicode iconography for consistent
 status reporting across the engine.
 """
 
-import sys
 import gettext
+import sys
 from pathlib import Path
 from typing import Dict, Optional
 

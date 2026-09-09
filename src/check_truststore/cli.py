@@ -27,23 +27,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # -----------------------------------------------------------------------------
 
-import sys
-import platform
 import argparse
-import json
 import io
+import json
+import platform
+import sys
 
 from check_truststore import __version__
 from check_truststore.engine import (
-    _,
     ERROR,
-    WARNING,
     INFO,
+    WARNING,
     CertificateRepository,
     TrustStoreAnalyzer,
+    _,
 )
 from check_truststore.providers import TrustStoreProvider
 from check_truststore.renderers import TrustStoreRenderer
+
 
 def setup_utf8_output() -> None:
     """
@@ -51,10 +52,9 @@ def setup_utf8_output() -> None:
     Crucial for older Python 3.6 environments and containers (e.g., Podman/Docker)
     to prevent 'UnicodeEncodeError' when printing emojis or special symbols.
     """
-    if sys.stdout.encoding is None or sys.stdout.encoding.lower() != 'utf-8':
-        if hasattr(sys.stdout, 'buffer'):
-            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+    if sys.stdout.encoding is None or sys.stdout.encoding.lower() != 'utf-8' and hasattr(sys.stdout, 'buffer'):
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 def get_version_string():
     app_version = __version__

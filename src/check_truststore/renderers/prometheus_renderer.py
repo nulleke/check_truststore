@@ -7,10 +7,12 @@ Renders the certificate trust analysis results into the Prometheus text expositi
 format, enabling native time-series tracking of trust store health.
 """
 
-from typing import List, Any, Set, Dict, Union
-from datetime import datetime, date
+from datetime import date, datetime, timezone
+from typing import Any, Dict, List, Set, Union
+
+from check_truststore.engine import CYCLE_NODE_ID, ORPHAN_NODE_ID
+
 from .base import BaseRenderer
-from check_truststore.engine import ORPHAN_NODE_ID, CYCLE_NODE_ID
 
 
 class PrometheusRenderer(BaseRenderer):
@@ -122,10 +124,10 @@ class PrometheusRenderer(BaseRenderer):
             clean_cn = str(cn).replace("\"", "")
             clean_serial = str(serial).replace("\"", "")
 
-            label_parts: str = [
-                f'group="{target}",'
-                f'common_name="{clean_cn}",'
-                f'serial="{clean_serial}",'
+            label_parts: List[str] = [
+                f'group="{target}"',
+                f'common_name="{clean_cn}"',
+                f'serial="{clean_serial}"',
                 f'fingerprint="{fp}"'
             ]
 
@@ -142,7 +144,7 @@ class PrometheusRenderer(BaseRenderer):
 
             expiry_dt: Any = self._get_val(node, "expiry_date")
             if isinstance(expiry_dt, date) and not isinstance(expiry_dt, datetime):
-                expiry_dt = datetime(expiry_dt.year, expiry_dt.month, expiry_dt.day)
+                expiry_dt = datetime(expiry_dt.year, expiry_dt.month, expiry_dt.day, tzinfo=timezone.utc)
             
             if isinstance(expiry_dt, datetime):
                 lines.append(f'truststore_cert_expiry_timestamp_seconds{{{labels}}} {expiry_dt.timestamp():.0f}')

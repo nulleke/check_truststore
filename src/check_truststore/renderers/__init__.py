@@ -7,14 +7,15 @@ This module provides a unified interface for various output formats.
 It maps format identifiers to their respective renderer implementations.
 """
 
-from typing import List, Any
+from typing import Any, List
+
 from .base import BaseRenderer as BaseRenderer
-from .text_renderer import TextRenderer
-from .json_renderer import JsonRenderer
-from .status_renderer import StatusRenderer
-from .sarif_renderer import SarifRenderer
 from .graphviz_renderer import GraphvizRenderer
+from .json_renderer import JsonRenderer
 from .prometheus_renderer import PrometheusRenderer
+from .sarif_renderer import SarifRenderer
+from .status_renderer import StatusRenderer
+from .text_renderer import TextRenderer
 
 
 class TrustStoreRenderer:

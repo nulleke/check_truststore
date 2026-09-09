@@ -8,16 +8,31 @@ X.509 certificate trust chains. It resolves subjects to issuers and
 validates signatures and metadata throughout the chain.
 """
 
-from pathlib import Path
-from cryptography import x509
-from cryptography.hazmat.primitives import serialization
-from typing import Any, Optional, List, Dict, Union, Set, Tuple
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
-from .models import ORPHAN_NODE_ID, CYCLE_NODE_ID, DEPTH_LIMIT_NODE_ID, Certificate
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
+
+from cryptography import x509
+from cryptography.hazmat.primitives import serialization
+
+from .logging import (
+    AIA,
+    COLLISION,
+    ERROR,
+    EXPIRING,
+    MISSING,
+    OK,
+    REVOKED,
+    SYSTEM,
+    WARNING,
+    Icons,
+    _,
+)
+from .models import CYCLE_NODE_ID, DEPTH_LIMIT_NODE_ID, ORPHAN_NODE_ID, Certificate
 from .policy import PolicyEngine, PolicyFinding
 from .repository import CertificateRepository
-from .logging import _, OK, EXPIRING, WARNING, MISSING, ERROR, COLLISION, SYSTEM, AIA, REVOKED, Icons as Icons
+
 
 def N_(message: str) -> str:
     """
@@ -181,7 +196,7 @@ class TrustChainBuilder:
         aia_issuers: List[str] = self._get_extension(cert, x509.ExtensionOID.AUTHORITY_INFORMATION_ACCESS, "issuers") or []
         ocsp_urls: List[str] = self._get_extension(cert, x509.ExtensionOID.AUTHORITY_INFORMATION_ACCESS, "ocsp") or []
 
-        from cryptography.hazmat.primitives.asymmetric import rsa, ec, dsa, ed25519
+        from cryptography.hazmat.primitives.asymmetric import dsa, ec, ed25519, rsa
         pk = cert.public_key()
         pk_info: Dict[str, Union[str, int]] = {"algorithm": "Unknown", "bits": 0}
 
@@ -283,9 +298,8 @@ class TrustChainBuilder:
             path.append(ski)
 
             for parent in list(self.parents_map.get(ski, [])):
-                if parent not in [ORPHAN_NODE_ID, CYCLE_NODE_ID] and parent in self.cert_data:
-                    if check_cycle(parent):
-                        pass
+                if parent not in [ORPHAN_NODE_ID, CYCLE_NODE_ID] and parent in self.cert_data and check_cycle(parent):
+                    pass
 
             path.pop()
             return False
@@ -669,8 +683,7 @@ class TrustChainBuilder:
 
             unique_cycle_skis: List[str] = list(dict.fromkeys(cycle_skis))
             for c_ski in sorted(unique_cycle_skis, key=lambda x: (self.cert_data[x].common_name.lower(), self.cert_data[x].fingerprint.lower())):
-                if c_ski in node_cache:
-                    del node_cache[c_ski]
+                node_cache.pop(c_ski, None)
                 node: Certificate = to_node(c_ski, parent_status="INVALID", max_depth=max_depth)
                 node.children = []
                 node.is_in_circular_group = True
@@ -777,9 +790,8 @@ class TrustChainBuilder:
             for cert_id, cert_obj in self.cert_data.items():
                 aki: Optional[str] = self.parent_map.get(cert_id)
 
-                if aki and aki != ORPHAN_NODE_ID and aki not in current_skis:
-                    if cert_obj.aia_ca_issuers:
-                        missing_issuers_map[cert_id] = cert_obj
+                if aki and aki != ORPHAN_NODE_ID and aki not in current_skis and cert_obj.aia_ca_issuers:
+                    missing_issuers_map[cert_id] = cert_obj
 
             if not missing_issuers_map:
                 break
@@ -828,9 +840,8 @@ class TrustChainBuilder:
             final_skis: Set[str] = set(self.cert_data.keys())
             for cert_id, cert_obj in self.cert_data.items():
                 aki = self.parent_map.get(cert_id)
-                if aki and aki != ORPHAN_NODE_ID and aki not in final_skis:
-                    if cert_obj.aia_ca_issuers:
-                        self.depth_limited_skis.add(cert_id)
+                if aki and aki != ORPHAN_NODE_ID and aki not in final_skis and cert_obj.aia_ca_issuers:
+                    self.depth_limited_skis.add(cert_id)
 
     def _create_virtual_node(self, name: str) -> Certificate:
         """Creates an execution placeholder node for grouping orphaned or restricted hierarchies.

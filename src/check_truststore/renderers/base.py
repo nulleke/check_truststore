@@ -9,9 +9,9 @@ Includes a specialized JSON encoder for X.509 date handling.
 
 import json
 from abc import ABC, abstractmethod
-from typing import List, Any, Union, Optional, Set
-from datetime import datetime, date, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
+from typing import Any, List, Optional, Set, Union
 
 
 class DateTimeEncoder(json.JSONEncoder):
@@ -89,7 +89,6 @@ class BaseRenderer(ABC):
         Returns:
             The rendered string representation of the data.
         """
-        pass
 
     def _get_sorted_nodes(self, nodes: List[Any]) -> List[Any]:
         """Sorts nodes by expiry date (descending) and display name.

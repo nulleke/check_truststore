@@ -9,8 +9,9 @@ are lazily loaded by the orchestrator.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Any, Union, Dict
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
+
 from check_truststore.engine import CertificateRepository
 
 
@@ -89,4 +90,3 @@ class BaseInputProvider(ABC):
             List[TrustStoreGroup]: A list of filled trust store groups
                 ready to be processed by the analysis orchestration layer.
         """
-        pass
