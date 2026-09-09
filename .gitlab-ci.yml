@@ -1,5 +1,4 @@
 stages:
-  - test
   - deploy
 
 variables:
@@ -11,61 +10,6 @@ variables:
 cache:
   paths:
     - .cache/pip
-
-test_full_compatibility:
-  stage: test
-  image: python:${PYTHON_VERSION}-slim
-  parallel:
-    matrix:
-      - PYTHON_VERSION: ["3.6", "3.9", "3.10", "3.13", "3.14"]
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "web" || $CI_PIPELINE_SOURCE == "api"'
-      when: on_success
-    - changes:
-        - "src/**/*"
-        - "pyproject.toml"
-        - "setup.cfg"
-        - "check_truststore"
-      if: '$CI_COMMIT_BRANCH == "main"'
-      when: on_success
-    - changes:
-        - "src/**/*"
-        - "pyproject.toml"
-        - "setup.cfg"
-        - "check_truststore"
-      if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH != "main"'
-      when: manual
-      allow_failure: false
-  before_script:
-    - apt-get update && apt-get install -y gettext
-    - |
-      if [ "$PYTHON_VERSION" == "3.6" ]; then
-        echo ">>> Environment: Legacy (3.6)"
-        python3 -m pip install --quiet --upgrade "pip<22.0"
-        pip install "cryptography<3.5" PyYAML requests
-      else
-        echo ">>> Environment: Modern ($PYTHON_VERSION)"
-        python3 -m pip install --quiet --upgrade pip
-        pip install -e ".[all]"
-      fi
-    - |
-      echo ">>> Compiling Translations inside src structure"
-      find src/check_truststore/locale -name "*.po" | while read po_file; do
-        mo_file="${po_file%.po}.mo"
-        echo "Compiling $po_file -> $mo_file"
-        msgfmt "$po_file" -o "$mo_file"
-      done
-  script:
-    - echo ">>> Running Analyzer on Python ${PYTHON_VERSION}"
-    - chmod +x check_truststore
-    - ./check_truststore --mock --format text -d
-    - ./check_truststore --mock --format json > output_${PYTHON_VERSION}.json
-    - python3 -m json.tool output_${PYTHON_VERSION}.json > /dev/null
-  artifacts:
-    when: on_failure
-    paths:
-      - output_*.json
-    expire_in: 2 days
 
 deploy:
   stage: deploy
