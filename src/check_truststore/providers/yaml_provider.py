@@ -7,13 +7,15 @@ Advanced configuration-driven provider that supports YAML syntax,
 Jinja2 templating (optional), and automated file extension resolution.
 """
 
-import yaml
 import os
 import re
 from pathlib import Path
-from typing import List, Optional, Union, Dict, Any
+from typing import Any, Dict, List, Optional, Union
+
+import yaml
+
+from check_truststore.engine import ERROR, INFO, WARNING, CertificateRepository, _
 from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
-from check_truststore.engine import _, ERROR, WARNING, INFO, CertificateRepository
 
 
 class YamlInputProvider(BaseInputProvider):
@@ -157,7 +159,7 @@ class YamlInputProvider(BaseInputProvider):
                 if "{{" in raw_content and any(x in str(e) for x in ["mapping", "unhashable"]):
                     ERROR.log(_("YAML Syntax Error"),
                              _("Found unquoted Jinja2 delimiters. Wrap expressions like '{{ var }}' in quotes."))
-                raise e
+                raise
 
             root_vars: Dict[str, Any] = {k: v for k, v in pre_parsed.items() if k != "truststores"} if isinstance(pre_parsed, dict) else {}
 
@@ -165,7 +167,7 @@ class YamlInputProvider(BaseInputProvider):
 
         except (yaml.YAMLError, OSError) as e:
             if self.debug:
-                ERROR.log(_("YAML Parse Error"), f"\n{str(e)}")
+                ERROR.log(_("YAML Parse Error"), f"\n{e!s}")
             return None
 
     def get_groups(self) -> List[TrustStoreGroup]:

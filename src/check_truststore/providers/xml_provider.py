@@ -8,12 +8,14 @@ to extract certificates directly from scan results without external conversion.
 Optimized for lazy registration to ensure group isolation.
 """
 
-import xml.etree.ElementTree as ET
 import re
+import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import List, Dict, Optional, Union, Any
-from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
+from typing import Any, Dict, List, Optional, Union
+
 from check_truststore.engine import CertificateRepository
+from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
+
 
 class XmlInputProvider(BaseInputProvider):
     """XML Input Provider for certificate extraction.

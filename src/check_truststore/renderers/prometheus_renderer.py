@@ -7,10 +7,12 @@ Renders the certificate trust analysis results into the Prometheus text expositi
 format, enabling native time-series tracking of trust store health.
 """
 
-from typing import List, Any, Set, Dict, Union
 from datetime import datetime
+from typing import Any, Dict, List, Set, Union
+
+from check_truststore.engine import CYCLE_NODE_ID, ORPHAN_NODE_ID
+
 from .base import BaseRenderer
-from check_truststore.engine import ORPHAN_NODE_ID, CYCLE_NODE_ID
 
 
 class PrometheusRenderer(BaseRenderer):

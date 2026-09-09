@@ -8,17 +8,17 @@ It registers all concrete input providers and dynamically routes input targets
 to their matching parser implementation, including standard input (stdin) streams.
 """
 
-from typing import List, Any, Dict, Optional
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from .base import BaseInputProvider as BaseInputProvider
 from .base import TrustStoreGroup as TrustStoreGroup
-from .yaml_provider import YamlInputProvider
+from .directory_provider import DirectoryInputProvider
+from .file_provider import SingleFileInputProvider
+from .https_provider import HttpsInputProvider
 from .json_provider import JsonInputProvider
 from .xml_provider import XmlInputProvider
-from .file_provider import SingleFileInputProvider
-from .directory_provider import DirectoryInputProvider
-from .https_provider import HttpsInputProvider
+from .yaml_provider import YamlInputProvider
 
 
 class DummyTruthyList(list):
@@ -106,12 +106,12 @@ class TrustStoreProvider:
 
 __all__ = [
     "BaseInputProvider",
-    "TrustStoreGroup",
-    "TrustStoreProvider",
-    "YamlInputProvider",
-    "JsonInputProvider",
-    "XmlInputProvider",
-    "SingleFileInputProvider",
     "DirectoryInputProvider",
     "HttpsInputProvider",
+    "JsonInputProvider",
+    "SingleFileInputProvider",
+    "TrustStoreGroup",
+    "TrustStoreProvider",
+    "XmlInputProvider",
+    "YamlInputProvider",
 ]

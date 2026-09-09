@@ -50,3 +50,9 @@ check_truststore = ["locale/**/*.mo", "locale/**/*.po"]
 "Source" = "https://gitlab.com/nulleke/check_truststore/"
 "Issue Tracker" = "https://gitlab.com/nulleke/check_truststore/-/issues"
 "Documentation" = "https://gitlab.com/nulleke/check_truststore/-/blob/main/README.md"
+
+[tool.ruff]
+target-version = "py37"
+
+[tool.ruff.lint]
+ignore = ["UP", "FA", "BLE001", "S110", "S112"]

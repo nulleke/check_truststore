@@ -8,11 +8,13 @@ It automatically segments certificates into distinct TrustStoreGroups based
 on their parent directories, maintaining logical isolation during analysis.
 """
 
-from pathlib import Path
-from typing import List, Optional, Any, Dict, Union
 from collections import defaultdict
-from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
+
 from check_truststore.engine import CertificateRepository
+from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
+
 
 class DirectoryInputProvider(BaseInputProvider):
     """Scans directories for X.509 certificates and groups them by folder.

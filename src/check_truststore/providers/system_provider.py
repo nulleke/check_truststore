@@ -9,9 +9,11 @@ Supports Windows Certificate Store (CAPI) and standard Unix/Linux CA bundles.
 
 import platform
 from pathlib import Path
-from typing import Dict, List, Optional, Any
-from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
+from typing import Any, Dict, List, Optional
+
 from check_truststore.engine import CertificateRepository
+from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
+
 
 class SystemInputProvider(BaseInputProvider):
     """Accesses the operating system's built-in trusted certificate stores.

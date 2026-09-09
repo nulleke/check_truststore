@@ -10,6 +10,7 @@ and long-term data storage.
 
 import json
 from typing import Any
+
 from .base import BaseRenderer, DateTimeEncoder
 
 
@@ -95,12 +96,11 @@ class JsonRenderer(BaseRenderer):
             if self.verbosity >= 1:
                 res["auditStatus"] = data.get_audit_status()
 
-            if self.verbosity >= 2:
-                if hasattr(data, "findings") and data.findings:
-                    res["findings"] = [
-                        f.model_dump() if hasattr(f, "model_dump") else str(f)
-                        for f in data.findings
-                    ]
+            if self.verbosity >= 2 and hasattr(data, "findings") and data.findings:
+                res["findings"] = [
+                    f.model_dump() if hasattr(f, "model_dump") else str(f)
+                    for f in data.findings
+                ]
 
             # Recurse into children for the tree structure
             children = getattr(data, "children", [])

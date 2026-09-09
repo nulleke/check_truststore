@@ -9,17 +9,19 @@ display.
 """
 
 from datetime import datetime, timezone
-from typing import List, Any, Dict
+from typing import Any, Dict, List
+
 from check_truststore.engine import (
-    _,
-    Icons,
-    SYSTEM,
     AIA,
     COLLISION,
-    ORPHAN_NODE_ID,
     CYCLE_NODE_ID,
     DEPTH_LIMIT_NODE_ID,
+    ORPHAN_NODE_ID,
+    SYSTEM,
+    Icons,
+    _,
 )
+
 from .base import BaseRenderer
 
 

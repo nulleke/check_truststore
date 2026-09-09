@@ -8,9 +8,11 @@ Optimized for lazy loading of files while maintaining support for piped input.
 """
 
 from pathlib import Path
-from typing import List, Optional, Union, Any, Dict
-from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
+from typing import Any, Dict, List, Optional, Union
+
 from check_truststore.engine import CertificateRepository
+from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
+
 
 class SingleFileInputProvider(BaseInputProvider):
     """Handles the discovery and grouping of a single certificate source.

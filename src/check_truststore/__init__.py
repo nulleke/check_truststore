@@ -12,27 +12,21 @@ __author__ = "Serge van Thillo"
 __version__ = "1.2.5"
 
 from .engine import (
-    TrustStoreAnalyzer,
-    CertificateRepository,
     Certificate,
     CertificateGroup,
+    CertificateRepository,
+    TrustStoreAnalyzer,
 )
-
-from .providers.base import (
-    BaseInputProvider,
-    TrustStoreGroup
-)
-
 from .providers import TrustStoreProvider
-
+from .providers.base import BaseInputProvider, TrustStoreGroup
 from .renderers import TrustStoreRenderer
 
 __all__ = [
-    "TrustStoreAnalyzer",
-    "CertificateRepository",
+    "BaseInputProvider",
     "Certificate",
     "CertificateGroup",
-    "BaseInputProvider",
+    "CertificateRepository",
+    "TrustStoreAnalyzer",
     "TrustStoreGroup",
     "TrustStoreProvider",
     "TrustStoreRenderer",

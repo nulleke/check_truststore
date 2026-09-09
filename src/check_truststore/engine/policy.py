@@ -5,12 +5,15 @@ Architect: Serge van Thillo
 SPDX-License-Identifier: LGPL-3.0-or-later
 """
 
-from typing import List, Optional, Any, Dict, Set
 from datetime import timezone
+from typing import Any, Dict, List, Optional, Set
+
 from cryptography import x509
-from cryptography.hazmat.primitives.asymmetric import rsa, ec, padding as rsa_padding
-from cryptography.x509.oid import ExtensionOID, ExtendedKeyUsageOID
 from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from cryptography.hazmat.primitives.asymmetric import padding as rsa_padding
+from cryptography.x509.oid import ExtendedKeyUsageOID, ExtensionOID
+
 
 def N_(message):
     return message
@@ -107,9 +110,7 @@ class PolicyEngine:
         """
         if self.disabled_checks is True:
             return True
-        if isinstance(self.disabled_checks, set) and check_name in self.disabled_checks:
-            return True
-        return False
+        return isinstance(self.disabled_checks, set) and check_name in self.disabled_checks
 
     def validate(self, cert: x509.Certificate, issuer: Optional[x509.Certificate] = None, path_depth: Optional[int] = None, target_hostname: Optional[str] = None) -> List[PolicyFinding]:
         """
@@ -421,26 +422,24 @@ class PolicyEngine:
         findings: List[PolicyFinding] = []
         pub_key = cert.public_key()
 
-        if isinstance(pub_key, rsa.RSAPublicKey):
-            if pub_key.key_size < self.min_rsa_bits:
-                findings.append(PolicyFinding(
-                    level="ERROR",
-                    code="WEAK_RSA",
-                    label="INSECURE",
-                    message=N_("RSA key size ({bits} bits) is below the minimum required {min_bits} bits."),
-                    params={"bits": pub_key.key_size, "min_bits": self.min_rsa_bits},
-                    code_int=4
-                ))
-        elif isinstance(pub_key, ec.EllipticCurvePublicKey):
-            if pub_key.key_size < self.min_ecdsa_bits:
-                findings.append(PolicyFinding(
-                    level="ERROR",
-                    code="WEAK_ECC",
-                    label="INSECURE",
-                    message=N_("ECC key size ({bits} bits) is below the minimum required {min_bits} bits."),
-                    params={"bits": pub_key.key_size, "min_bits": self.min_ecdsa_bits},
-                    code_int=4
-                ))
+        if isinstance(pub_key, rsa.RSAPublicKey) and pub_key.key_size < self.min_rsa_bits:
+            findings.append(PolicyFinding(
+                level="ERROR",
+                code="WEAK_RSA",
+                label="INSECURE",
+                message=N_("RSA key size ({bits} bits) is below the minimum required {min_bits} bits."),
+                params={"bits": pub_key.key_size, "min_bits": self.min_rsa_bits},
+                code_int=4
+            ))
+        elif isinstance(pub_key, ec.EllipticCurvePublicKey) and pub_key.key_size < self.min_ecdsa_bits:
+            findings.append(PolicyFinding(
+                level="ERROR",
+                code="WEAK_ECC",
+                label="INSECURE",
+                message=N_("ECC key size ({bits} bits) is below the minimum required {min_bits} bits."),
+                params={"bits": pub_key.key_size, "min_bits": self.min_ecdsa_bits},
+                code_int=4
+            ))
         return findings
 
     def _check_signature_algorithm(self, cert: x509.Certificate) -> List[PolicyFinding]:
@@ -720,16 +719,15 @@ class PolicyEngine:
         findings: List[PolicyFinding] = []
         is_root = self.is_root_ca(cert)
 
-        if not is_root:
-            if ExtensionOID.CRL_DISTRIBUTION_POINTS not in present_oids:
-                level = "INFO" if is_internal else "WARNING"
-                findings.append(PolicyFinding(
-                    level=level,
-                    code="CRL_MISSING",
-                    label="POLICY_VIOLATION",
-                    message=N_("Certificate lacks CRL Distribution Points (CDP). Revocation checking may be limited."),
-                    code_int=0 if is_internal else 2
-                ))
+        if not is_root and ExtensionOID.CRL_DISTRIBUTION_POINTS not in present_oids:
+            level = "INFO" if is_internal else "WARNING"
+            findings.append(PolicyFinding(
+                level=level,
+                code="CRL_MISSING",
+                label="POLICY_VIOLATION",
+                message=N_("Certificate lacks CRL Distribution Points (CDP). Revocation checking may be limited."),
+                code_int=0 if is_internal else 2
+            ))
         return findings
 
     def _check_path_limit(self, cert: x509.Certificate, issuer: x509.Certificate, depth: int) -> List[PolicyFinding]:
@@ -924,10 +922,9 @@ class PolicyEngine:
                     for subtree in constraints.permitted_subtrees:
                         base = subtree.base if hasattr(subtree, 'base') else subtree
 
-                        if isinstance(base, x509.DNSName):
-                            if self._match_dns(name_str, base.value.lower()):
-                                is_permitted = True
-                                break
+                        if isinstance(base, x509.DNSName) and self._match_dns(name_str, base.value.lower()):
+                            is_permitted = True
+                            break
 
                     if not is_permitted:
                         findings.append(PolicyFinding(
@@ -943,17 +940,16 @@ class PolicyEngine:
                 for name_str in cert_names:
                     for subtree in constraints.excluded_subtrees:
                         base = subtree.base if hasattr(subtree, 'base') else subtree
-                        if isinstance(base, x509.DNSName):
-                            if self._match_dns(name_str, base.value.lower()):
-                                findings.append(PolicyFinding(
-                                    level="ERROR",
-                                    code="NAME_CONSTRAINT_EXCLUDED",
-                                    label="RESTRICTED",
-                                    message=N_("Certificate name '{name}' is explicitly excluded by the issuer."),
-                                    params={"name": name_str},
-                                    code_int=4
-                                ))
-                                break
+                        if isinstance(base, x509.DNSName) and self._match_dns(name_str, base.value.lower()):
+                            findings.append(PolicyFinding(
+                                level="ERROR",
+                                code="NAME_CONSTRAINT_EXCLUDED",
+                                label="RESTRICTED",
+                                message=N_("Certificate name '{name}' is explicitly excluded by the issuer."),
+                                params={"name": name_str},
+                                code_int=4
+                            ))
+                            break
 
         except x509.ExtensionNotFound:
             pass

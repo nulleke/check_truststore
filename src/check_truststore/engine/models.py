@@ -9,7 +9,8 @@ for orphans and circular references.
 """
 
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Union, Optional
+from typing import Any, Dict, List, Optional, Union
+
 from .logging import Icons
 from .policy import PolicyFinding
 
@@ -17,7 +18,7 @@ PYDANTIC_AVAILABLE = False
 try:
     import pydantic
     if pydantic.__version__.startswith("2"):
-        from pydantic import BaseModel, Field, ConfigDict, model_validator
+        from pydantic import BaseModel, ConfigDict, Field, model_validator
         PYDANTIC_AVAILABLE = True
 except (ImportError, AttributeError):
     PYDANTIC_AVAILABLE = False
@@ -150,7 +151,7 @@ class _BaseUniversal:
 
         if serious_findings:
             # Sort findings to ensure the most critical one (highest code_int) defines the status.
-            critical = sorted(serious_findings, key=lambda x: x.code_int, reverse=True)[0]
+            critical = max(serious_findings, key=lambda x: x.code_int)
 
             if critical.level.lower() == "error":
                 return {"code": critical.code_int, "label": "INVALID", "message": critical.message, "level": "error"}
@@ -712,10 +713,10 @@ else:
             ):
                 clean_date = self.expiry_date.replace(" ", "T").replace("Z", "").split(".")[0]
                 try:
-                    self.expiry_date = datetime.strptime(clean_date, "%Y-%m-%dT%H:%M:%S")
+                    self.expiry_date = datetime.strptime(clean_date, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
                 except ValueError:
                     try:
-                        self.expiry_date = datetime.strptime(clean_date, "%Y-%m-%d")
+                        self.expiry_date = datetime.strptime(clean_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
                     except ValueError:
                         pass
 

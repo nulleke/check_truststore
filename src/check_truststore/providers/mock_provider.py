@@ -9,20 +9,20 @@ metadata dictionaries to the orchestrator to ensure registration happens
 after the repository cache reset.
 """
 
-from pathlib import Path
 from datetime import datetime, timedelta, timezone
-from typing import List, Dict, Optional, Any, Union, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from cryptography import x509
-from cryptography.x509.oid import NameOID
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import rsa, ec
-from cryptography.hazmat.backends import default_backend
 from cryptography.exceptions import UnsupportedAlgorithm
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from cryptography.x509.oid import NameOID
 
-from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
 from check_truststore.engine import CertificateRepository
 from check_truststore.engine.models import Certificate
+from check_truststore.providers.base import BaseInputProvider, TrustStoreGroup
 
 
 class MockProvider(BaseInputProvider):
@@ -85,7 +85,7 @@ class MockProvider(BaseInputProvider):
         san_names: Optional[List[str]] = None,
         add_crl: bool = False,
         key_size: int = 2048,
-        hash_algo: hashes.HashAlgorithm = hashes.SHA256(),
+        hash_algo: hashes.HashAlgorithm = None,
         permitted_dns: Optional[List[str]] = None,
         excluded_dns: Optional[List[str]] = None,
     ) -> x509.Certificate:
@@ -94,6 +94,9 @@ class MockProvider(BaseInputProvider):
         Returns:
             x509.Certificate: A signed certificate object ready for ingestion.
         """
+        if hash_algo is None:
+            hash_algo = hashes.SHA256()
+
         subject_key: Any = subject_key_override or self._get_key(common_name, key_size, algo=key_type)
 
         if issuer_cn and issuer_cn != common_name:
@@ -155,7 +158,7 @@ class MockProvider(BaseInputProvider):
                 for loc in ["cryptography.x509.name_constraints", "cryptography.x509.general_name"]:
                     try:
                         mod = __import__(loc, fromlist=["GeneralSubtree"])
-                        GS = getattr(mod, "GeneralSubtree")
+                        GS = mod.GeneralSubtree
                         break
                     except (ImportError, AttributeError):
                         continue
