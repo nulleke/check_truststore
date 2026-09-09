@@ -8,9 +8,30 @@ on:
   workflow_dispatch:
 
 jobs:
+  linting:
+    name: Ruff Linter
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        env:
+          GIT_SSL_NO_VERIFY: "true"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Ruff
+        run: pip install ruff
+
+      - name: Run Ruff check
+        run: ruff check .
+  
   test_full_compatibility:
     name: Test Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
+    needs: linting
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.13", "3.14"]
@@ -27,30 +48,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Set up Python 3.6 (Legacy - Manual)
-        if: matrix.python-version == '3.6'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y software-properties-common curl
-          sudo add-apt-repository -y ppa:deadsnakes/ppa
-          sudo apt-get update
-          sudo apt-get install -y python3.6 python3.6-distutils
-          curl https://bootstrap.pypa.io/pip/3.6/get-pip.py -o get-pip.py
-          sudo python3.6 get-pip.py
-          sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.6 1
-          python --version
-
       - name: Install system dependencies (Gettext)
         run: |
           sudo apt-get update
           sudo apt-get install -y gettext
-
-      - name: Setup Environment (Legacy 3.6)
-        if: matrix.python-version == '3.6'
-        run: |
-          echo ">>> Environment: Legacy (3.6)"
-          python -m pip install --quiet --upgrade "pip<22.0"
-          pip install "cryptography<3.5" PyYAML requests
 
       - name: Setup Environment (Modern)
         if: matrix.python-version != '3.6'
