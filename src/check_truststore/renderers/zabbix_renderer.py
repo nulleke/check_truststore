@@ -139,6 +139,9 @@ class ZabbixRenderer(BaseRenderer):
                 if group_name not in existing_groups:
                     existing_groups.append(group_name)
                 cert_registry[fp]["{#CERT_GROUPS}"] = ", ".join(existing_groups)
+
+                if cert_type == "Intermediate" and cert_registry[fp]["{#CERT_TYPE}"] == "Endpoint":
+                    cert_registry[fp]["{#CERT_TYPE}"] = "Intermediate"
             else:
                 cert_registry[fp] = {
                     "{#CERT_FINGERPRINT}": fp,
@@ -155,4 +158,4 @@ class ZabbixRenderer(BaseRenderer):
                     }
                 }
 
-            self._collect_and_deduplicate(self._get_val(node, "children", []), target_host, group_name, depth + 1, processed_fps, cert_registry)
+            self._collect_and_deduplicate(children, target_host, group_name, depth + 1, processed_fps, cert_registry)
