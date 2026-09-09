@@ -4,7 +4,7 @@ Architect: Serge van Thillo
 SPDX-License-Identifier: LGPL-3.0-or-later
 
 Renders certificate analysis results into Zabbix Low Level Discovery (LLD) JSON format,
-globally deduplicating shared roots and intermediates with group tracking.
+globally deduplicating shared roots and intermediates with group tracking and SAN support.
 """
 
 import json
@@ -103,14 +103,18 @@ class ZabbixRenderer(BaseRenderer):
 
             processed_fps.add(fp)
 
+            is_root: bool = getattr(node, "is_root", False)
             children = self._get_val(node, "children", [])
 
-            if depth == 0:
+            if is_root and depth == 0:
                 cert_type = "Root"
             elif children:
                 cert_type = "Intermediate"
             else:
                 cert_type = "Endpoint"
+
+            san_names: List[str] = self._get_val(node, "san_names") or []
+            san_str: str = ", ".join(san_names)
 
             audit_status = node.get_audit_status() if hasattr(node, "get_audit_status") else {}
             audit_level = audit_status.get("level", "note").lower()
@@ -148,8 +152,10 @@ class ZabbixRenderer(BaseRenderer):
                     "{#CERT_UID}": fp[:16],
                     "{#CERT_CN}": cn.replace("\"", ""),
                     "{#CERT_TYPE}": cert_type,
+                    "{#CERT_SANS}": san_str,
                     "{#CERT_GROUPS}": group_name,
                     "groups": [group_name],
+                    "sans": san_names,
                     "metrics": {
                         "valid": is_valid,
                         "expiry": expiry_ts,
