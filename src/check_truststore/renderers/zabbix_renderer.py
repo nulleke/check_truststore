@@ -103,11 +103,14 @@ class ZabbixRenderer(BaseRenderer):
 
             processed_fps.add(fp)
 
-            cert_type = "Intermediate"
+            children = self._get_val(node, "children", [])
+
             if depth == 0:
                 cert_type = "Root"
-            elif not self._get_val(node, "children", []):
-                cert_type = "Leaf"
+            elif children:
+                cert_type = "Intermediate"
+            else:
+                cert_type = "Endpoint"
 
             audit_status = node.get_audit_status() if hasattr(node, "get_audit_status") else {}
             audit_level = audit_status.get("level", "note").lower()
