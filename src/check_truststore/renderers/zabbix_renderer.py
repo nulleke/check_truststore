@@ -53,10 +53,10 @@ class ZabbixRenderer(BaseRenderer):
 
         for group in groups:
             processed_fps: Set[str] = set()
-            raw_group_name: str = self._get_val(group, "group_name") or self._get_val(group, "name") or "default"
-            group_name = raw_group_name
+            raw_group_name: str = str(self._get_val(group, "group_name") or self._get_val(group, "name") or "default")
+            group_name: str = raw_group_name
 
-            target = raw_group_name
+            target: str = raw_group_name
             if ": " in raw_group_name:
                 _, target_part = raw_group_name.split(": ", 1)
                 target = target_part.strip()
@@ -68,7 +68,7 @@ class ZabbixRenderer(BaseRenderer):
             root_nodes: List[Any] = self._get_val(group, "tree", [])
             self._collect_and_deduplicate(root_nodes, target, group_name, 0, processed_fps, cert_registry)
 
-        lld_data = list(cert_registry.values())
+        lld_data: List[Dict[str, Any]] = list(cert_registry.values())
         return json.dumps(lld_data, indent=2) + "\n"
 
     def _collect_and_deduplicate(
@@ -94,18 +94,20 @@ class ZabbixRenderer(BaseRenderer):
             return
 
         for node in nodes:
-            fp: str = self._get_val(node, "fingerprint") or ""
-            cn: str = self._get_val(node, "common_name") or "Unknown"
+            fp: str = str(self._get_val(node, "fingerprint") or "")
+            cn: str = str(self._get_val(node, "common_name") or "Unknown")
+
+            children: List[Any] = self._get_val(node, "children") or []
 
             if cn in [ORPHAN_NODE_ID, CYCLE_NODE_ID] or not fp:
-                self._collect_and_deduplicate(self._get_val(node, "children", []), target_host, group_name, depth + 1, processed_fps, cert_registry)
+                self._collect_and_deduplicate(children, target_host, group_name, depth + 1, processed_fps, cert_registry)
                 continue
 
             processed_fps.add(fp)
 
-            is_root: bool = getattr(node, "is_root", False)
-            children = self._get_val(node, "children", [])
+            is_root: bool = bool(self._get_val(node, "is_root", self._get_val(node, "isRoot", False)))
 
+            cert_type: str
             if is_root and depth == 0:
                 cert_type = "Root"
             elif children:
@@ -113,33 +115,49 @@ class ZabbixRenderer(BaseRenderer):
             else:
                 cert_type = "Endpoint"
 
-            san_names: List[str] = self._get_val(node, "san_names") or []
+            raw_san_names: List[str] = self._get_val(node, "san_names") or []
+            san_names: List[str] = list(dict.fromkeys(raw_san_names))
             san_str: str = ", ".join(san_names)
 
-            audit_status = node.get_audit_status() if hasattr(node, "get_audit_status") else {}
-            audit_level = audit_status.get("level", "note").lower()
+            audit_status: Dict[str, Any]
+            if hasattr(node, "get_audit_status") and callable(node.get_audit_status):
+                audit_status = node.get_audit_status()
+            else:
+                audit_status = self._get_val(node, "auditStatus", self._get_val(node, "audit_status", {}))
+
+            audit_level: str = str(audit_status.get("level", "note")).lower()
 
             is_valid: int = 0 if audit_level == "error" else (1 if self._get_val(node, "is_valid") else 0)
 
             findings: List[Any] = self._get_val(node, "findings") or []
             levels: Dict[str, int] = {"ERROR": 0, "WARNING": 0, "INFO": 0}
+
             for f in findings:
-                lvl = str(self._get_val(f, "level", "INFO")).upper()
+                lvl: str = str(self._get_val(f, "level", "INFO")).upper()
                 if lvl in levels:
                     levels[lvl] += 1
 
             if audit_level == "error" and levels["ERROR"] == 0:
                 levels["ERROR"] = 1
 
-            expiry_dt: Any = self._get_val(node, "expiry_date")
-            expiry_ts = 0
+            expiry_dt: Any = self._get_val(node, "expiry_date", self._get_val(node, "expiryDate"))
+            expiry_ts: int = 0
+
+            if isinstance(expiry_dt, str) and expiry_dt and expiry_dt != "1970-01-01":
+                try:
+                    clean_date = expiry_dt.replace("Z", "+00:00")
+                    expiry_dt = datetime.fromisoformat(clean_date)
+                except ValueError:
+                    pass
+
             if isinstance(expiry_dt, date) and not isinstance(expiry_dt, datetime):
                 expiry_dt = datetime(expiry_dt.year, expiry_dt.month, expiry_dt.day, tzinfo=timezone.utc)
+
             if isinstance(expiry_dt, datetime):
                 expiry_ts = int(expiry_dt.timestamp())
 
             if fp in cert_registry:
-                existing_groups = cert_registry[fp]["groups"]
+                existing_groups: List[str] = cert_registry[fp]["groups"]
                 if group_name not in existing_groups:
                     existing_groups.append(group_name)
                 cert_registry[fp]["{#CERT_GROUPS}"] = ", ".join(existing_groups)
