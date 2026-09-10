@@ -5,9 +5,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: check_truststore 1.2.5\n"
+"Project-Id-Version: check_truststore 1.2.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-27 08:42+0200\n"
+"POT-Creation-Date: 2026-09-10 08:26+0200\n"
 "PO-Revision-Date: 2026-04-13 11:08+0200\n"
 "Last-Translator: Serge van Thillo <nulleke76@gmail.com>\n"
 "Language-Team: Dutch <vertaling@vrijschrift.org>\n"
@@ -16,6 +16,85 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Serial"
+msgstr "S/N"
+
+msgid "Unknown"
+msgstr "Onbekend"
+
+msgid ""
+"This certificate is explicitly untrusted by the Operating System "
+"(Blacklisted)."
+msgstr ""
+"Dit certificaat wordt expliciet gewantrouwd door het besturingssysteem (op "
+"de zwarte lijst)."
+
+#, python-brace-format
+msgid "Certificate expires within {days} days."
+msgstr "Certificaat verloopt binnen {days} dagen."
+
+#, python-brace-format
+msgid "Circular chain detected: {path}"
+msgstr "Circulaire keten gedetecteerd: {path}"
+
+msgid "CYCLE_BREAKER"
+msgstr "CYCLUS_BREKER"
+
+msgid "SIG_ERR"
+msgstr "SIG_FOUT"
+
+msgid "REVOKED"
+msgstr "INGETROKKEN"
+
+msgid "INVALID"
+msgstr "ONGELDIG"
+
+#, python-brace-format
+msgid "Missing issuer for: {name}"
+msgstr "Ontbrekende issuer voor: {name}"
+
+msgid "UNTRUSTED"
+msgstr "GEEN_TRUST"
+
+msgid "The certificate chain leads to an untrusted or missing root."
+msgstr ""
+"De certificaatketen leidt naar een niet-vertrouwde of ontbrekende root."
+
+msgid "The certificate chain is incomplete due to a missing upstream issuer."
+msgstr ""
+"De certificaatketen is incompleet door een ontbrekende bovenliggende "
+"uitgever."
+
+msgid ""
+"The chain is untrusted because an upstream issuer is blacklisted by the OS."
+msgstr ""
+"De keten wordt niet vertrouwd omdat een bovenliggende uitgever op de "
+"blacklist van het besturingssysteem staat."
+
+#, python-brace-format
+msgid "AIA: {name}"
+msgstr "AIA: {name}"
+
+msgid "Successfully discovered issuer via AIA"
+msgstr "Uitgever succesvol gevonden via AIA"
+
+msgid "CHAIN_TOO_DEEP"
+msgstr "KETEN_TE_DIEP"
+
+#, python-brace-format
+msgid "Chain limit reached | Depth > {depth}"
+msgstr "Ketenlimiet bereikt | Diepte > {depth}"
+
+msgid "The chain is broken; an issuer (Root or Intermediate) was not found."
+msgstr ""
+"De keten is verbroken; een uitgever (Root of Intermediate) is niet gevonden."
+
+msgid "The certificate chain exceeds the maximum allowed depth."
+msgstr "De certificaatketen overschrijdt de maximaal toegestane diepte."
+
+msgid "A circular certificate reference was detected."
+msgstr "Er is een circulaire certificaatverwijzing gedetecteerd."
 
 msgid "CACHE"
 msgstr "CACHE"
@@ -191,119 +270,6 @@ msgstr "{used} van de {total} systeem-certificaten gebruikt"
 msgid "System usage"
 msgstr "Systeemgebruik"
 
-msgid "Invalid DER structure"
-msgstr "Ongeldige DER structuur"
-
-#, python-brace-format
-msgid "Maximum certificate limit ({limit}) reached."
-msgstr "Maximale certificaatlimiet ({limit}) bereikt."
-
-msgid "Skipping duplicate certificate (already loaded)"
-msgstr "Duplicaat certificaat overgeslagen (reeds geladen)"
-
-msgid "DUPLICATE"
-msgstr "DUPLICAAT"
-
-msgid "Invalid certificate structure"
-msgstr "Ongeldige certificaat structuur"
-
-msgid "PKCS7-container"
-msgstr "PKCS7-container"
-
-msgid "Legacy cryptography detected, falling back."
-msgstr "Verouderde cryptografie gedetecteerd, fallback wordt uitgevoerd."
-
-#, python-brace-format
-msgid "Failed to parse PKCS7: {error}"
-msgstr "Parsen van PKCS7 mislukt: {error}"
-
-#, python-brace-format
-msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
-msgstr "Maximale certificaatlimiet ({limit}) bereikt. Scan wordt gestopt."
-
-#, python-brace-format
-msgid "File too large ({size:.1f}MB)"
-msgstr "Bestand te groot ({size:.1f}MB)."
-
-msgid "Serial"
-msgstr "S/N"
-
-msgid "Unknown"
-msgstr "Onbekend"
-
-msgid ""
-"This certificate is explicitly untrusted by the Operating System "
-"(Blacklisted)."
-msgstr ""
-"Dit certificaat wordt expliciet gewantrouwd door het besturingssysteem (op "
-"de zwarte lijst)."
-
-#, python-brace-format
-msgid "Certificate expires within {days} days."
-msgstr "Certificaat verloopt binnen {days} dagen."
-
-#, python-brace-format
-msgid "Circular chain detected: {path}"
-msgstr "Circulaire keten gedetecteerd: {path}"
-
-msgid "CYCLE_BREAKER"
-msgstr "CYCLUS_BREKER"
-
-msgid "SIG_ERR"
-msgstr "SIG_FOUT"
-
-msgid "REVOKED"
-msgstr "INGETROKKEN"
-
-msgid "INVALID"
-msgstr "ONGELDIG"
-
-#, python-brace-format
-msgid "Missing issuer for: {name}"
-msgstr "Ontbrekende issuer voor: {name}"
-
-msgid "UNTRUSTED"
-msgstr "GEEN_TRUST"
-
-msgid "The certificate chain leads to an untrusted or missing root."
-msgstr ""
-"De certificaatketen leidt naar een niet-vertrouwde of ontbrekende root."
-
-msgid "The certificate chain is incomplete due to a missing upstream issuer."
-msgstr ""
-"De certificaatketen is incompleet door een ontbrekende bovenliggende "
-"uitgever."
-
-msgid ""
-"The chain is untrusted because an upstream issuer is blacklisted by the OS."
-msgstr ""
-"De keten wordt niet vertrouwd omdat een bovenliggende uitgever op de "
-"blacklist van het besturingssysteem staat."
-
-#, python-brace-format
-msgid "AIA: {name}"
-msgstr "AIA: {name}"
-
-msgid "Successfully discovered issuer via AIA"
-msgstr "Uitgever succesvol gevonden via AIA"
-
-msgid "CHAIN_TOO_DEEP"
-msgstr "KETEN_TE_DIEP"
-
-#, python-brace-format
-msgid "Chain limit reached | Depth > {depth}"
-msgstr "Ketenlimiet bereikt | Diepte > {depth}"
-
-msgid "The chain is broken; an issuer (Root or Intermediate) was not found."
-msgstr ""
-"De keten is verbroken; een uitgever (Root of Intermediate) is niet gevonden."
-
-msgid "The certificate chain exceeds the maximum allowed depth."
-msgstr "De certificaatketen overschrijdt de maximaal toegestane diepte."
-
-msgid "A circular certificate reference was detected."
-msgstr "Er is een circulaire certificaatverwijzing gedetecteerd."
-
 #, python-brace-format
 msgid ""
 "The cryptographic signature from issuer '{issuer}' is invalid or could not "
@@ -467,6 +433,40 @@ msgstr ""
 msgid "Certificate name '{name}' is explicitly excluded by the issuer."
 msgstr "Certificaatnaam '{name}' is expliciet uitgesloten door de uitgever."
 
+msgid "Invalid DER structure"
+msgstr "Ongeldige DER structuur"
+
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached."
+msgstr "Maximale certificaatlimiet ({limit}) bereikt."
+
+msgid "Skipping duplicate certificate (already loaded)"
+msgstr "Duplicaat certificaat overgeslagen (reeds geladen)"
+
+msgid "DUPLICATE"
+msgstr "DUPLICAAT"
+
+msgid "Invalid certificate structure"
+msgstr "Ongeldige certificaat structuur"
+
+msgid "PKCS7-container"
+msgstr "PKCS7-container"
+
+msgid "Legacy cryptography detected, falling back."
+msgstr "Verouderde cryptografie gedetecteerd, fallback wordt uitgevoerd."
+
+#, python-brace-format
+msgid "Failed to parse PKCS7: {error}"
+msgstr "Parsen van PKCS7 mislukt: {error}"
+
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
+msgstr "Maximale certificaatlimiet ({limit}) bereikt. Scan wordt gestopt."
+
+#, python-brace-format
+msgid "File too large ({size:.1f}MB)"
+msgstr "Bestand te groot ({size:.1f}MB)."
+
 #, python-brace-format
 msgid "Initiating TLS connection to {host}:{port}"
 msgstr "TLS-verbinding opzetten met {host}:{port}"
@@ -516,9 +516,6 @@ msgstr "Groep heeft GEEN geldige certificaten."
 msgid "EMPTY_GROUP"
 msgstr "LEGE_GROEP"
 
-msgid "Unknown format: {}"
-msgstr "Onbekend formaat: {}"
-
 msgid "SIG_INVALID"
 msgstr "SIG_ONGELDIG"
 
@@ -560,6 +557,9 @@ msgstr "Gebruik"
 
 msgid "ALT"
 msgstr "ALT"
+
+msgid "Unknown format: {}"
+msgstr "Onbekend formaat: {}"
 
 #, python-brace-format
 msgid "check_truststore v{app_version} (Python {python_ver} on {os_pretty})"
