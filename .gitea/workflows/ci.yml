@@ -27,7 +27,7 @@ jobs:
 
       - name: Run Ruff check
         run: ruff check .
-  
+
   test_full_compatibility:
     name: Test Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest

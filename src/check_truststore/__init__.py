@@ -9,7 +9,7 @@ input providers, and rendering results.
 """
 
 __author__ = "Serge van Thillo"
-__version__ = "1.2.5"
+__version__ = "1.2.6"
 
 from .engine import (
     Certificate,

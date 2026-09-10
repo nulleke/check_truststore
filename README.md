@@ -35,6 +35,7 @@ A tool for system administrators and security engineers to audit certificate tru
   - [🛡️ SARIF (Static Analysis Results Interchange Format)](#️-sarif-static-analysis-results-interchange-format)
   - [🎨 Visual PKI Topology (Graphviz)](#-visual-pki-topology-graphviz)
   - [📈 Prometheus Metrics Support](#-prometheus-metrics-support)
+  - [🟢 Zabbix Low-Level Discovery (LLD)](#-zabbix-low-level-discovery-lld)
 - [🧠 Core Logic & Identity Strategy](#-core-logic--identity-strategy)
   - [🏗️ Path Construction & Validation](#️-path-construction--validation)
   - [🆔 Identity Strategy](#-identity-strategy)
@@ -633,6 +634,57 @@ truststore_cert_policy_findings_total{group="production-api",common_name="Expire
 truststore_cert_policy_findings_total{group="production-api",common_name="Expired Sub-CA",serial="987654321",fingerprint="e5f6g7h8...",level="INFO"} 2
 ```
 
+### 🟢 Zabbix Low-Level Discovery (LLD)
+
+The `ZabbixRenderer` (`--format zabbix`) transforms the certificate hierarchy into a highly optimized JSON payload specifically designed for **Zabbix Low-Level Discovery (LLD)**. To prevent redundant monitoring items, the engine automatically globally deduplicates shared root and intermediate certificates across all your scanned environments (groups).
+
+#### Generated LLD Macros
+When a Zabbix Master Item receives this payload, it can dynamically create hosts or items using the following automatically generated macros:
+
+| Macro | Description |
+| :--- | :--- |
+| `{#CERT_FINGERPRINT}` | The unique SHA-256 fingerprint of the certificate. |
+| `{#CERT_UID}` | A short (16-char) unique identifier based on the fingerprint (ideal for item keys). |
+| `{#CERT_CN}` | The sanitized Common Name (CN) of the certificate. |
+| `{#CERT_TYPE}` | The structural role in the chain (`Root`, `Intermediate`, or `Endpoint`). |
+| `{#CERT_SANS}` | A comma-separated string of discovered Subject Alternative Names. |
+| `{#CERT_GROUPS}` | A comma-separated list of all truststore environments where this exact certificate was discovered. |
+
+#### Dependent Item Metrics
+Alongside the LLD macros, each discovered entity contains a `metrics` object designed to be extracted via Zabbix Dependent Items (using JSONPath like `$.metrics.expiry`):
+
+* **`valid`**: Returns `1` if the certificate is structurally and cryptographically sound, or `0` if any critical errors exist.
+* **`expiry`**: The expiration date provided as a UNIX timestamp (seconds). This allows for easy native Zabbix trigger calculations (e.g., alert if `< 30d`).
+* **`errors` / `warnings`**: Integer counters reflecting the number of policy violations discovered on the specific certificate.
+
+#### Zabbix JSON Example Snippet
+```json
+[
+  {
+    "{#CERT_FINGERPRINT}": "e5477085a1b2c3d4e5f6g7h8...",
+    "{#CERT_UID}": "e5477085a1b2c3d4",
+    "{#CERT_CN}": "www.example.com",
+    "{#CERT_TYPE}": "Endpoint",
+    "{#CERT_SANS}": "www.example.com, api.example.com",
+    "{#CERT_GROUPS}": "Production Store, Nmap: 443",
+    "groups": [
+      "Production Store",
+      "Nmap: 443"
+    ],
+    "sans": [
+      "www.example.com",
+      "api.example.com"
+    ],
+    "metrics": {
+      "valid": 1,
+      "expiry": 1809687309,
+      "errors": 0,
+      "warnings": 1
+    }
+  }
+]
+```
+
 ## 🧠 Core Logic & Identity Strategy
 * **Smart Deduplication**: To keep reports clean and efficient, the tool uses a dual-layer filtering process. First, it calculates a **SHA-256 fingerprint** for every file. If the exact same certificate (identical binary content) is found in multiple paths, it is processed only once. This prevents redundant entries and circular references in the tree.
 * **Name Collisions [👯]**: Even with ID tracking, name collisions occur (e.g., two different CAs using the same Common Name). The tool detects these based on differing Public Key IDs and flags them. This ensures you can distinguish between them even if they appear identical in the hierarchy.
@@ -796,4 +848,4 @@ This program is free software: you can redistribute it and/or modify it under th
 This project is licensed under the **LGPL-3.0-or-later** - see the [LICENSE](LICENSE) file for details.
 
 ---
-**Status**: Version: 1.2.5 | Stable | **Logic validated for current system date**: May 23, 2026
+**Status**: Version: 1.2.6 | Stable | **Logic validated for current system date**: Sep 10, 2026

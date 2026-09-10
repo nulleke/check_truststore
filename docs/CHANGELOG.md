@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.2.6] - 2026-09-10 (Stable)
+
+### 🚀 Highlights
+*   **Zabbix LLD Support**: Introduced a dedicated `ZabbixRenderer` (`--format zabbix`) that generates highly optimized, globally deduplicated JSON payloads tailored for Zabbix Low-Level Discovery.
+*   **Code Quality & Typing**: The entire codebase has been rigorously overhauled with strict Python type hinting and comprehensive docstrings to fully comply with the latest `ruff` linter standards.
+
+### Added
+*   **Maximum Chain Depth Validation**: Enforced strict validation for deep recursion using the `--max-depth` parameter (default: 4). Chains exceeding this limit now safely terminate and generate a `CHAIN_TOO_DEEP` / `MAXIMUM DEPTH LIMIT REACHED` policy finding.
+*   **Gitea CI Pipeline**: Added `.gitea/workflows/ci.yml` to run automated compatibility tests, translation compilation, and Ruff linting on a private Gitea runner.
+
+### Changed
+*   **Documentation**: Expanded the README to highlight out-of-the-box Nmap `ssl-cert` integration and added comprehensive examples for the new Zabbix output and LLD macros.
+*   **GitLab CI**: Streamlined `.gitlab-ci.yml` to delegate heavy testing to Gitea while maintaining the GitLab pipeline status and repository badges.
+
+### Internal
+*   **Translations**: Synchronized the core `.pot` template and all locale files (`nl`, `de`, `fr`) with new technical strings for depth limits, circular references, and renderer states.
+*   **Pydantic Optimization**: Adjusted internal JSON dumping logic to safely handle truncation of children arrays when encountering depth limits or cycle breakers.
+
 ## [v1.2.5] - 2026-05-23
 
 ### 🚀 Highlights

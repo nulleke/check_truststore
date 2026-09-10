@@ -4,9 +4,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: check_truststore 1.2.5\n"
+"Project-Id-Version: check_truststore 1.2.6\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-27 08:42+0200\n"
+"POT-Creation-Date: 2026-09-10 08:26+0200\n"
 "PO-Revision-Date: 2026-05-07 14:35+0200\n"
 "Last-Translator: Assistant\n"
 "Language-Team: fr\n"
@@ -15,6 +15,85 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "Serial"
+msgstr "Série"
+
+msgid "Unknown"
+msgstr "Inconnu"
+
+msgid ""
+"This certificate is explicitly untrusted by the Operating System "
+"(Blacklisted)."
+msgstr ""
+"Ce certificat est explicitement non fiable pour le système d'exploitation "
+"(liste noire)."
+
+#, python-brace-format
+msgid "Certificate expires within {days} days."
+msgstr "Le certificat expire dans {days} jours."
+
+#, python-brace-format
+msgid "Circular chain detected: {path}"
+msgstr "Chaîne circulaire détectée : {path}"
+
+msgid "CYCLE_BREAKER"
+msgstr "RUPTEUR_CYCLE"
+
+msgid "SIG_ERR"
+msgstr "ERR_SIG"
+
+msgid "REVOKED"
+msgstr "RÉVOQUÉ"
+
+msgid "INVALID"
+msgstr "INVALIDE"
+
+#, python-brace-format
+msgid "Missing issuer for: {name}"
+msgstr "Émetteur manquant pour : {name}"
+
+msgid "UNTRUSTED"
+msgstr "NON_FIABLE"
+
+msgid "The certificate chain leads to an untrusted or missing root."
+msgstr "La chaîne de certificats mène à une racine non approuvée ou manquante."
+
+msgid "The certificate chain is incomplete due to a missing upstream issuer."
+msgstr ""
+"La chaîne de certificats est incomplète en raison d'un émetteur amont "
+"manquant."
+
+msgid ""
+"The chain is untrusted because an upstream issuer is blacklisted by the OS."
+msgstr ""
+"La chaîne n'est pas fiable car un émetteur en amont est sur la liste noire "
+"de l'OS."
+
+#, python-brace-format
+msgid "AIA: {name}"
+msgstr "AIA : {name}"
+
+msgid "Successfully discovered issuer via AIA"
+msgstr "Émetteur découvert avec succès via AIA"
+
+msgid "CHAIN_TOO_DEEP"
+msgstr "CHAINE_TROP_PROFONDE"
+
+#, python-brace-format
+msgid "Chain limit reached | Depth > {depth}"
+msgstr "Limite de chaîne atteinte | Profondeur > {depth}"
+
+msgid "The chain is broken; an issuer (Root or Intermediate) was not found."
+msgstr ""
+"La chaîne est rompue ; un émetteur (racine ou intermédiaire) n'a pas été "
+"trouvé."
+
+msgid "The certificate chain exceeds the maximum allowed depth."
+msgstr "La chaîne de certificats dépasse la profondeur maximale autorisée."
+
+msgid "A circular certificate reference was detected."
+msgstr "Une référence de certificat circulaire a été détectée."
 
 msgid "CACHE"
 msgstr "CACHE"
@@ -189,119 +268,6 @@ msgstr "{used} des {total} certificats système utilisés"
 msgid "System usage"
 msgstr "Utilisation du système"
 
-msgid "Invalid DER structure"
-msgstr "Structure DER invalide"
-
-#, python-brace-format
-msgid "Maximum certificate limit ({limit}) reached."
-msgstr "Limite maximale de certificats ({limit}) atteinte."
-
-msgid "Skipping duplicate certificate (already loaded)"
-msgstr "Saut du certificat en double (déjà chargé)"
-
-msgid "DUPLICATE"
-msgstr "DOUBLON"
-
-msgid "Invalid certificate structure"
-msgstr "Structure de certificat invalide"
-
-msgid "PKCS7-container"
-msgstr "Conteneur-PKCS7"
-
-msgid "Legacy cryptography detected, falling back."
-msgstr "Cryptographie obsolète détectée, mode de repli activé."
-
-#, python-brace-format
-msgid "Failed to parse PKCS7: {error}"
-msgstr "Échec de l'analyse du PKCS7 : {error}"
-
-#, python-brace-format
-msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
-msgstr "Limite maximale de certificats ({limit}) atteinte. Arrêt de l'analyse."
-
-#, python-brace-format
-msgid "File too large ({size:.1f}MB)"
-msgstr "Fichier trop volumineux ({size:.1f} Mo)"
-
-msgid "Serial"
-msgstr "Série"
-
-msgid "Unknown"
-msgstr "Inconnu"
-
-msgid ""
-"This certificate is explicitly untrusted by the Operating System "
-"(Blacklisted)."
-msgstr ""
-"Ce certificat est explicitement non fiable pour le système d'exploitation "
-"(liste noire)."
-
-#, python-brace-format
-msgid "Certificate expires within {days} days."
-msgstr "Le certificat expire dans {days} jours."
-
-#, python-brace-format
-msgid "Circular chain detected: {path}"
-msgstr "Chaîne circulaire détectée : {path}"
-
-msgid "CYCLE_BREAKER"
-msgstr "RUPTEUR_CYCLE"
-
-msgid "SIG_ERR"
-msgstr "ERR_SIG"
-
-msgid "REVOKED"
-msgstr "RÉVOQUÉ"
-
-msgid "INVALID"
-msgstr "INVALIDE"
-
-#, python-brace-format
-msgid "Missing issuer for: {name}"
-msgstr "Émetteur manquant pour : {name}"
-
-msgid "UNTRUSTED"
-msgstr "NON_FIABLE"
-
-msgid "The certificate chain leads to an untrusted or missing root."
-msgstr "La chaîne de certificats mène à une racine non approuvée ou manquante."
-
-msgid "The certificate chain is incomplete due to a missing upstream issuer."
-msgstr ""
-"La chaîne de certificats est incomplète en raison d'un émetteur amont "
-"manquant."
-
-msgid ""
-"The chain is untrusted because an upstream issuer is blacklisted by the OS."
-msgstr ""
-"La chaîne n'est pas fiable car un émetteur en amont est sur la liste noire "
-"de l'OS."
-
-#, python-brace-format
-msgid "AIA: {name}"
-msgstr "AIA : {name}"
-
-msgid "Successfully discovered issuer via AIA"
-msgstr "Émetteur découvert avec succès via AIA"
-
-msgid "CHAIN_TOO_DEEP"
-msgstr "CHAINE_TROP_PROFONDE"
-
-#, python-brace-format
-msgid "Chain limit reached | Depth > {depth}"
-msgstr "Limite de chaîne atteinte | Profondeur > {depth}"
-
-msgid "The chain is broken; an issuer (Root or Intermediate) was not found."
-msgstr ""
-"La chaîne est rompue ; un émetteur (racine ou intermédiaire) n'a pas été "
-"trouvé."
-
-msgid "The certificate chain exceeds the maximum allowed depth."
-msgstr "La chaîne de certificats dépasse la profondeur maximale autorisée."
-
-msgid "A circular certificate reference was detected."
-msgstr "Une référence de certificat circulaire a été détectée."
-
 #, python-brace-format
 msgid ""
 "The cryptographic signature from issuer '{issuer}' is invalid or could not "
@@ -471,6 +437,40 @@ msgstr ""
 msgid "Certificate name '{name}' is explicitly excluded by the issuer."
 msgstr "Le nom du certificat '{name}' est explicitement exclu par l'émetteur."
 
+msgid "Invalid DER structure"
+msgstr "Structure DER invalide"
+
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached."
+msgstr "Limite maximale de certificats ({limit}) atteinte."
+
+msgid "Skipping duplicate certificate (already loaded)"
+msgstr "Saut du certificat en double (déjà chargé)"
+
+msgid "DUPLICATE"
+msgstr "DOUBLON"
+
+msgid "Invalid certificate structure"
+msgstr "Structure de certificat invalide"
+
+msgid "PKCS7-container"
+msgstr "Conteneur-PKCS7"
+
+msgid "Legacy cryptography detected, falling back."
+msgstr "Cryptographie obsolète détectée, mode de repli activé."
+
+#, python-brace-format
+msgid "Failed to parse PKCS7: {error}"
+msgstr "Échec de l'analyse du PKCS7 : {error}"
+
+#, python-brace-format
+msgid "Maximum certificate limit ({limit}) reached. Stopping scan."
+msgstr "Limite maximale de certificats ({limit}) atteinte. Arrêt de l'analyse."
+
+#, python-brace-format
+msgid "File too large ({size:.1f}MB)"
+msgstr "Fichier trop volumineux ({size:.1f} Mo)"
+
 #, python-brace-format
 msgid "Initiating TLS connection to {host}:{port}"
 msgstr "Initialisation de la connexion TLS vers {host}:{port}"
@@ -520,9 +520,6 @@ msgstr "Le groupe ne contient aucun certificat valide."
 msgid "EMPTY_GROUP"
 msgstr "GROUPE_VIDE"
 
-msgid "Unknown format: {}"
-msgstr "Format inconnu : {}"
-
 msgid "SIG_INVALID"
 msgstr "SIG_INVALIDE"
 
@@ -564,6 +561,9 @@ msgstr "Utilisation"
 
 msgid "ALT"
 msgstr "ALT"
+
+msgid "Unknown format: {}"
+msgstr "Format inconnu : {}"
 
 #, python-brace-format
 msgid "check_truststore v{app_version} (Python {python_ver} on {os_pretty})"

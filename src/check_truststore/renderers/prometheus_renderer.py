@@ -72,7 +72,7 @@ class PrometheusRenderer(BaseRenderer):
 
             if ": " in raw_group_name:
                 prov_part, target_part = raw_group_name.split(": ", 1)
-                provider = prov_part.strip().upper()  
+                provider = prov_part.strip().upper()
                 target = target_part.strip()
 
             if ":" in target:
@@ -145,7 +145,7 @@ class PrometheusRenderer(BaseRenderer):
             expiry_dt: Any = self._get_val(node, "expiry_date")
             if isinstance(expiry_dt, date) and not isinstance(expiry_dt, datetime):
                 expiry_dt = datetime(expiry_dt.year, expiry_dt.month, expiry_dt.day, tzinfo=timezone.utc)
-            
+
             if isinstance(expiry_dt, datetime):
                 lines.append(f'truststore_cert_expiry_timestamp_seconds{{{labels}}} {expiry_dt.timestamp():.0f}')
 
