@@ -50,7 +50,6 @@ jobs:
 
       - name: Install system dependencies (Gettext)
         run: |
-          echo 'Acquire::http::Proxy "http://10.88.0.1:3142";' | sudo tee /etc/apt/apt.conf.d/01proxy
           sed -i 's/archive.ubuntu.com/nl.archive.ubuntu.com/g' /etc/apt/sources.list.d/ubuntu.sources || true
           sudo apt-get update
           sudo apt-get install -y gettext
