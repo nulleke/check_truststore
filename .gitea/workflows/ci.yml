@@ -50,9 +50,8 @@ jobs:
 
       - name: Install system dependencies (Gettext)
         run: |
-          sed -i 's/archive.ubuntu.com/nl.archive.ubuntu.com/g' /etc/apt/sources.list.d/ubuntu.sources || true
-          sudo apt-get update
-          sudo apt-get install -y gettext
+          sudo apt-get update -qq
+          sudo apt-get install -yqq gettext
 
       - name: Setup Environment (Modern)
         if: matrix.python-version != '3.6'
