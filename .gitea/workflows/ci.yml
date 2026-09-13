@@ -148,12 +148,12 @@ jobs:
       - name: Download all test results
         uses: actions/download-artifact@v3
         with:
-          pattern: test-results-*
           path: all-logs
-          merge-multiple: true
 
       - name: Validate JSON and Compare outputs
         run: |
+          find all-logs -type f -name "*.json" -exec cp {} all-logs/ \;
+
           echo "--- Quality Control (Audit) ---"
           REFERENCE_VER="3.14"
           REFERENCE_JSON="all-logs/output_${REFERENCE_VER}.json"
