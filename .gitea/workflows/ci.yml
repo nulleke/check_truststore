@@ -69,7 +69,7 @@ jobs:
 
           rm *.csr *.ext *.srl *.key
 
-    - name: Upload Test Fixtures
+      - name: Upload Test Fixtures
         uses: actions/upload-artifact@v3
         with:
           name: dynamic-test-fixtures
