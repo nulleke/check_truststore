@@ -185,12 +185,20 @@ jobs:
           name: dynamic-test-fixtures
           path: test_data
 
-      - name: Run Execution in pure Slim Container
+      - name: Run Execution via Docker CP
         run: |
-          echo ">>> Booting python:3.6-slim purely for execution..."
+          echo ">>> Booting python:3.6-slim background container..."
+          # Start een lege container in de achtergrond en hou hem in leven
+          docker run --name py36_tester -d -w /workspace python:3.6-slim tail -f /dev/null
           
-          # We starten de container, koppelen de huidige werkmap ($PWD) eraan, en draaien het script
-          docker run --rm -v "$PWD:/workspace" -w /workspace python:3.6-slim bash -c "
+          # Zorg dat de container ALTIJD wordt opgeruimd, ook als de test faalt
+          trap 'docker rm -f py36_tester' EXIT
+          
+          echo ">>> Injecting workspace into container..."
+          docker cp . py36_tester:/workspace
+          
+          echo ">>> Executing tests inside container..."
+          docker exec py36_tester bash -c "
             echo '>>> Install Gettext & Python packages'
             apt-get update -qq && apt-get install -yqq gettext
             python -m pip install --quiet --upgrade 'pip<22.0'
@@ -211,6 +219,13 @@ jobs:
             ./check_truststore test_data/test_stores.yml -f status > logs/status_3.6.json || true
             ./check_truststore --mock -f text -d > logs/mock_3.6.txt
           "
+          
+          echo ">>> Extracting logs from container..."
+          mkdir -p logs
+          # Haal de gegenereerde logs veilig terug naar de gitea-runner workspace
+          docker cp py36_tester:/workspace/logs/output_3.6.json logs/
+          docker cp py36_tester:/workspace/logs/status_3.6.json logs/
+          docker cp py36_tester:/workspace/logs/mock_3.6.txt logs/ || true
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v3
