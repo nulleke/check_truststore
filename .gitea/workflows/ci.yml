@@ -38,7 +38,6 @@ jobs:
           mkdir -p test_data/files/certificates/prd/trust
           cd test_data
 
-          # Genereer de test_stores.yml met TWEE groepen (Valid & Broken)
           cat << 'EOF' > test_stores.yml
           ---
           env: prd
@@ -125,7 +124,6 @@ jobs:
           path: test_data
 
       - name: Set up Python ${{ matrix.python-version }}
-        if: matrix.python-version != '3.6'
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
@@ -136,7 +134,6 @@ jobs:
           sudo apt-get install -yqq gettext
 
       - name: Setup Environment (Modern)
-        if: matrix.python-version != '3.6'
         run: |
           echo ">>> Environment: Modern (${{ matrix.python-version }})"
           python -m pip install --quiet --upgrade pip
