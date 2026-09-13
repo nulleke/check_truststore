@@ -157,6 +157,7 @@ jobs:
           chmod +x check_truststore
           mkdir -p logs
 
+          ./check_truststore --version
           ./check_truststore test_data/test_stores.yml -f json > logs/output_${{ matrix.python-version }}.json
           ./check_truststore test_data/test_stores.yml -f status > logs/status_${{ matrix.python-version }}.json || true
           ./check_truststore --mock -f text -d > logs/mock_${{ matrix.python-version }}.txt
