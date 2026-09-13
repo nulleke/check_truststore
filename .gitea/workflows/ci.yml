@@ -38,34 +38,62 @@ jobs:
           mkdir -p test_data/files/certificates/prd/trust
           cd test_data
 
+          # Genereer de test_stores.yml met TWEE groepen (Valid & Broken)
           cat << 'EOF' > test_stores.yml
           ---
           env: prd
           certificate_file_extension: ".crt"
           truststores:
-            - name: ci_test_chain
+            - name: ci_valid_chain
               cert_src_dir: "test_data/files/certificates/{{ env }}/trust"
               cert_chain:
                 - {link: "Test_Root_CA", pos: 1}
                 - {link: "Test_Inter_CA", pos: 2}
-                - {link: "Test_Server", pos: 3}
+                - {link: "Test_Server_Valid", pos: 3}
+            - name: ci_broken_chain
+              cert_src_dir: "test_data/files/certificates/{{ env }}/trust"
+              cert_chain:
+                - {link: "Test_Root_CA", pos: 1}
+                - {link: "Test_Inter_CA", pos: 2}
+                - {link: "Test_Server_Broken", pos: 3}
           EOF
 
           cd files/certificates/prd/trust
 
           openssl req -x509 -newkey rsa:2048 -nodes -keyout Test_Root_CA.key -out Test_Root_CA.crt \
-            -days 365 -subj "/CN=CI_Test_Root_CA" 2>/dev/null
+            -days 365 -subj "/CN=CI_Test_Root_CA" \
+            -addext "subjectKeyIdentifier=hash" \
+            -addext "basicConstraints=critical,CA:TRUE" 2>/dev/null
 
           openssl req -new -newkey rsa:2048 -nodes -keyout Test_Inter_CA.key -out Test_Inter_CA.csr \
             -subj "/CN=CI_Test_Intermediate_CA" 2>/dev/null
-          echo "basicConstraints=CA:TRUE" > v3_ca.ext
-          openssl x509 -req -in Test_Inter_CA.csr -CA Test_Root_CA.crt -CAkey Test_Root_CA.key \
-            -CAcreateserial -out Test_Inter_CA.crt -days 365 -extfile v3_ca.ext 2>/dev/null
 
-          openssl req -new -newkey rsa:2048 -nodes -keyout Test_Server.key -out Test_Server.csr \
-            -subj "/CN=test.ci.local" 2>/dev/null
-          openssl x509 -req -in Test_Server.csr -CA Test_Inter_CA.crt -CAkey Test_Inter_CA.key \
-            -CAcreateserial -out Test_Server.crt -days 365 2>/dev/null
+          cat << 'EOF' > v3_inter.ext
+          basicConstraints = critical, CA:TRUE, pathlen:0
+          subjectKeyIdentifier = hash
+          authorityKeyIdentifier = keyid:always,issuer
+          EOF
+
+          openssl x509 -req -in Test_Inter_CA.csr -CA Test_Root_CA.crt -CAkey Test_Root_CA.key \
+            -CAcreateserial -out Test_Inter_CA.crt -days 365 -extfile v3_inter.ext 2>/dev/null
+
+          openssl req -new -newkey rsa:2048 -nodes -keyout Test_Server_Valid.key -out Test_Server_Valid.csr \
+            -subj "/CN=valid.ci.local" 2>/dev/null
+            
+          cat << 'EOF' > v3_leaf.ext
+          basicConstraints = CA:FALSE
+          subjectKeyIdentifier = hash
+          authorityKeyIdentifier = keyid:always,issuer
+          subjectAltName = DNS:valid.ci.local
+          EOF
+          
+          openssl x509 -req -in Test_Server_Valid.csr -CA Test_Inter_CA.crt -CAkey Test_Inter_CA.key \
+            -CAcreateserial -out Test_Server_Valid.crt -days 365 -extfile v3_leaf.ext 2>/dev/null
+
+          openssl req -new -newkey rsa:2048 -nodes -keyout Test_Server_Broken.key -out Test_Server_Broken.csr \
+            -subj "/CN=broken.ci.local" 2>/dev/null
+          openssl x509 -req -in Test_Server_Broken.csr -CA Test_Inter_CA.crt -CAkey Test_Inter_CA.key \
+            -CAcreateserial -out Test_Server_Broken.crt -days 365 2>/dev/null
 
           rm *.csr *.ext *.srl *.key
 
@@ -82,7 +110,7 @@ jobs:
     needs: [linting, prepare_fixtures]
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.13", "3.14"]
+        python-version: ["3.7", "3.9", "3.10", "3.13", "3.14"]
 
     steps:
       - name: Checkout code
