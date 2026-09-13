@@ -175,11 +175,6 @@ jobs:
     container: python:3.6-slim
     needs: [linting, prepare_fixtures]
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        env:
-          GIT_SSL_NO_VERIFY: "true"
-
       - name: Download Test Fixtures
         uses: actions/download-artifact@v3
         with:
