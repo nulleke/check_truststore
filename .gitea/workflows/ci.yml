@@ -69,6 +69,13 @@ jobs:
 
           rm *.csr *.ext *.srl *.key
 
+    - name: Upload Test Fixtures
+        uses: actions/upload-artifact@v3
+        with:
+          name: dynamic-test-fixtures
+          path: test_data/
+          retention-days: 1
+
   test_full_compatibility:
     name: Test Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
@@ -84,7 +91,7 @@ jobs:
           GIT_SSL_NO_VERIFY: "true"
 
       - name: Download Test Fixtures
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           name: dynamic-test-fixtures
           path: test_data
@@ -127,7 +134,7 @@ jobs:
           ./check_truststore --mock -f text -d > logs/mock_${{ matrix.python-version }}.txt
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: test-results-${{ matrix.python-version }}
           path: logs/*.json
@@ -139,7 +146,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all test results
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v3
         with:
           pattern: test-results-*
           path: all-logs
