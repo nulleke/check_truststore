@@ -188,10 +188,8 @@ jobs:
       - name: Run Execution via Docker CP
         run: |
           echo ">>> Booting python:3.6-slim background container..."
-          # Start een lege container in de achtergrond en hou hem in leven
           docker run --name py36_tester -d -w /workspace python:3.6-slim tail -f /dev/null
           
-          # Zorg dat de container ALTIJD wordt opgeruimd, ook als de test faalt
           trap 'docker rm -f py36_tester' EXIT
           
           echo ">>> Injecting workspace into container..."
@@ -200,7 +198,7 @@ jobs:
           echo ">>> Executing tests inside container..."
           docker exec py36_tester bash -c "
             echo '>>> Install Gettext & Python packages'
-            apt-get update -qq && apt-get install -yqq gettext
+            apt-get update -qq && apt-get install -y gettext
             python -m pip install --quiet --upgrade 'pip<22.0'
             pip install 'cryptography<3.5' PyYAML requests
             
@@ -222,7 +220,6 @@ jobs:
           
           echo ">>> Extracting logs from container..."
           mkdir -p logs
-          # Haal de gegenereerde logs veilig terug naar de gitea-runner workspace
           docker cp py36_tester:/workspace/logs/output_3.6.json logs/
           docker cp py36_tester:/workspace/logs/status_3.6.json logs/
           docker cp py36_tester:/workspace/logs/mock_3.6.txt logs/ || true
