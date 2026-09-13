@@ -28,10 +28,86 @@ jobs:
       - name: Run Ruff check
         run: ruff check .
 
+  prepare_fixtures:
+    name: Generate Test Data
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Test Environment
+        run: |
+          echo ">>> Generating dynamic test fixtures..."
+          mkdir -p test_data/files/certificates/prd/trust
+          cd test_data
+
+          # Genereer de test_stores.yml met TWEE groepen (Valid & Broken)
+          cat << 'EOF' > test_stores.yml
+          ---
+          env: prd
+          certificate_file_extension: ".crt"
+          truststores:
+            - name: ci_valid_chain
+              cert_src_dir: "test_data/files/certificates/{{ env }}/trust"
+              cert_chain:
+                - {link: "Test_Root_CA", pos: 1}
+                - {link: "Test_Inter_CA", pos: 2}
+                - {link: "Test_Server_Valid", pos: 3}
+            - name: ci_broken_chain
+              cert_src_dir: "test_data/files/certificates/{{ env }}/trust"
+              cert_chain:
+                - {link: "Test_Root_CA", pos: 1}
+                - {link: "Test_Inter_CA", pos: 2}
+                - {link: "Test_Server_Broken", pos: 3}
+          EOF
+
+          cd files/certificates/prd/trust
+
+          openssl req -x509 -newkey rsa:2048 -nodes -keyout Test_Root_CA.key -out Test_Root_CA.crt \
+            -days 365 -subj "/CN=CI_Test_Root_CA" \
+            -addext "subjectKeyIdentifier=hash" \
+            -addext "basicConstraints=critical,CA:TRUE" 2>/dev/null
+
+          openssl req -new -newkey rsa:2048 -nodes -keyout Test_Inter_CA.key -out Test_Inter_CA.csr \
+            -subj "/CN=CI_Test_Intermediate_CA" 2>/dev/null
+
+          cat << 'EOF' > v3_inter.ext
+          basicConstraints = critical, CA:TRUE, pathlen:0
+          subjectKeyIdentifier = hash
+          authorityKeyIdentifier = keyid:always,issuer
+          EOF
+
+          openssl x509 -req -in Test_Inter_CA.csr -CA Test_Root_CA.crt -CAkey Test_Root_CA.key \
+            -CAcreateserial -out Test_Inter_CA.crt -days 365 -extfile v3_inter.ext 2>/dev/null
+
+          openssl req -new -newkey rsa:2048 -nodes -keyout Test_Server_Valid.key -out Test_Server_Valid.csr \
+            -subj "/CN=valid.ci.local" 2>/dev/null
+            
+          cat << 'EOF' > v3_leaf.ext
+          basicConstraints = CA:FALSE
+          subjectKeyIdentifier = hash
+          authorityKeyIdentifier = keyid:always,issuer
+          subjectAltName = DNS:valid.ci.local
+          EOF
+          
+          openssl x509 -req -in Test_Server_Valid.csr -CA Test_Inter_CA.crt -CAkey Test_Inter_CA.key \
+            -CAcreateserial -out Test_Server_Valid.crt -days 365 -extfile v3_leaf.ext 2>/dev/null
+
+          openssl req -new -newkey rsa:2048 -nodes -keyout Test_Server_Broken.key -out Test_Server_Broken.csr \
+            -subj "/CN=broken.ci.local" 2>/dev/null
+          openssl x509 -req -in Test_Server_Broken.csr -CA Test_Inter_CA.crt -CAkey Test_Inter_CA.key \
+            -CAcreateserial -out Test_Server_Broken.crt -days 365 2>/dev/null
+
+          rm *.csr *.ext *.srl *.key
+
+      - name: Upload Test Fixtures
+        uses: actions/upload-artifact@v3
+        with:
+          name: dynamic-test-fixtures
+          path: test_data/
+          retention-days: 1
+
   test_full_compatibility:
     name: Test Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
-    needs: linting
+    needs: [linting, prepare_fixtures]
     strategy:
       matrix:
         python-version: ["3.9", "3.10", "3.13", "3.14"]
@@ -41,6 +117,12 @@ jobs:
         uses: actions/checkout@v4
         env:
           GIT_SSL_NO_VERIFY: "true"
+
+      - name: Download Test Fixtures
+        uses: actions/download-artifact@v3
+        with:
+          name: dynamic-test-fixtures
+          path: test_data
 
       - name: Set up Python ${{ matrix.python-version }}
         if: matrix.python-version != '3.6'
@@ -69,18 +151,77 @@ jobs:
             msgfmt "$po_file" -o "$mo_file"
           done
 
-      - name: Run Analyzer
+      - name: Run Full Test Suite
         run: |
           echo ">>> Running Analyzer on Python ${{ matrix.python-version }}"
           chmod +x check_truststore
-          ./check_truststore --mock --format text -d
-          ./check_truststore --mock --format json > output_${{ matrix.python-version }}.json
-          python -m json.tool output_${{ matrix.python-version }}.json > /dev/null
+          mkdir -p logs
 
-      - name: Upload Artifacts on Failure
-        uses: actions/upload-artifact@v4
-        if: failure()
+          ./check_truststore test_data/test_stores.yml -f json > logs/output_${{ matrix.python-version }}.json
+          ./check_truststore test_data/test_stores.yml -f status > logs/status_${{ matrix.python-version }}.json || true
+          ./check_truststore --mock -f text -d > logs/mock_${{ matrix.python-version }}.txt
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v3
         with:
-          name: output-json-${{ matrix.python-version }}
-          path: output_*.json
-          retention-days: 2
+          name: test-results-${{ matrix.python-version }}
+          path: logs/*.json
+          retention-days: 1
+
+  audit_results:
+    name: Quality Control & Audit
+    needs: test_full_compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all test results
+        uses: actions/download-artifact@v3
+        with:
+          path: all-logs
+
+      - name: Validate JSON and Compare outputs
+        run: |
+          find all-logs -type f -name "*.json" -exec cp {} all-logs/ \;
+
+          echo "--- Quality Control (Audit) ---"
+          REFERENCE_VER="3.14"
+          REFERENCE_JSON="all-logs/output_${REFERENCE_VER}.json"
+          REFERENCE_STATUS="all-logs/status_${REFERENCE_VER}.json"
+
+          for file in all-logs/*.json; do
+            if ! python3 -c "import json; json.load(open('$file'))" 2>/dev/null; then
+              echo "❌ ERROR: $file contains invalid JSON!"
+              exit 1
+            fi
+            echo "✅ $file is valid JSON."
+          done
+
+          if grep -q "exitCode" "$REFERENCE_STATUS" && grep -q "groupName" "$REFERENCE_JSON"; then
+              echo "✅ Field-check: 'exitCode' and 'groupName' present in reference."
+          else
+              echo "❌ Field-check: Essential fields missing in reference files!"
+              exit 1
+          fi
+
+          echo "--- Consistency Check (vs $REFERENCE_VER) ---"
+          for VER in 3.9 3.10 3.13; do
+            if diff -I '"scanDate":' "$REFERENCE_JSON" "all-logs/output_${VER}.json" > /dev/null; then
+                echo "✅ Data: ${REFERENCE_VER} vs $VER is identical."
+            else
+                echo "❌ ERROR: Data differences found in output_${VER}.json!"
+                diff "$REFERENCE_JSON" "all-logs/output_${VER}.json"
+                exit 1
+            fi
+          done
+          echo "✅ All versions match perfectly!"
+
+          echo "--- Exit Code Validation ---"
+          EXIT_VAL=$(python3 -c "import json; print(json.load(open('$REFERENCE_STATUS'))['metadata']['exitCode'])")
+
+          if [ "$EXIT_VAL" -eq 7 ]; then
+              echo "❌ FATAL: Renderer crashed internally (Code 7)."
+              exit 1
+          elif [ "$EXIT_VAL" -eq 4 ]; then
+              echo "✅ Validation: Certificate errors found (Code 4), as expected for test data."
+          else
+              echo "✅ Validation: Status code $EXIT_VAL received."
+          fi
