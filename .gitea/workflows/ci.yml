@@ -219,7 +219,6 @@ jobs:
           mkdir -p logs
           docker cp py36_tester:/workspace/logs/output_3.6.json logs/
           docker cp py36_tester:/workspace/logs/status_3.6.json logs/
-          docker cp py36_tester:/workspace/logs/mock_3.6.txt logs/ || true
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v3
